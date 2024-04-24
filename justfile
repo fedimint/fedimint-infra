@@ -2,13 +2,11 @@ default:
   @just --list
 
 # Apply (deply) configuration to a host
-apply HOST="runner-01" SSH_HOST="root@fedimint-runner-01":
+apply HOST="runner-01" SSH_HOST="root@runner-01.dev.fedimint.org":
   nixos-rebuild switch --flake .#{{HOST}} --target-host "{{SSH_HOST}}"
 
 # Bootstrap host using nixos-anywhere
-bootstrap HOST="runner-01" SSH_HOST="root@fedimint-runner-01":
-  >&2 echo "Edit rule manually to prevent mistakes"
-  exit 1
+bootstrap HOST SSH_HOST:
   nix run github:nix-community/nixos-anywhere -- --flake .#{{HOST}} {{SSH_HOST}}
 
 
