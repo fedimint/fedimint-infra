@@ -12,6 +12,9 @@ let
 in
 {
 
+  environment.systemPackages = map lib.lowPrio [
+  ];
+
   age.secrets = {
     github-runner-token = {
       file = ../../secrets/github-runner.age;
@@ -52,6 +55,11 @@ in
         url = "https://github.com/fedimint";
         tokenFile = "/run/secrets/github-runner/token";
         user = name;
+        extraPackages = [
+          pkgs.docker
+          pkgs.cachix
+          pkgs.gawk
+        ];
       };
     })
     runnersNames);

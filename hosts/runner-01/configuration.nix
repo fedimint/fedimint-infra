@@ -20,7 +20,6 @@
     pkgs.helix
     pkgs.tmux
     inputs.agenix.packages."${pkgs.system}".default
-    pkgs.cachix
   ];
 
   system.stateVersion = "23.11";
