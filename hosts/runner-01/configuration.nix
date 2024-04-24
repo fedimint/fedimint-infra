@@ -1,4 +1,4 @@
-{ modulesPath, lib, pkgs, ... }:
+{ modulesPath, lib, pkgs, inputs, ... }:
 
 {
   imports = [
@@ -8,16 +8,6 @@
   boot.loader.grub = {
     # no need to set devices, disko will add all devices that have a EF02 partition to the list already
     # devices = [ ];
-    # mirroredBoots = [
-    #   {
-    #     devices = [ "/dev/nvme0n1" ];
-    #     path = "/boot";
-    #   }
-    #   {
-    #     devices = [ "/dev/nvme1n1" ];
-    #     path = "/boot-fallback";
-    #   }
-    # ];
     efiSupport = true;
     efiInstallAsRemovable = true;
   };
@@ -28,6 +18,8 @@
     pkgs.gitMinimal
     pkgs.helix
     pkgs.tmux
+    inputs.agenix.packages."${pkgs.system}".default
+    pkgs.cachix
   ];
 
   users.users.root.openssh.authorizedKeys.keys = [
@@ -51,6 +43,8 @@
   boot.tmp.cleanOnBoot = true;
   services.automatic-timezoned.enable = true;
   nix = {
+    package = pkgs.nixVersions.nix_2_21;
+
     extraOptions = ''
       experimental-features = nix-command flakes repl-flake
     '';
@@ -68,11 +62,45 @@
       dates = "monthly";
       options = "--delete-older-than 30d";
     };
-
-    settings = {
-      keep-derivations = lib.mkForce false;
-      keep-outputs = lib.mkForce false;
-    };
   };
   services.journald.extraConfig = "SystemMaxUse=1G";
+
+
+  age.secrets = {
+    github-runner-token = {
+      file = ../../secrets/github-runner.age;
+      path = "/run/secrets/github-runner/nixos.token";
+      owner = "github-runner";
+      group = "github-runner";
+      mode = "600";
+    };
+  };
+
+  users.groups.github-runner = { };
+  users.users.github-runner = {
+    # behaves as normal user, needs a shell and home
+    isNormalUser = true;
+    group = "github-runner";
+  };
+
+  services.github-runners = lib.listToAttrs (map
+    (name: {
+      inherit name;
+      value = {
+        enable = true;
+        inherit name;
+        url = "https://github.com/fedimint";
+        tokenFile = "/run/secrets/github-runner/nixos.token";
+        user = "github-runner";
+      };
+    }) [
+    "runner-01-a"
+    "runner-01-b"
+    "runner-01-c"
+    "runner-01-d"
+    "runner-01-e"
+    "runner-01-f"
+    "runner-01-g"
+    "runner-01-h"
+  ]);
 }
