@@ -6,8 +6,6 @@ let
     "${runnerName}-bb"
     "${runnerName}-cc"
     "${runnerName}-dd"
-    "${runnerName}-ee"
-    "${runnerName}-ff"
   ];
 in
 {
@@ -44,7 +42,7 @@ in
         # behaves as normal user, needs a shell and home
         isNormalUser = true;
         group = "github-runner";
-        home = "/var/lib/github-runner/${name}/homeless-shelter";
+        home = "/var/lib/github-runner.home/${name}";
         extraGroups = [ "docker" ];
       };
     })
