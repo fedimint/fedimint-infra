@@ -64,6 +64,10 @@ in
 
           # lncli just has to touch the real home and won't tolerate `HOME` envvar
           ProtectHome = false;
+
+          # All runners get the same value here, so they all get the same CPU time if needed,
+          # but left-over CPU time can be given to the ones that could use it.
+          CPUShares = 1024;
         };
         extraPackages = [
           # Broken: https://github.com/cachix/cachix-action/issues/179
@@ -75,4 +79,7 @@ in
     })
     runnersNames);
 
+  systemd.services.nix-daemon.serviceConfig = lib.mkForce {
+    CPUShares = 1024;
+  };
 }
