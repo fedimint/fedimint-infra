@@ -65,9 +65,6 @@ in
           # To access /var/run/docker.sock we need to be part of docker group,
           # but it doesn't seem to work when it's mapped as `nobody` due to `PrivateUsers=true`
           PrivateUsers = false;
-          # All runners get the same value here, so they all get the same CPU time if needed,
-          # but left-over CPU time can be given to the ones that could use it.
-          CPUShares = 1024;
         };
         extraPackages = [
           # Broken: https://github.com/cachix/cachix-action/issues/179
