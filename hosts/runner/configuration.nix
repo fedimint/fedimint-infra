@@ -19,6 +19,9 @@
     pkgs.gitMinimal
     pkgs.helix
     pkgs.tmux
+    pkgs.btop
+    pkgs.htop
+    pkgs.psmisc
     inputs.agenix.packages."${pkgs.system}".default
   ];
 
