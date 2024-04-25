@@ -42,7 +42,7 @@ in
         # behaves as normal user, needs a shell and home
         isNormalUser = true;
         group = "github-runner";
-        home = "/var/lib/github-runner.home/${name}";
+        # home = "/var/lib/github-runner.home/${name}";
         extraGroups = [ "docker" ];
       };
     })
@@ -63,6 +63,9 @@ in
           # To access /var/run/docker.sock we need to be part of docker group,
           # but it doesn't seem to work when it's mapped as `nobody` due to `PrivateUsers=true`
           PrivateUsers = false;
+
+          # lncli just has to touch the real home and won't tolerate `HOME` envvar
+          ProtectHome = false;
         };
         extraPackages = [
           # Broken: https://github.com/cachix/cachix-action/issues/179
