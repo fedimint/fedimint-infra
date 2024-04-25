@@ -23,6 +23,9 @@ agenix-edit PATH="secrets/github-runner.age" IDENTITY="$HOME/.ssh/id_ed25519.age
   # a standalone ssh key generated with `ssh-keygen -t ed25519`
   agenix -e "{{PATH}}" -i "{{IDENTITY}}"
 
+agenix-rekey IDENTITY="$HOME/.ssh/id_ed25519.agenix":
+  agenix -r -i "{{IDENTITY}}"
+   
 # Build host configuration
 build HOST:
   nix build -L ".#nixosConfigurations.{{HOST}}.config.system.build.toplevel"
