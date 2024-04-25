@@ -12,6 +12,10 @@ let
 in
 {
 
+  boot.tmp.useTmpfs = true;
+  boot.tmp.cleanOnBoot = true;
+
+
   environment.systemPackages = map lib.lowPrio [
   ];
 
