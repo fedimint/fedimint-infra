@@ -1,13 +1,13 @@
-{ lib, pkgs, inputs, ... }:
+{ lib, pkgs, inputs, runnerName, ... }:
 
 let
   runnersNames = [
-    "runner-01-aa"
-    "runner-01-bb"
-    "runner-01-cc"
-    "runner-01-dd"
-    "runner-01-ee"
-    "runner-01-ff"
+    "${runnerName}-aa"
+    "${runnerName}-bb"
+    "${runnerName}-cc"
+    "${runnerName}-dd"
+    "${runnerName}-ee"
+    "${runnerName}-ff"
   ];
 in
 {

@@ -2,8 +2,15 @@ default:
   @just --list
 
 # Apply (deply) configuration to a host
-apply HOST="runner-01" SSH_HOST="root@runner-01.dev.fedimint.org":
+apply HOST SSH_HOST:
   nixos-rebuild switch --flake .#{{HOST}} --target-host "{{SSH_HOST}}"
+
+apply-runner RUNNER:
+  just apply "runner-{{RUNNER}}" "root@runner-{{RUNNER}}.dev.fedimint.org"
+
+apply-all-runners:
+  just apply-runner "01"
+  just apply-runner "02"
 
 # Bootstrap host using nixos-anywhere
 bootstrap HOST SSH_HOST:
@@ -17,7 +24,7 @@ agenix-edit PATH="secrets/github-runner.age" IDENTITY="$HOME/.ssh/id_ed25519.age
   agenix -e "{{PATH}}" -i "{{IDENTITY}}"
 
 # Build host configuration
-build HOST="runner-01":
+build HOST:
   nix build -L ".#nixosConfigurations.{{HOST}}.config.system.build.toplevel"
 
 # Check flake for problems

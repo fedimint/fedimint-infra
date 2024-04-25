@@ -1,4 +1,4 @@
-{ modulesPath, lib, pkgs, inputs, adminKeys, ... }:
+{ modulesPath, lib, pkgs, inputs, adminKeys, runnerName, ... }:
 
 {
   imports = [
@@ -30,6 +30,7 @@
 
 
   networking = {
+    hostName = runnerName;
     firewall = {
       allowPing = true;
     };

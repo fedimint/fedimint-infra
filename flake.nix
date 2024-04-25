@@ -36,23 +36,27 @@
         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC+t2YktQZWLbv2BmIkWv9G98L5nNwnsVGMszcbnTu3W25bp0CJ4MtBmvmagygfAd+td9dPe44assaU5XNk1+eK9CMx3X3LlkJ4sVr6EYDG+HrBiFSWSIGlYA6EblXXiCIzKh6i+dAM+c35YUZLBxfKaqaWEF1REiR7O1DQxH6TU3qCMStxY5PF1rtiLjVHPBTiWv41zynRRqfA5L+sE+/NYrZj6NIKL5p6zAhKwV8YRavVTOzGDr+Rn+10t907JHjydFK6LfKpUADr4c/XkMY8IRgKCZsBeu9C+N2y93CbyfPua5+s/6caO6wHNjBYi2599Ky84XBtVt/WUQtq5WwXAe97j6Z+3M8bEqUFLUQxQh4r1hOE9ApEUYY6T//wDvqPDVMsKTkMe8HiAjOZawjzjQWYutAjGjuug9efFoP9WJ39J3SfmTDUHo+4Pyf+2ntqUyp6SMmBu7eTHOw1a4kDaQvIltBcokdhMm12RNdTwCLMS0YvFiRcJmzuemiTw78="
       ];
 
+      makeRunner = runnerName: nixpkgs.lib.nixosSystem {
+       system = "x86_64-linux";
+       modules = [
+         topLevelModule
+
+         disko.nixosModules.disko
+         agenix.nixosModules.default
+         ./hosts/runner/configuration.nix
+       ];
+       specialArgs = {
+         inherit inputs;
+         inherit adminKeys;
+         inherit runnerName;
+       };
+     };
     in
     {
-      nixosConfigurations.runner-01 = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [
-          topLevelModule
-
-          disko.nixosModules.disko
-          agenix.nixosModules.default
-          ./hosts/runner-01/configuration.nix
-        ];
-        specialArgs = {
-          inherit inputs;
-          inherit adminKeys;
-        };
+      nixosConfigurations = {
+        runner-01 = makeRunner "runner-01";
+        runner-02 = makeRunner "runner-02";
       };
-
     } //
 
     flake-utils.lib.eachDefaultSystem
