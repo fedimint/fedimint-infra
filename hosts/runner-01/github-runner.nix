@@ -55,6 +55,10 @@ in
         url = "https://github.com/fedimint";
         tokenFile = "/run/secrets/github-runner/token";
         user = name;
+        serviceOverrides = {
+          # we set home to the work dir, so mounting it RO messes things up
+          ProtectHome = false;
+        };
         extraPackages = [
           pkgs.docker
           pkgs.cachix
