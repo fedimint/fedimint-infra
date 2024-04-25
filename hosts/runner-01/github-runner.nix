@@ -40,7 +40,7 @@ in
         # behaves as normal user, needs a shell and home
         isNormalUser = true;
         group = "github-runner";
-        home = "/var/lib/github-runner/${name}/";
+        home = "/var/lib/github-runner/${name}/homeless-shelter";
         extraGroups = [ "docker" ];
       };
     })
@@ -58,14 +58,13 @@ in
         tokenFile = "/run/secrets/github-runner/token";
         user = name;
         serviceOverrides = {
-          # we set home to the work dir, so mounting it RO messes things up
-          ProtectHome = false;
           # To access /var/run/docker.sock we need to be part of docker group,
           # but it doesn't seem to work when it's mapped as `nobody` due to `PrivateUsers=true`
           PrivateUsers = false;
         };
         extraPackages = [
-          pkgs.cachix
+          # Broken: https://github.com/cachix/cachix-action/issues/179
+          # pkgs.cachix
           pkgs.gawk
           pkgs.docker
         ];
