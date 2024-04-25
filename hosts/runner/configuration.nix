@@ -51,9 +51,6 @@
       max-jobs = "auto";
       auto-optimise-store = true;
     };
-    daemonIOSchedClass = "idle";
-    daemonIOSchedPriority = 7;
-    daemonCPUSchedPolicy = "idle";
 
     gc = {
       automatic = true;
