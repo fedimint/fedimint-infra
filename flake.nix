@@ -37,25 +37,26 @@
       ];
 
       makeRunner = runnerName: nixpkgs.lib.nixosSystem {
-       system = "x86_64-linux";
-       modules = [
-         topLevelModule
+        system = "x86_64-linux";
+        modules = [
+          topLevelModule
 
-         disko.nixosModules.disko
-         agenix.nixosModules.default
-         ./hosts/runner/configuration.nix
-       ];
-       specialArgs = {
-         inherit inputs;
-         inherit adminKeys;
-         inherit runnerName;
-       };
-     };
+          disko.nixosModules.disko
+          agenix.nixosModules.default
+          ./hosts/runner/configuration.nix
+        ];
+        specialArgs = {
+          inherit inputs;
+          inherit adminKeys;
+          inherit runnerName;
+        };
+      };
     in
     {
       nixosConfigurations = {
         runner-01 = makeRunner "runner-01";
         runner-02 = makeRunner "runner-02";
+        runner-03 = makeRunner "runner-03";
       };
     } //
 
