@@ -4,6 +4,7 @@ let
   runnersNames = [
     "${runnerName}-aa"
     "${runnerName}-bb"
+    "${runnerName}-cc"
   ];
 in
 {
