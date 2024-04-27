@@ -56,6 +56,11 @@ in
 
           # lncli just has to touch the real home and won't tolerate `HOME` envvar
           ProtectHome = false;
+
+          # Share the same portalloc dir so workers don't suffer random port conflicts
+          Environment = ''
+            "FM_PORTALLOC_DATA_DIR=/home/github-runner/.cache/port-alloc"
+          '';
         };
         extraPackages = [
           # Broken: https://github.com/cachix/cachix-action/issues/179
