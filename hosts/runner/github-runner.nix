@@ -30,21 +30,13 @@ in
   };
 
   users.groups.github-runner = { };
-  # ideally, we would just want one user, but due to
-  # https://github.com/btcsuite/btcd/pull/2177
-  # we need to tie each worker and it's home to it's workdir 1:1
-  users.users = lib.listToAttrs (map
-    (name: {
-      inherit name;
-      value = {
-        # behaves as normal user, needs a shell and home
-        isNormalUser = true;
-        group = "github-runner";
-        # home = "/var/lib/github-runner.home/${name}";
-        extraGroups = [ "docker" ];
-      };
-    })
-    runnersNames);
+  users.users.github-runner = {
+    # behaves as normal user, needs a shell and home
+    isNormalUser = true;
+    group = "github-runner";
+    home = "/home/github-runner";
+    extraGroups = [ "docker" ];
+  };
 
   virtualisation.docker.enable = true;
 
@@ -56,7 +48,7 @@ in
         inherit name;
         url = "https://github.com/fedimint";
         tokenFile = "/run/secrets/github-runner/token";
-        user = name;
+        user = "github-runner";
         serviceOverrides = {
           # To access /var/run/docker.sock we need to be part of docker group,
           # but it doesn't seem to work when it's mapped as `nobody` due to `PrivateUsers=true`
