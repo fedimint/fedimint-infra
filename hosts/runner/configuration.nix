@@ -51,7 +51,7 @@
       experimental-features = nix-command flakes repl-flake
     '';
     settings = {
-      max-jobs = "auto";
+      max-jobs = 1;
       auto-optimise-store = true;
     };
 
