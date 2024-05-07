@@ -61,6 +61,7 @@ in
 
           # These are hard to wipe, break cachix, break `--keep-failed-build`, etc.
           PrivateTmp = false;
+          ProtectSystem = "full"; # instead of "strict", to make /tmp actually usable
 
           # Share the same portalloc dir so workers don't suffer random port conflicts
           Environment = ''
