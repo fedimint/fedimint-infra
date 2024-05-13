@@ -1,24 +1,22 @@
 { config, lib, pkgs, ... }:
 let
   timerName = "cleanup-tmp";
-  serviceName = "${timerName}.service";
-in {
-  systemd.services.${serviceName} = {
+in
+{
+  systemd.services.${timerName} = {
     description = "Clean up /tmp files not accessed in the last 24h";
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.findutils}/bin/find /tmp -type f -atime +1 -delete";
       User = "root";
     };
-    wantedBy = [ "multi-user.target" ];
   };
 
-  systemd.timers.${timerName} = {
+  systemd.timers.${timerName } = {
     description = "Timer for cleaning up /tmp files";
-    partOf = [ serviceName ];
-    wantedBy = [ "timers.target" "multi-user.target" ];
+    wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnCalendar = "daily";
+      OnCalendar = "hourly";
     };
   };
 }
