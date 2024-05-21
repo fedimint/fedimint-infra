@@ -11,5 +11,7 @@ let
 in
 {
   "secrets/github-runner.age".publicKeys = systems ++ users;
+  "secrets/perfitd.age".publicKeys = [ runner-01 ] ++ users;
+  "secrets/perfitd-info.age".publicKeys = users;
 }
 

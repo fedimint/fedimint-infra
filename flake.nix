@@ -1,12 +1,19 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+
     flake-utils.url = "github:numtide/flake-utils";
+
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     agenix.url = "github:ryantm/agenix";
+
+    perfit = {
+      url = "github:rustshop/perfit?rev=cbaef15579a92239ecc1f868ecac5fdd095a3f71";
+    };
   };
 
   outputs = { nixpkgs, disko, agenix, flake-utils, ... }@inputs:
@@ -14,7 +21,10 @@
     let
 
       overlays = [
-        (final: prev: { })
+        (final: prev: {
+          perfitd = inputs.perfit.packages.${final.system}.perfitd;
+          perfit = inputs.perfit.packages.${final.system}.perfit;
+        })
       ];
 
       topLevelModule = {
@@ -36,27 +46,29 @@
         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC+t2YktQZWLbv2BmIkWv9G98L5nNwnsVGMszcbnTu3W25bp0CJ4MtBmvmagygfAd+td9dPe44assaU5XNk1+eK9CMx3X3LlkJ4sVr6EYDG+HrBiFSWSIGlYA6EblXXiCIzKh6i+dAM+c35YUZLBxfKaqaWEF1REiR7O1DQxH6TU3qCMStxY5PF1rtiLjVHPBTiWv41zynRRqfA5L+sE+/NYrZj6NIKL5p6zAhKwV8YRavVTOzGDr+Rn+10t907JHjydFK6LfKpUADr4c/XkMY8IRgKCZsBeu9C+N2y93CbyfPua5+s/6caO6wHNjBYi2599Ky84XBtVt/WUQtq5WwXAe97j6Z+3M8bEqUFLUQxQh4r1hOE9ApEUYY6T//wDvqPDVMsKTkMe8HiAjOZawjzjQWYutAjGjuug9efFoP9WJ39J3SfmTDUHo+4Pyf+2ntqUyp6SMmBu7eTHOw1a4kDaQvIltBcokdhMm12RNdTwCLMS0YvFiRcJmzuemiTw78="
       ];
 
-      makeRunner = runnerName: nixpkgs.lib.nixosSystem {
+      makeRunner = { name, extraModules ? [ ] }: nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
           topLevelModule
 
           disko.nixosModules.disko
           agenix.nixosModules.default
+          inputs.perfit.nixosModules.perfitd
+
           ./hosts/runner/configuration.nix
-        ];
+        ] ++ extraModules;
         specialArgs = {
           inherit inputs;
           inherit adminKeys;
-          inherit runnerName;
+          runnerName = name;
         };
       };
     in
     {
       nixosConfigurations = {
-        runner-01 = makeRunner "runner-01";
-        runner-02 = makeRunner "runner-02";
-        runner-03 = makeRunner "runner-03";
+        runner-01 = makeRunner { name = "runner-01"; extraModules = [ (import ./modules/perfit.nix) ]; };
+        runner-02 = makeRunner { name = "runner-02"; };
+        runner-03 = makeRunner { name = "runner-03"; };
       };
     } //
 
@@ -70,15 +82,12 @@
           devShells = {
             default = pkgs.mkShell {
               packages = [
-                inputs.agenix.packages."${pkgs.system}".default
-
+                inputs.agenix.packages.${pkgs.system}.default
+                inputs.perfit.packages.${pkgs.system}.perfit
               ];
             };
           };
-
         }
-
-
       );
 }
 
