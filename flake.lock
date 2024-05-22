@@ -350,17 +350,17 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1716266586,
-        "narHash": "sha256-yGNs/wqoszdMGbDn1QNPl4QI+MCMXNu9KTDZy8Jmrnk=",
+        "lastModified": 1716350734,
+        "narHash": "sha256-omnbfZ2YOdTB1RKtjtDBTqg1adP8DPM+aF8KD+NOO34=",
         "owner": "rustshop",
         "repo": "perfit",
-        "rev": "cbaef15579a92239ecc1f868ecac5fdd095a3f71",
+        "rev": "7e9407b788063d454abed02e19315d544ca840dd",
         "type": "github"
       },
       "original": {
         "owner": "rustshop",
         "repo": "perfit",
-        "rev": "cbaef15579a92239ecc1f868ecac5fdd095a3f71",
+        "rev": "7e9407b788063d454abed02e19315d544ca840dd",
         "type": "github"
       }
     },
