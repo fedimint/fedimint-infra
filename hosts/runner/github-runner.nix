@@ -46,6 +46,10 @@ in
       inherit name;
       value = {
         enable = true;
+        # this will shut down the whole service after every run,
+        # notably making sure there is no ghosts processses
+        ephemeral = true;
+        replace = true;
         inherit name;
         url = "https://github.com/fedimint";
         tokenFile = "/run/secrets/github-runner/token";
