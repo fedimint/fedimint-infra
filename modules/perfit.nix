@@ -58,7 +58,7 @@
       '';
 
       virtualHosts = {
-        "perfit-fedimint.dpc.pw" = {
+        "perfit.dev.fedimint.org" = {
           enableACME = true;
           forceSSL = true;
           locations."/" = {
