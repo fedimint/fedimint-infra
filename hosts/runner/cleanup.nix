@@ -6,12 +6,10 @@ in
   systemd.services.${timerName} =
     let
       script = pkgs.writeShellScript "cleanup-github-runner-tmp" ''
-        # all files created by the github-runner user
-        ${pkgs.findutils}/bin/find /tmp/ -mindepth 1 -type f -user github-runner -mmin +120 -delete
-        ${pkgs.findutils}/bin/find /tmp/ -mindepth 1 -type d -user github-runner -mmin +120 -empty -delete
-        # all files created by the nixbldX users (nixbld group)
-        ${pkgs.findutils}/bin/find /tmp/ -mindepth 1 -type f -group nixbld -mmin +120 -delete
-        ${pkgs.findutils}/bin/find /tmp/ -mindepth 1 -type d -group nixbld -mmin +120 -empty -delete
+        # tmp stuff  created by the github-runner user
+        ${pkgs.findutils}/bin/find /tmp/ -mindepth 1 -maxdepth 1 -user github-runner -mmin +120 -print0 | xargs -n 1 -0 rm -rf
+        # tmp stuff created by the nixbldX users
+        ${pkgs.findutils}/bin/find /tmp/ -mindepth 1 -maxdepth 1 -group nixbld -mmin +120 -print0 | xargs -n 1 -0 rm -rf
       '';
     in
     {
