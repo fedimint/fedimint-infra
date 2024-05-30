@@ -14,6 +14,7 @@ in
 
 
   environment.systemPackages = map lib.lowPrio [
+    pkgs.cachix
   ];
 
   age.secrets = {
