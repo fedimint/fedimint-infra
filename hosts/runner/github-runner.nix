@@ -14,8 +14,6 @@ in
 
 
   environment.systemPackages = map lib.lowPrio [
-    pkgs.cachix
-    pkgs.gnupg
   ];
 
   age.secrets = {
@@ -75,10 +73,10 @@ in
           '';
         };
         extraPackages = [
-          # Broken: https://github.com/cachix/cachix-action/issues/179
-          # pkgs.cachix
           pkgs.gawk
           pkgs.docker
+          pkgs.cachix
+          pkgs.gnupg
         ];
       };
     })
