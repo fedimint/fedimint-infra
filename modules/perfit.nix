@@ -29,6 +29,11 @@
   services.perfitd."fedimint" = {
     enable = true;
     rootAccessTokenFile = "/run/secrets/perfitd/token";
+    onDemand = true;
+  };
+
+  systemd.services.nginx.serviceConfig = {
+    LimitNOFILE = "100000";
   };
 
   services.nginx =

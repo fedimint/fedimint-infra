@@ -12,7 +12,7 @@
     agenix.url = "github:ryantm/agenix";
 
     perfit = {
-      url = "github:rustshop/perfit?rev=2114a10897fa4c37b419ad34d5ccf8cd2e097e35";
+      url = "github:rustshop/perfit?rev=56b33333bd7e38b503841a528e6207dab8748fff";
     };
   };
 
