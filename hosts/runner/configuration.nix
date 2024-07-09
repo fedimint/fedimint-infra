@@ -47,7 +47,8 @@
   boot.tmp.cleanOnBoot = true;
   services.automatic-timezoned.enable = true;
   nix = {
-    package = pkgs.nixVersions.nix_2_21;
+    # 2.21 seems to break crane vendoring crates
+    # package = pkgs.nixVersions.nix_2_21;
 
     extraOptions = ''
       experimental-features = nix-command flakes repl-flake
