@@ -12,6 +12,7 @@ apply-all-runners:
   just apply-runner "01"
   just apply-runner "02"
   just apply-runner "03"
+  just apply-runner "04"
 
 # Bootstrap host using nixos-anywhere
 bootstrap HOST SSH_HOST:

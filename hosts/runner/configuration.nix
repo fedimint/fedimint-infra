@@ -26,7 +26,7 @@
       ExecStart = pkgs.writeShellScript "check-temp.sh" ''
 
         PATH="${pkgs.lm_sensors}/bin:${pkgs.gawk}/bin:${pkgs.cpufrequtils}/bin:$PATH"
-        TEMP_THRESHOLD=85
+        TEMP_THRESHOLD=80
         current_temp=$(sensors | grep 'Tctl:' | awk '{print $2}' | sed 's/+//;s/°C//' | cut -d'.' -f1)
         echo "Current temperature: ''${current_temp}°C"
         if [ "$current_temp" -ge "$TEMP_THRESHOLD" ]; then
