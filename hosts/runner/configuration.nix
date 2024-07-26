@@ -90,6 +90,7 @@
     settings = {
       max-jobs = 2;
       auto-optimise-store = true;
+      trusted-users = [ "root" "github-runner" ];
     };
 
     gc = {
