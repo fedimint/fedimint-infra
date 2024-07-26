@@ -14,5 +14,6 @@ in
   "secrets/github-runner.age".publicKeys = systems ++ users;
   "secrets/perfitd.age".publicKeys = [ runner-01 runner-04 ] ++ users;
   "secrets/perfitd-info.age".publicKeys = users;
+  "secrets/radicle-seednode.age".publicKeys = [ runner-04 ] ++ users;
 }
 

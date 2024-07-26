@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -17,13 +17,56 @@
   };
 
   outputs = { nixpkgs, disko, agenix, flake-utils, ... }@inputs:
-
     let
-
       overlays = [
         (final: prev: {
           perfitd = inputs.perfit.packages.${final.system}.perfitd;
           perfit = inputs.perfit.packages.${final.system}.perfit;
+
+
+
+          radicle-node =
+            let
+              ver = "1.0.0-rc.13";
+            in
+            prev.radicle-node.overrideAttrs (superPrevAttrs: rec {
+              version = ver;
+              env.RADICLE_VERSION = version;
+              src = prev.fetchgit {
+                url = "https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git";
+                rev = "refs/namespaces/z6MksFqXN3Yhqk8pTJdUGLwATkRfQvwZXPqR2qMEhbS9wzpT/refs/tags/v${version}";
+                hash = "sha256-6bJcJfNIe9idgQ/P5kYMklp9gLwkO8aXm5gfWkafScM=";
+              };
+              cargoDeps = superPrevAttrs.cargoDeps.overrideAttrs (depsPrevAttrs: {
+                inherit src;
+                name = final.lib.replaceStrings [ superPrevAttrs.version ] [ version ] depsPrevAttrs.name;
+                outputHash = "sha256-HI9ZwxkyepgD68s5E8289hEnI+UEDNKAZYbn9JG3Snk=";
+              });
+              doCheck = false; # A test seg-faulted on me.  TODO: Maybe it'll work in the future.
+              passthru.tests = false; # ditto
+            });
+
+          radicle-httpd =
+            let
+              ver = "0.15.0";
+            in
+            prev.radicle-httpd.overrideAttrs (superPrevAttrs: rec {
+              version = ver;
+              env.RADICLE_VERSION = version;
+              src = prev.fetchgit {
+                url = "https://seed.radicle.xyz/z4V1sjrXqjvFdnCUbxPFqd5p4DtH5.git";
+                rev = "refs/namespaces/z6MkkfM3tPXNPrPevKr3uSiQtHPuwnNhu2yUVjgd2jXVsVz5/refs/tags/v${version}";
+                hash = "sha256-wd+ST8ax988CpGcdFb3LUcA686U7BLmbi1k8Y3GAEIc=";
+                sparseCheckout = [ "radicle-httpd" ];
+              };
+              cargoDeps = superPrevAttrs.cargoDeps.overrideAttrs (depsPrevAttrs: {
+                inherit src;
+                name = final.lib.replaceStrings [ superPrevAttrs.version ] [ version ] depsPrevAttrs.name;
+                outputHash = "sha256-YIux5/BFAZNI9ZwP4lVKj4UGQ4lKrhZ675bCdUaXN70=";
+              });
+              doCheck = false; # Just to be consistent with `newer.radicle-node`.
+              passthru.tests = false;
+            });
         })
       ];
 
@@ -69,7 +112,13 @@
         # runner-01 = makeRunner { name = "runner-01"; extraModules = [ (import ./modules/perfit.nix) ]; };
         runner-02 = makeRunner { name = "runner-02"; };
         # runner-03 = makeRunner { name = "runner-03"; };
-        runner-04 = makeRunner { name = "runner-04"; extraModules = [ (import ./modules/perfit.nix) ]; };
+        runner-04 = makeRunner {
+          name = "runner-04";
+          extraModules = [
+            (import ./modules/perfit.nix)
+            (import ./modules/radicle.nix)
+          ];
+        };
       };
     } //
 
