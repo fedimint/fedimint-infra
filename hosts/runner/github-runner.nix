@@ -1,11 +1,11 @@
-{ lib, pkgs, inputs, runnerName, ... }:
+{ lib, pkgs, hostName, ... }:
 
 let
   runnersNames = [
-    "${runnerName}-aa"
-    "${runnerName}-bb"
-    "${runnerName}-cc"
-    "${runnerName}-dd"
+    "${hostName}-aa"
+    "${hostName}-bb"
+    "${hostName}-cc"
+    "${hostName}-dd"
   ];
 in
 {
