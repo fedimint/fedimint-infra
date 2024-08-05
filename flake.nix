@@ -1,6 +1,8 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # until https://github.com/NixOS/nixpkgs/pull/322815 lands:
+    nixpkgs.url = "github:dpc/nixpkgs?rev=3d6e5458dcb122c6f86337c3b92a4b58485bf161";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -30,6 +32,11 @@
         (final: prev: {
           perfitd = inputs.perfit.packages.${final.system}.perfitd;
           perfit = inputs.perfit.packages.${final.system}.perfit;
+          fedimint-ui = fedimint-ui.packages.${final.system}.guardian-ui.overrideAttrs (prev: {
+            # TODO:
+            # "sha256-qg7h4jCXEudMgG3vCGXO9bS3/az+XpXWnucWM05ri5I="
+          });
+
 
           radicle-node =
             let
