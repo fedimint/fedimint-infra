@@ -72,6 +72,10 @@ in
           Environment = ''
             "FM_PORTALLOC_DATA_DIR=/home/github-runner/.cache/port-alloc"
           '';
+
+          # Apparently it wasn't restarting on failure, so let's make sure it does
+          Restart = lib.mkForce "always";
+          RestartSec = "30s";
         };
         extraPackages = [
           pkgs.gawk
