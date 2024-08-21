@@ -14,7 +14,7 @@
   services.radicle = {
     enable = true;
     privateKeyFile = "/run/secrets/radicle/seednode";
-    publicKeyFile = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMYKej/5RMfmhoyaOqHr/AZmhxrQGYBIm/U4dnfrLHSd dpc@ren";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMYKej/5RMfmhoyaOqHr/AZmhxrQGYBIm/U4dnfrLHSd dpc@ren";
     node.openFirewall = true;
     node.listenAddress = "[::0]";
     settings = {
