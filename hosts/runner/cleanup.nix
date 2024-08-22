@@ -1,9 +1,10 @@
 { lib, pkgs, ... }:
 let
-  timerName = "cleanup-tmp";
+  cleanupTmp = "cleanup-tmp";
+  gcNix = "gc-nix";
 in
 {
-  systemd.services.${timerName} =
+  systemd.services.${cleanupTmp} =
     let
       script = pkgs.writeShellScript "cleanup-github-runner-tmp" ''
         # tmp stuff  created by the github-runner user
@@ -13,7 +14,7 @@ in
       '';
     in
     {
-      description = "Clean up /tmp files not accessed in the last 24h";
+      description = "Clean up /tmp files not accessed in the last 1h";
       serviceConfig = {
         Type = "oneshot";
         ExecStart = script;
@@ -21,11 +22,34 @@ in
       };
     };
 
-  systemd.timers.${timerName } = {
+  systemd.timers.${cleanupTmp} = {
     description = "Timer for cleaning up /tmp files";
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "hourly";
+    };
+  };
+
+  systemd.services.${gcNix} =
+    let
+      script = pkgs.writeShellScript "gc-nix-store" ''
+        ${pkgs.nix}/bin/nix-collect-garbage -d --delete-older-than 7d
+      '';
+    in
+    {
+      description = "GC the /nix store";
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = script;
+        User = "root";
+      };
+    };
+
+  systemd.timers.${gcNix} = {
+    description = "Timer for gc the /nix store";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
     };
   };
 }
