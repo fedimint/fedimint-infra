@@ -4,7 +4,6 @@ let
   fmFqdn = "${hostName}.dev.fedimint.org";
   fmApiFqdn = fmFqdn;
   fmP2pFqdn = fmFqdn;
-  fmAdminFqdn = "admin.${fmFqdn}";
 in
 {
   age.secrets = {
@@ -30,6 +29,9 @@ in
     '';
   };
 
+  environment.systemPackages = [
+    pkgs.fedimint.fedimint
+  ];
 
 
   users.extraUsers.fedimintd-signet.extraGroups = [ "bitcoinrpc-public" ];
@@ -41,6 +43,7 @@ in
       "RUST_LOG" = "fm=debug,info";
       "RUST_BACKTRACE" = "1";
       "FM_BIND_METRICS_API" = "[::1]:8175";
+      "FM_REL_NOTES_ACK" = "0_4_xyz";
     };
     api = {
       fqdn = fmApiFqdn;
@@ -68,23 +71,5 @@ in
     enable = true;
     recommendedProxySettings = true;
     recommendedTlsSettings = true;
-
-    # TODO:
-    # virtualHosts."${fmAdminFqdn}" = {
-    #   enableACME = true;
-    #   forceSSL = true;
-    #   locations."/" = {
-    #     root = pkgs.fedimint-ui;
-    #   };
-    #   locations."=/config.json" = {
-    #     alias = pkgs.writeText "config.json"
-    #       ''
-    #         {
-    #             "fm_config_api": "wss://${fmApiFqdn}/ws/",
-    #             "tos": "This is a signet dev instance of Fedimint"
-    #         }
-    #       '';
-    #   };
-    # };
   };
 }

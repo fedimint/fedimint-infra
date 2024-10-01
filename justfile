@@ -8,11 +8,20 @@ apply HOST SSH_HOST:
 apply-runner RUNNER:
   just apply "runner-{{RUNNER}}" "root@runner-{{RUNNER}}.dev.fedimint.org"
 
+apply-fedimintd N:
+  just apply "fedimintd-{{N}}" "root@fedimintd-{{N}}.dev.fedimint.org"
+
 apply-all-runners:
   # just apply-runner "01"
   just apply-runner "02"
   # just apply-runner "03"
   just apply-runner "04"
+
+apply-all-fedimintd:
+  just apply-fedimintd "01"
+  just apply-fedimintd "02"
+  just apply-fedimintd "03"
+  just apply-fedimintd "04"
 
 # Bootstrap host using nixos-anywhere
 bootstrap HOST SSH_HOST:
