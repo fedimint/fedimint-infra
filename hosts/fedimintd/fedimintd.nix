@@ -6,12 +6,15 @@ let
   fmP2pFqdn = fmFqdn;
 in
 {
+  users.groups = {
+    bitcoind-signet-pass = { };
+  };
+
   age.secrets = {
     bitcoind-signet-pass = {
       file = ../../secrets/bitcoind-signet-pass.age;
       path = "/run/secrets/bitcoind-signet-pass";
-      owner = "fedimintd-signet";
-      group = "fedimintd-signet";
+      group = "bitcoind-signet-pass";
       mode = "660";
     };
   };
@@ -35,7 +38,9 @@ in
 
   networking.firewall.allowedTCPPorts = [ 80 443 ];
 
-  users.extraUsers.fedimintd-signet.extraGroups = [ "bitcoinrpc-public" ];
+  systemd.services.fedimintd-signet.serviceConfig = {
+    SupplementaryGroups = "bitcoind-signet-pass";
+  };
 
   services.fedimintd."signet" = {
     enable = true;
@@ -49,11 +54,11 @@ in
     };
 
     api = {
-      fqdn = fmApiFqdn;
+      url = "wss://${fmApiFqdn}";
     };
 
     p2p = {
-      fqdn = fmP2pFqdn;
+      url = "fedimint://${fmP2pFqdn}";
     };
 
     bitcoin = {
@@ -66,11 +71,7 @@ in
 
     nginx = {
       enable = true;
-      config = {
-        enableACME = true;
-        forceSSL = true;
-        serverName = fmApiFqdn;
-      };
+      fqdn = fmApiFqdn;
     };
   };
 

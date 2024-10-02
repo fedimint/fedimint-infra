@@ -2,7 +2,7 @@
   inputs = {
     # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     # until https://github.com/NixOS/nixpkgs/pull/322815 lands:
-    nixpkgs.url = "github:dpc/nixpkgs?rev=d19846fc0ccad8ac0413df172d18507c30ef2ecc";
+    nixpkgs.url = "github:dpc/nixpkgs?rev=7314c1d859224c567e4c4e7f2fe8d703c0ec2378";
 
     flake-utils.url = "github:numtide/flake-utils";
 
