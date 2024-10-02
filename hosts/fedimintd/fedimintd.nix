@@ -33,6 +33,7 @@ in
     pkgs.fedimint.fedimint
   ];
 
+  networking.firewall.allowedTCPPorts = [ 80 443 ];
 
   users.extraUsers.fedimintd-signet.extraGroups = [ "bitcoinrpc-public" ];
 
@@ -60,6 +61,11 @@ in
     };
     nginx = {
       enable = true;
+      config = {
+        enableACME = true;
+        forceSSL = true;
+        serverName = fmApiFqdn;
+      };
     };
   };
 
