@@ -40,18 +40,22 @@ in
   services.fedimintd."signet" = {
     enable = true;
     package = pkgs.fedimint.fedimint;
+
     environment = {
       "RUST_LOG" = "fm=debug,info";
       "RUST_BACKTRACE" = "1";
       "FM_BIND_METRICS_API" = "[::1]:8175";
       "FM_REL_NOTES_ACK" = "0_4_xyz";
     };
+
     api = {
       fqdn = fmApiFqdn;
     };
+
     p2p = {
       fqdn = fmP2pFqdn;
     };
+
     bitcoin = {
       network = "signet";
       rpc = {
@@ -59,6 +63,7 @@ in
         secretFile = "/run/secrets/bitcoind-signet-pass";
       };
     };
+
     nginx = {
       enable = true;
       config = {
@@ -69,8 +74,10 @@ in
     };
   };
 
-  security.acme.defaults.email = "contact@fedimint.org";
-  security.acme.acceptTerms = true;
+  security.acme = {
+    defaults.email = "contact@fedimint.org";
+    acceptTerms = true;
+  };
 
 
   services.nginx = {
