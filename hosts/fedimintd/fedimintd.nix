@@ -61,7 +61,7 @@ in
     };
 
     p2p = {
-      url = "fedimint://${fmP2pFqdn}/";
+      url = "fedimint://${fmP2pFqdn}:8173/";
     };
 
     bitcoin = {
