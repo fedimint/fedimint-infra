@@ -36,7 +36,10 @@ in
     pkgs.fedimint.fedimint
   ];
 
-  networking.firewall.allowedTCPPorts = [ 80 443 ];
+  networking.firewall.allowedTCPPorts = [
+    80
+    443
+  ];
 
   systemd.services.fedimintd-signet.serviceConfig = {
     SupplementaryGroups = "bitcoind-signet-pass";
@@ -54,11 +57,11 @@ in
     };
 
     api = {
-      url = "wss://${fmApiFqdn}";
+      url = "wss://${fmApiFqdn}/ws/";
     };
 
     p2p = {
-      url = "fedimint://${fmP2pFqdn}";
+      url = "fedimint://${fmP2pFqdn}/";
     };
 
     bitcoin = {
@@ -79,7 +82,6 @@ in
     defaults.email = "contact@fedimint.org";
     acceptTerms = true;
   };
-
 
   services.nginx = {
     enable = true;
