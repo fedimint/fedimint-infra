@@ -1,8 +1,6 @@
 {
   inputs = {
-    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # until https://github.com/NixOS/nixpkgs/pull/322815 lands:
-    nixpkgs.url = "github:dpc/nixpkgs?rev=7314c1d859224c567e4c4e7f2fe8d703c0ec2378";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -26,7 +24,16 @@
     };
   };
 
-  outputs = { nixpkgs, disko, agenix, flake-utils, fedimint, fedimint-ui, ... }@inputs:
+  outputs =
+    {
+      nixpkgs,
+      disko,
+      agenix,
+      flake-utils,
+      fedimint,
+      fedimint-ui,
+      ...
+    }@inputs:
     let
       overlays = [
         (final: prev: {
@@ -36,50 +43,6 @@
             # TODO:
             # "sha256-qg7h4jCXEudMgG3vCGXO9bS3/az+XpXWnucWM05ri5I="
           });
-
-
-          radicle-node =
-            let
-              ver = "1.0.0-rc.13";
-            in
-            prev.radicle-node.overrideAttrs (superPrevAttrs: rec {
-              version = ver;
-              env.RADICLE_VERSION = version;
-              src = prev.fetchgit {
-                url = "https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git";
-                rev = "refs/namespaces/z6MksFqXN3Yhqk8pTJdUGLwATkRfQvwZXPqR2qMEhbS9wzpT/refs/tags/v${version}";
-                hash = "sha256-6bJcJfNIe9idgQ/P5kYMklp9gLwkO8aXm5gfWkafScM=";
-              };
-              cargoDeps = superPrevAttrs.cargoDeps.overrideAttrs (depsPrevAttrs: {
-                inherit src;
-                name = final.lib.replaceStrings [ superPrevAttrs.version ] [ version ] depsPrevAttrs.name;
-                outputHash = "sha256-HI9ZwxkyepgD68s5E8289hEnI+UEDNKAZYbn9JG3Snk=";
-              });
-              doCheck = false; # A test seg-faulted on me.  TODO: Maybe it'll work in the future.
-              passthru.tests = false; # ditto
-            });
-
-          radicle-httpd =
-            let
-              ver = "0.15.0";
-            in
-            prev.radicle-httpd.overrideAttrs (superPrevAttrs: rec {
-              version = ver;
-              env.RADICLE_VERSION = version;
-              src = prev.fetchgit {
-                url = "https://seed.radicle.xyz/z4V1sjrXqjvFdnCUbxPFqd5p4DtH5.git";
-                rev = "refs/namespaces/z6MkkfM3tPXNPrPevKr3uSiQtHPuwnNhu2yUVjgd2jXVsVz5/refs/tags/v${version}";
-                hash = "sha256-wd+ST8ax988CpGcdFb3LUcA686U7BLmbi1k8Y3GAEIc=";
-                sparseCheckout = [ "radicle-httpd" ];
-              };
-              cargoDeps = superPrevAttrs.cargoDeps.overrideAttrs (depsPrevAttrs: {
-                inherit src;
-                name = final.lib.replaceStrings [ superPrevAttrs.version ] [ version ] depsPrevAttrs.name;
-                outputHash = "sha256-YIux5/BFAZNI9ZwP4lVKj4UGQ4lKrhZ675bCdUaXN70=";
-              });
-              doCheck = false; # Just to be consistent with `newer.radicle-node`.
-              passthru.tests = false;
-            });
         })
       ];
 
@@ -107,40 +70,50 @@
         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDcuMO6k5zhp7JTnp4Kz4gjWqOo+TDbaBlD2d/LICHSv5DAiQy/mgRcgfKZrb4LSA08FmbMjzp2cJoNGTG249vABdizEzTXUnQ+8QzS3VKkfZw5D86+EyOXCwhD2YwGS4A7nzUaStROlQ+lyVMeR8DpbbCSVrx0VMdP48SwJA5pSGHPuXJsYElfGOttQrIWAqvdK8CxG+BmdgmzLpb7b9KlJ5TetUmn03+zsE587EcdvtNU9jCmbJ5uFLR5x9zZGhF5HNA/XqSiiPkbAfcAc/mEwVaSP6ZeOKXg9M1LXeeG/+/oDYLJU6Ra3pVL50aw6L7UEOoUt0Vcf394famZaugFxcRGuvK6ox0tWhvrcO2Oj8Ko9FHTHD0XfEXazpXmW9eDa9rLYNgdY9li/pD2T71VqZrnr7Xq8J676srbvHp7RO8Wz4RRnwbmpfm1107oiZegu1kxCOvJmlZeBef/9EE0lYKi7/XfmKD3uAS5UJa/dvFysI6aUX1X0duNUedmkgSAhTz8yw7sVB/zarDf21AyCuwc8MZ9rcdMYMsCvpF/p/0BfddV5cI7juXWnbH9Zbfct+XJj1OqS46G9wieKslrJEZ94ZLrghe0wE5Ip1kuYHVIlZzDw0UXm4j0wfsZCw8w/RIZDojwnr992xKSWHyyNxjRVfp77BqoxECopJOO7w== bradley@sparkswap.com"
       ];
 
-      makeRunner = { name, extraModules ? [ ] }: nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [
-          topLevelModule
+      makeRunner =
+        {
+          name,
+          extraModules ? [ ],
+        }:
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            topLevelModule
 
-          disko.nixosModules.disko
-          agenix.nixosModules.default
-          inputs.perfit.nixosModules.perfitd
+            disko.nixosModules.disko
+            agenix.nixosModules.default
+            inputs.perfit.nixosModules.perfitd
 
-          ./hosts/runner/configuration.nix
-        ] ++ extraModules;
-        specialArgs = {
-          inherit inputs;
-          hostName = name;
-          inherit adminKeys;
+            ./hosts/runner/configuration.nix
+          ] ++ extraModules;
+          specialArgs = {
+            inherit inputs;
+            hostName = name;
+            inherit adminKeys;
+          };
         };
-      };
-      makeFedimintd = { name, extraModules ? [ ] }: nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [
-          topLevelModule
+      makeFedimintd =
+        {
+          name,
+          extraModules ? [ ],
+        }:
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            topLevelModule
 
-          disko.nixosModules.disko
-          agenix.nixosModules.default
-          inputs.perfit.nixosModules.perfitd
+            disko.nixosModules.disko
+            agenix.nixosModules.default
+            inputs.perfit.nixosModules.perfitd
 
-          ./hosts/fedimintd/configuration.nix
-        ] ++ extraModules;
-        specialArgs = {
-          inherit inputs;
-          hostName = name;
-          adminKeys = adminKeysFedimintd;
+            ./hosts/fedimintd/configuration.nix
+          ] ++ extraModules;
+          specialArgs = {
+            inherit inputs;
+            hostName = name;
+            adminKeys = adminKeysFedimintd;
+          };
         };
-      };
     in
     {
       nixosConfigurations = {
@@ -159,10 +132,11 @@
         fedimintd-03 = makeFedimintd { name = "fedimintd-03"; };
         fedimintd-04 = makeFedimintd { name = "fedimintd-04"; };
       };
-    } //
+    }
+    //
 
-    flake-utils.lib.eachDefaultSystem
-      (system:
+      flake-utils.lib.eachDefaultSystem (
+        system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
         in
@@ -178,4 +152,3 @@
         }
       );
 }
-
