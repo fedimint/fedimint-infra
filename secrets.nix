@@ -1,7 +1,10 @@
 let
   dpc = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOZjH1c5py2OnIp6YhSwoYeG91gfRNRl4fL+hIHaI1Ej dpc@ren";
   elsirion = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC+t2YktQZWLbv2BmIkWv9G98L5nNwnsVGMszcbnTu3W25bp0CJ4MtBmvmagygfAd+td9dPe44assaU5XNk1+eK9CMx3X3LlkJ4sVr6EYDG+HrBiFSWSIGlYA6EblXXiCIzKh6i+dAM+c35YUZLBxfKaqaWEF1REiR7O1DQxH6TU3qCMStxY5PF1rtiLjVHPBTiWv41zynRRqfA5L+sE+/NYrZj6NIKL5p6zAhKwV8YRavVTOzGDr+Rn+10t907JHjydFK6LfKpUADr4c/XkMY8IRgKCZsBeu9C+N2y93CbyfPua5+s/6caO6wHNjBYi2599Ky84XBtVt/WUQtq5WwXAe97j6Z+3M8bEqUFLUQxQh4r1hOE9ApEUYY6T//wDvqPDVMsKTkMe8HiAjOZawjzjQWYutAjGjuug9efFoP9WJ39J3SfmTDUHo+4Pyf+2ntqUyp6SMmBu7eTHOw1a4kDaQvIltBcokdhMm12RNdTwCLMS0YvFiRcJmzuemiTw78=";
-  users = [ dpc elsirion ];
+  users = [
+    dpc
+    elsirion
+  ];
 
   # Host key from /etc/ssh/ssh_host_rsa_key.pub
   runner-01 = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCpxCs5smpqE7iW0nxB+TRHkgcKTGqLhJbzz/0LvRRqpGKsiGJJlim69kHydKbciZnTxE9s2cuLiGtrtr6/1SnvwmwyHsr3shiIkP9zTWDIFZr+873aPmBWjo1TTVQevx0jAuT4rbofX/VG5zI02298jgj6laepZ4OtoWqNHi47avr0Rwlr2FYmTQ8+RylZIiYRb6Ew+ldQfDnNVLxd7wBTflrO6QvMVo7wu9pc29kqNup9XC8s4tXq/lWVIliTSxFn8aj+3kjw4UFk3O/2TEqm3mEd23wDP8CYMMlzvAMmnwsNg1C8nuZbxbswcGJTgLPclEDN/KRDnD5OeBd9lxGD21l7NSA7uhCTPsE4Bag6TaFirfJCj27x2bNE8yJOnaEtsH+6KbDCBHsnrgf2GRDg5Rbj9UvxAQn/zuNcs2jkYVPiccJbeCftuJ55VMIvdtHdE+/KvlgEyc1t5KKpbD8r7welIr6jrQJZgT2hoRoPYi5lLSAzW0vKV/K8CteJtKkEj3cmT3JshkwhFOF/K5S/z0UzhHDldyp3Y2K5TS6KCfHwk/zNp8Dor6oIuyckDbNYq8+3KxtxBe/Xr+vjD29oHT+Q69sLklZEdrtcT7d4O6O6nu6abt6RHLHZ549+NoMuU9F+G/KNFI1rWoO+2IczIlWLVBw7b4kBZ1h7NrulEw== root@runner-01";
@@ -12,14 +15,27 @@ let
   fedimintd-02 = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC4gbvGGwRKFboQUo8SDtRGdSqv0MEMvzkAHjB0nq0ZKyjzoG2aD1cPGj3Ea7izaitnIvN2DWUEwUy910aP3+X+6btKUve7vPmGqHUYxt3yujfjPziatkr6ICKv6gE45svgC15q+EoXMUqtOTpyEQhs6PYQXiPS1rRIXhnUjcuLTdOgNiLvKf4KOiGuQ0e23wqGRuwiouniYrfrOmpFShEQHcMKQ/uBy/jCBPPAuRc80b3Eytv9nNSVOuq4dM72Vj8QTmWpHczwlL1fZFWYBkTjbr6oG5Xa/yTL9vRaoAnBiawEJR9/ey7S8Sq4+UaT81hw2gE29+BidlPIt0KDSRPcfFVH28CYVGo1TPDBSQD3zw9dRQVJ9lCklqmtwhMv2p9EiFVUqknjtxpOeZM/wra7usELHdUA8BlyweM1Ab/ue6e+u4RnZOBb24RuDx6zgywVUOFCpA479mb7S5o9dx83psbFJOH46NTjdZUcBOhiewKXKGFgnH37f//lZnKLOu/qbOE0sRLyYk5d5S8Y8C+JS1HQTO1ihaWXbYdF7xAGPK1RSrFnQJ0hkbfgRHw22Lrq4MGd7q842Lg5VmgSJiX8nFJEUN+FAvze31irLHoFWMpi/ZWGHHEZe38vouTOY+ajt2TV6y5NqpwG4OK4gR3GuEdzMpXyZpNUjoIkrE8pkQ== root@fedimintd-02";
   fedimintd-03 = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCa7i69yMzrT1uuomfPX/64YzOjcrLdmQV9CBqOSVWjbcIUVR5LPWpOjpnp5ZTDKnolkgUuFwZzgU0DH+3WaleHa7IMmEB7KwMSnWZfnuhxwpzWkuA0GLe5TJ0iXM9YoKEAkW8oYnrIyrlRRPBrZI36HcMtcGHMx5ds8DMJ5gbxmPnl2kKU+GRMtoIogLQbCs8OiqF3BKyocKsVk/W84/frVCMuDlcm5Pv9NjMW7KlD1Y2JtsdXj7FjGAtS720IE9vIaCAuSXGXLC4KoHBos21UjrO47B21p7l7/40c8TAs43eeH1CJ5Etlkq6kjPelCfyoqCxMqZtqgeKUFrKtCnxgnehDuIqk8a5iNQjsjAOV20bi5L0axhCYx8Xodtyr4jViNA9APd3UjrANqrb3Q928Zr9PJyH/fU57QaedsYsgUOOrlg9dbWiIWyf8rIHg6XayJobiJo4Trpkx7AOSDBS7+CJaxYHESo4ItA+ofWI4PV4qwwwE/+77BLJ5JnJJd+WyEjPAAf7HpNX7g9/Xl+GvI9Ouh4ihuIcw1J2m6ow7or+y+/2IOtYUyl5bXgESQg0CalhRYrOhDC9TNgkACmSQnVh8K5ugDRLxYFlLcscGiMlXcxH1rmozo1QLM0QtpPo16OcUy977wQHKLhIgp9YIS39UvwyZm4N+MIxJk9huWw== root@fedimintd-03";
   fedimintd-04 = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCYZzOapB+vVXGi5eVuJHCQ1Ia2HE+Mv1+8e5+3L3z/nmSj0mLH8UbNGg9kUDyeN05q2KdS/3iQGw5THNgWKjr83tkFEaMrtVQtwlc0tmWWLnpG//xpQVQXG4Ni4cYbLcBf3hJ5eTaWs+1sm3GOakP+CbEL2qYzDBsRYYHx8t+UG+fdvLJjY+UM6TxG6BWxgw0BcL2rv5YJKKccxO0+7BNF4BMMkC1SyZ72QSBZENLw5cxhib2LCa/GxSkFEbXiDDVTlcZ8ln/vx4Qt4NeNV0E7XtnWSo0NGD7XlMn8b0RzQm5lIIRNnEjn2t6JkG28GdZ1pwGuzNBqy8U+OqwlnMVNyRXTvt8WMEsO0L6XwypD8oEO+fu6qZPXvvCdBg/HsccbTA6QwnzNKh6ivuMW3xlaQwNgIWECVUNH9LfObdTcUIlRGnBnOKop3oN4CLH+BWYFiupo0JhL57Sm2w9RbEFcUGxb5koVKvLkyVs+2rg/lpDkabglALpVRWNS5h8LqUz6kjpzxgaCeglXBSBKNzj/l1+oh4xDcQUe9CpC7loMr0Ghe2pUrQ4dXoszTkL/9a5fKZOVs3KuaJthYSA0dusI7ucarMr3lyvdvWxYmGMhYBrpPxXp+oF9YqCrruLkf9705IDi+h3JQzXaaE/abIvJR4crLiQztBsNKhlgRxJFzw== root@fedimintd-04";
-  runners = [ runner-01 runner-02 runner-03 runner-04 ];
-  fedimintds = [ fedimintd-01 fedimintd-02 fedimintd-03 fedimintd-04 ];
+  runners = [
+    runner-01
+    runner-02
+    runner-03
+    runner-04
+  ];
+  fedimintds = [
+    fedimintd-01
+    fedimintd-02
+    fedimintd-03
+    fedimintd-04
+  ];
 in
 {
   "secrets/github-runner.age".publicKeys = runners ++ users;
-  "secrets/perfitd.age".publicKeys = [ runner-01 runner-04 ] ++ users;
+  "secrets/perfitd.age".publicKeys = [
+    runner-01
+    runner-04
+  ] ++ users;
   "secrets/perfitd-info.age".publicKeys = users;
   "secrets/radicle-seednode.age".publicKeys = [ runner-04 ] ++ users;
   "secrets/bitcoind-signet-pass.age".publicKeys = fedimintds ++ users;
+  "secrets/fedimint-signet-demo.age".publicKeys = users;
 }
-
