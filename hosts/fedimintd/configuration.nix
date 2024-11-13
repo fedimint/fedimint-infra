@@ -49,7 +49,7 @@
     # package = pkgs.nixVersions.nix_2_21;
 
     extraOptions = ''
-      experimental-features = nix-command flakes repl-flake
+      experimental-features = nix-command flakes
     '';
     settings = {
       max-jobs = 2;
