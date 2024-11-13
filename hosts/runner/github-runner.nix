@@ -73,6 +73,22 @@ in
             "FM_PORTALLOC_DATA_DIR=/home/github-runner/.cache/port-alloc"
           '';
 
+          # Chromium hacks for fedimint-web-sdk CI
+          # removed "~capset"
+          SystemCallFilter = lib.mkForce [
+            "~@clock"
+            "~@cpu-emulation"
+            "~@module"
+            "~@mount"
+            "~@obsolete"
+            "~@raw-io"
+            "~@reboot"
+            "~setdomainname"
+            "~sethostname"
+          ];
+          CapabilityBoundingSet = [ "CAP_SETUID" "CAP_SETGID" "CAP_SYS_ADMIN" ];
+          NoNewPrivileges = false;
+
           # Apparently it wasn't restarting on failure, so let's make sure it does
           Restart = lib.mkForce "always";
           RestartSec = "30s";
