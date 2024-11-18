@@ -11,6 +11,7 @@ in
         ${pkgs.findutils}/bin/find /tmp/ -mindepth 1 -maxdepth 1 -user github-runner -mmin +60 -print0 | xargs -n 1 -0 rm -rf
         # tmp stuff created by the nixbldX users
         ${pkgs.findutils}/bin/find /tmp/ -mindepth 1 -maxdepth 1 -group nixbld -mmin +60 -print0 | xargs -n 1 -0 rm -rf
+        ${pkgs.docker}/bin/docker image prune -af
       '';
     in
     {
