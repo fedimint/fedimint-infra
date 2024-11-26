@@ -146,6 +146,7 @@
               packages = [
                 inputs.agenix.packages.${pkgs.system}.default
                 inputs.perfit.packages.${pkgs.system}.perfit
+                pkgs.just
               ];
             };
           };
