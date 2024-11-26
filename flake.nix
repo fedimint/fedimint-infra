@@ -117,7 +117,7 @@
     in
     {
       nixosConfigurations = {
-        # runner-01 = makeRunner { name = "runner-01"; extraModules = [ (import ./modules/perfit.nix) ]; };
+        runner-01 = makeRunner { name = "runner-01"; };
         runner-02 = makeRunner { name = "runner-02"; };
         # runner-03 = makeRunner { name = "runner-03"; };
         runner-04 = makeRunner {
