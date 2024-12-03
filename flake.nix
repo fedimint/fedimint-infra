@@ -43,6 +43,8 @@
             # TODO:
             # "sha256-qg7h4jCXEudMgG3vCGXO9bS3/az+XpXWnucWM05ri5I="
           });
+          fedimint-cli = fedimint.packages.${final.system}.fedimint-cli;
+          fedimintd = fedimint.packages.${final.system}.fedimintd;
         })
       ];
 

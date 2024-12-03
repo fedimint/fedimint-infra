@@ -33,7 +33,8 @@ in
   };
 
   environment.systemPackages = [
-    pkgs.fedimint.fedimint
+    pkgs.fedimintd
+    pkgs.fedimint-cli
   ];
 
   networking.firewall.allowedTCPPorts = [
@@ -47,7 +48,7 @@ in
 
   services.fedimintd."signet" = {
     enable = true;
-    package = pkgs.fedimint.fedimint;
+    package = pkgs.fedimintd;
 
     environment = {
       "RUST_LOG" = "fm=debug,info";
