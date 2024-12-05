@@ -1,6 +1,7 @@
 { lib, pkgs, ... }:
 let
   cleanupTmp = "cleanup-tmp";
+  cleanupDocker = "cleanup-docker";
   gcNix = "gc-nix";
 in
 {
@@ -11,7 +12,6 @@ in
         ${pkgs.findutils}/bin/find /tmp/ -mindepth 1 -maxdepth 1 -user github-runner -mmin +60 -print0 | xargs -n 1 -0 rm -rf
         # tmp stuff created by the nixbldX users
         ${pkgs.findutils}/bin/find /tmp/ -mindepth 1 -maxdepth 1 -group nixbld -mmin +60 -print0 | xargs -n 1 -0 rm -rf
-        ${pkgs.docker}/bin/docker image prune -af --filter "until=24h"
       '';
     in
     {
@@ -28,6 +28,29 @@ in
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "hourly";
+    };
+  };
+
+  systemd.services.${cleanupDocker} =
+    let
+      script = pkgs.writeShellScript "cleanup-docker" ''
+        ${pkgs.docker}/bin/docker image prune -af --filter "until=14d"
+      '';
+    in
+    {
+      description = "Clean up old docker images";
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = script;
+        User = "root";
+      };
+    };
+
+  systemd.timers.${cleanupDocker} = {
+    description = "Timer for cleaning up /tmp files";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
     };
   };
 
