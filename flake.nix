@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -16,8 +16,8 @@
     };
 
     fedimint = {
-      url = "github:fedimint/fedimint?ref=v0.5.0-rc.2";
-      # inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:fedimint/fedimint?rev=c0b180d3ef00d5525b809beb8f30c920850599ec";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     fedimint-ui = {
       url = "github:fedimint/ui?rev=d240b04723d06590d73aa7dc60008dcb8db42733";
