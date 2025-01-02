@@ -29,7 +29,19 @@ in
       signet=1
       # must match bitcoind-signet-pass.age
       rpcauth=bitcoin:6a894e7e43ceac9f7fe375fb4986c602$4a1a9b5d41e8b46b295b35b2a52d14d4280a40ed3d3ad12322e9656c501afb69
+
+      # minimum memory usage settings, even on mainnet it will be slow but will work just fine
+      maxmempool=5
+      par=2
+      rpcthreads=4
+      maxconnections=32
     '';
+  };
+
+  systemd.services.bitcoind = {
+    environment = {
+      "MALLOC_ARENA_MAX" = "2";
+    };
   };
 
   environment.systemPackages = [
