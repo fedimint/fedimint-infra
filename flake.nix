@@ -16,7 +16,7 @@
     };
 
     fedimint = {
-      url = "github:fedimint/fedimint?rev=d65782eda05a302f4e861b59b7afa9cb7b31ecfb";
+      url = "github:fedimint/fedimint?rev=1cc3d7981f2c7d895c5cac4c994eb7c8a90e70bf";
       # inputs.nixpkgs.follows = "nixpkgs";
     };
     fedimint-ui = {
