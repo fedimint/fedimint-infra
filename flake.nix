@@ -68,8 +68,8 @@
       ];
 
       adminKeysFedimintd = adminKeys ++ [
-        # dpc
-        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDcuMO6k5zhp7JTnp4Kz4gjWqOo+TDbaBlD2d/LICHSv5DAiQy/mgRcgfKZrb4LSA08FmbMjzp2cJoNGTG249vABdizEzTXUnQ+8QzS3VKkfZw5D86+EyOXCwhD2YwGS4A7nzUaStROlQ+lyVMeR8DpbbCSVrx0VMdP48SwJA5pSGHPuXJsYElfGOttQrIWAqvdK8CxG+BmdgmzLpb7b9KlJ5TetUmn03+zsE587EcdvtNU9jCmbJ5uFLR5x9zZGhF5HNA/XqSiiPkbAfcAc/mEwVaSP6ZeOKXg9M1LXeeG/+/oDYLJU6Ra3pVL50aw6L7UEOoUt0Vcf394famZaugFxcRGuvK6ox0tWhvrcO2Oj8Ko9FHTHD0XfEXazpXmW9eDa9rLYNgdY9li/pD2T71VqZrnr7Xq8J676srbvHp7RO8Wz4RRnwbmpfm1107oiZegu1kxCOvJmlZeBef/9EE0lYKi7/XfmKD3uAS5UJa/dvFysI6aUX1X0duNUedmkgSAhTz8yw7sVB/zarDf21AyCuwc8MZ9rcdMYMsCvpF/p/0BfddV5cI7juXWnbH9Zbfct+XJj1OqS46G9wieKslrJEZ94ZLrghe0wE5Ip1kuYHVIlZzDw0UXm4j0wfsZCw8w/RIZDojwnr992xKSWHyyNxjRVfp77BqoxECopJOO7w== bradley@sparkswap.com"
+        # brad
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGP9AbqO9klB18SWLZcAzy88nqgkggyC4kjyaCCW8vDp l14-gen3"
       ];
 
       makeRunner =
