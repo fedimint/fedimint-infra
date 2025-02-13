@@ -63,7 +63,7 @@ in
     package = pkgs.fedimintd;
 
     environment = {
-      "RUST_LOG" = "fm=debug,info";
+      "RUST_LOG" = "fm=debug,info,fm::net::api=trace";
       "RUST_BACKTRACE" = "1";
       "FM_BIND_METRICS_API" = "[::1]:8175";
       "FM_REL_NOTES_ACK" = "0_4_xyz";
