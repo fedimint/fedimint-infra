@@ -1,12 +1,7 @@
-{ lib, pkgs, hostName, ... }:
+{ lib, pkgs, hostName, runnerGroup, runners, ... }:
 
 let
-  runnersNames = [
-    "${hostName}-aa"
-    "${hostName}-bb"
-    "${hostName}-cc"
-    "${hostName}-dd"
-  ];
+  runnersNames = map (name: "${hostName}-${name}") runners;
 in
 {
 
