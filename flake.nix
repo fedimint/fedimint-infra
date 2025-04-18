@@ -74,11 +74,13 @@
 
       makeRunner =
         {
+          system,
           name,
+          runners,
           extraModules ? [ ],
         }:
         nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
+          inherit system;
           modules = [
             topLevelModule
 
@@ -92,8 +94,31 @@
             inherit inputs;
             hostName = name;
             inherit adminKeys;
+            inherit runners;
           };
         };
+
+      makeRunnerAmd = { extraModules ? [], ... }@args:
+        makeRunner ({
+          system = "x86_64-linux";
+          extraModules = extraModules ++ [
+            ./disk-config/hetzner-ax162.nix
+            ./hosts/runner/hardware-configuration-amd.nix
+            ./hosts/runner/check-temp.nix
+          ];
+          runners = ["a" "b" "c" "d"];
+        } // args);
+
+      makeRunnerArm = { extraModules ? [], ... }@args:
+        makeRunner ({
+          system = "aarch64-linux";
+          extraModules = extraModules ++ [
+            ./disk-config/hetzner-vps.nix
+            ./hosts/runner/hardware-configuration-arm.nix
+          ];
+          runners = ["a" "b"];
+        } // args);
+
       makeFedimintd =
         {
           name,
@@ -119,16 +144,19 @@
     in
     {
       nixosConfigurations = {
-        runner-01 = makeRunner { name = "runner-01"; };
-        runner-02 = makeRunner { name = "runner-02"; };
+        runner-01 = makeRunnerAmd { name = "runner-01"; };
+        runner-02 = makeRunnerAmd { name = "runner-02"; };
         # runner-03 = makeRunner { name = "runner-03"; };
-        runner-04 = makeRunner {
+        runner-04 = makeRunnerAmd {
           name = "runner-04";
           extraModules = [
             (import ./modules/perfit.nix)
             (import ./modules/radicle.nix)
           ];
         };
+
+        runner-arm-01 = makeRunnerArm { name = "runner-arm-01"; };
+
         fedimintd-01 = makeFedimintd { name = "fedimintd-01"; };
         fedimintd-02 = makeFedimintd { name = "fedimintd-02"; };
         fedimintd-03 = makeFedimintd { name = "fedimintd-03"; };
