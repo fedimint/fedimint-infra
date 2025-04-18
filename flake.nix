@@ -106,7 +106,7 @@
             ./hosts/runner/hardware-configuration-amd.nix
             ./hosts/runner/check-temp.nix
           ];
-          runners = ["aa" "bb" "cc" "dd"];
+          runners = ["a" "b" "c" "d"];
         } // args);
 
       makeRunnerArm = { extraModules ? [], ... }@args:
@@ -116,7 +116,7 @@
             ./disk-config/hetzner-vps.nix
             ./hosts/runner/hardware-configuration-arm.nix
           ];
-          runners = ["aa" "bb"];
+          runners = ["a" "b"];
         } // args);
 
       makeFedimintd =
