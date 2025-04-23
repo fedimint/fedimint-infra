@@ -99,25 +99,25 @@
         };
 
       makeRunnerAmd = { extraModules ? [], ... }@args:
-        makeRunner ({
+        makeRunner (args // {
           system = "x86_64-linux";
-          extraModules = extraModules ++ [
+          extraModules = [
             ./disk-config/hetzner-ax162.nix
             ./hosts/runner/hardware-configuration-amd.nix
             ./hosts/runner/check-temp.nix
-          ];
+          ] ++ extraModules;
           runners = ["a" "b" "c" "d"];
-        } // args);
+        });
 
       makeRunnerArm = { extraModules ? [], ... }@args:
-        makeRunner ({
+        makeRunner (args // {
           system = "aarch64-linux";
-          extraModules = extraModules ++ [
+          extraModules = [
             ./disk-config/hetzner-vps.nix
             ./hosts/runner/hardware-configuration-arm.nix
-          ];
+          ] ++ extraModules;
           runners = ["a" "b"];
-        } // args);
+        });
 
       makeFedimintd =
         {
@@ -150,8 +150,8 @@
         runner-04 = makeRunnerAmd {
           name = "runner-04";
           extraModules = [
-            (import ./modules/perfit.nix)
-            (import ./modules/radicle.nix)
+            ./modules/perfit.nix
+            ./modules/radicle.nix
           ];
         };
 
