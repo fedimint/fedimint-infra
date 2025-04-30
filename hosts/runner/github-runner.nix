@@ -88,11 +88,12 @@ in
           Restart = lib.mkForce "always";
           RestartSec = "30s";
         };
-        extraPackages = [
-          pkgs.gawk
-          pkgs.docker
-          pkgs.cachix
-          pkgs.gnupg
+        extraPackages = with pkgs; [
+          gawk
+          docker
+          cachix
+          gnupg
+          curl
         ];
       };
     })
