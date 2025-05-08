@@ -94,6 +94,7 @@ in
           cachix
           gnupg
           curl
+          jq
         ];
       };
     })
