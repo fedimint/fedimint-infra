@@ -16,6 +16,7 @@ apply-all-runners:
   just apply-runner "02"
   # just apply-runner "03"
   just apply-runner "04"
+  just apply-runner "arm-01"
 
 apply-all-fedimintd:
   just apply-fedimintd "01"
@@ -36,7 +37,7 @@ agenix-edit PATH="secrets/github-runner.age" IDENTITY="$HOME/.ssh/id_ed25519.age
 
 agenix-rekey IDENTITY="$HOME/.ssh/id_ed25519.agenix":
   agenix -r -i "{{IDENTITY}}"
-   
+
 # Build host configuration
 build HOST:
   nix build -L ".#nixosConfigurations.{{HOST}}.config.system.build.toplevel"
