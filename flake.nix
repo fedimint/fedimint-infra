@@ -1,6 +1,7 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    # https://github.com/NixOS/nixpkgs/pull/397967
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=96869639e21d77d941889e04a0b7956c03a9a45f";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -16,11 +17,8 @@
     };
 
     fedimint = {
-      url = "github:fedimint/fedimint?ref=v0.6.2";
+      url = "github:fedimint/fedimint?ref=v0.7.1";
       # inputs.nixpkgs.follows = "nixpkgs";
-    };
-    fedimint-ui = {
-      url = "github:fedimint/ui?rev=d240b04723d06590d73aa7dc60008dcb8db42733";
     };
   };
 
@@ -31,7 +29,6 @@
       agenix,
       flake-utils,
       fedimint,
-      fedimint-ui,
       ...
     }@inputs:
     let
@@ -39,10 +36,6 @@
         (final: prev: {
           perfitd = inputs.perfit.packages.${final.system}.perfitd;
           perfit = inputs.perfit.packages.${final.system}.perfit;
-          fedimint-ui = fedimint-ui.packages.${final.system}.guardian-ui.overrideAttrs (prev: {
-            # TODO:
-            # "sha256-qg7h4jCXEudMgG3vCGXO9bS3/az+XpXWnucWM05ri5I="
-          });
           fedimint-cli = fedimint.packages.${final.system}.fedimint-cli;
           fedimintd = fedimint.packages.${final.system}.fedimintd;
         })

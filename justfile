@@ -3,7 +3,7 @@ default:
 
 # Apply (deply) configuration to a host
 apply HOST SSH_HOST:
-  nixos-rebuild switch -L --flake .#{{HOST}} --target-host "{{SSH_HOST}}"
+  nixos-rebuild switch --cores 8 -L --flake .#{{HOST}} --target-host "{{SSH_HOST}}"
 
 apply-runner RUNNER:
   just apply "runner-{{RUNNER}}" "root@runner-{{RUNNER}}.dev.fedimint.org"
