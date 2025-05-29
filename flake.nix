@@ -1,7 +1,7 @@
 {
   inputs = {
     # https://github.com/NixOS/nixpkgs/pull/397967
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=96869639e21d77d941889e04a0b7956c03a9a45f";
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=4f993a759ef3a1432653ce5f117ba7725771c0d8";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -17,7 +17,8 @@
     };
 
     fedimint = {
-      url = "github:fedimint/fedimint?ref=v0.7.1";
+      # url = "github:fedimint/fedimint?ref=v0.7.1";
+      url = "github:fedimint/fedimint?rev=21bc329d51729954a27261812036d05e120cb251";
       # inputs.nixpkgs.follows = "nixpkgs";
     };
   };

@@ -2,8 +2,7 @@
 
 let
   fmFqdn = "${hostName}.dev.fedimint.org";
-  fmApiFqdn = fmFqdn;
-  fmP2pFqdn = fmFqdn;
+  fmFqdnIroh = "${hostName}-iroh.dev.fedimint.org";
 in
 {
   users.groups = {
@@ -58,22 +57,26 @@ in
     SupplementaryGroups = "bitcoind-signet-pass";
   };
 
+  systemd.services.fedimintd-signet-iroh.serviceConfig = {
+    SupplementaryGroups = "bitcoind-signet-pass";
+  };
+
   services.fedimintd."signet" = {
     enable = true;
     package = pkgs.fedimintd;
 
     environment = {
-      "RUST_LOG" = "fm=debug,info,fm::net::api=trace";
+      "RUST_LOG" = "fm=debug,info";
       "RUST_BACKTRACE" = "1";
       "FM_BIND_METRICS_API" = "[::1]:8175";
     };
 
     api_ws = {
-      url = "wss://${fmApiFqdn}/ws/";
+      url = "wss://${fmFqdn}/ws/";
     };
 
     p2p = {
-      url = "fedimint://${fmP2pFqdn}:8173/";
+      url = "fedimint://${fmFqdn}:8173/";
     };
 
     bitcoin = {
@@ -86,7 +89,51 @@ in
 
     nginx = {
       enable = true;
-      fqdn = fmApiFqdn;
+      fqdn = fmFqdn;
+    };
+  };
+
+  services.fedimintd."signet-iroh" = {
+    enable = true;
+    package = pkgs.fedimintd;
+
+    environment = {
+      "RUST_LOG" = "fm=trace,info";
+      "RUST_BACKTRACE" = "1";
+      "FM_BIND_METRICS_API" = "[::1]:8275";
+      "FM_FORCE_IROH"="1";
+      "FM_DEBUGGING_SHOW_SECRETS" = "1";
+    };
+
+    p2p = {
+      port = 8273;
+      url = "fedimint://${fmFqdnIroh}:8173/";
+    };
+
+    api_ws = {
+      port = 8274;
+      url = "wss://${fmFqdnIroh}/ws/";
+    };
+
+    api_iroh = {
+      port = 8274;
+    };
+
+    ui = {
+      port = 8275;
+    };
+
+    bitcoin = {
+      network = "signet";
+      rpc = {
+        url = "http://bitcoin@127.0.0.1:38332";
+        secretFile = "/run/secrets/bitcoind-signet-pass";
+      };
+    };
+
+    nginx = {
+      enable = true;
+      fqdn = fmFqdnIroh;
     };
   };
 

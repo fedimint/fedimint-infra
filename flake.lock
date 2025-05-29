@@ -347,16 +347,16 @@
         "nixpkgs": "nixpkgs_5"
       },
       "locked": {
-        "lastModified": 1746581504,
+        "lastModified": 1748543225,
         "owner": "fedimint",
         "repo": "fedimint",
-        "rev": "8a9ec03990300e0e60f97e8e0947de0c36731f9a",
+        "rev": "21bc329d51729954a27261812036d05e120cb251",
         "type": "github"
       },
       "original": {
         "owner": "fedimint",
-        "ref": "v0.7.1",
         "repo": "fedimint",
+        "rev": "21bc329d51729954a27261812036d05e120cb251",
         "type": "github"
       }
     },
@@ -853,16 +853,16 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1746830491,
+        "lastModified": 1748545085,
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "96869639e21d77d941889e04a0b7956c03a9a45f",
+        "rev": "4f993a759ef3a1432653ce5f117ba7725771c0d8",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "96869639e21d77d941889e04a0b7956c03a9a45f",
+        "rev": "4f993a759ef3a1432653ce5f117ba7725771c0d8",
         "type": "github"
       }
     },
