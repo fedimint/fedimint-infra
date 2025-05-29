@@ -101,8 +101,7 @@ in
       "RUST_LOG" = "fm=trace,info";
       "RUST_BACKTRACE" = "1";
       "FM_BIND_METRICS_API" = "[::1]:8275";
-      "FM_FORCE_IROH"="1";
-      "FM_DEBUGGING_SHOW_SECRETS" = "1";
+      "FM_FORCE_IROH" = "1";
     };
 
     p2p = {
