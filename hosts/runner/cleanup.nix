@@ -34,7 +34,7 @@ in
   systemd.services.${cleanupDocker} =
     let
       script = pkgs.writeShellScript "cleanup-docker" ''
-        ${pkgs.docker}/bin/docker image prune -af --filter "until=14d"
+        ${pkgs.docker}/bin/docker image prune -af --filter "until=48h"
       '';
     in
     {
