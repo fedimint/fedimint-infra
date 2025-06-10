@@ -135,6 +135,24 @@
             adminKeys = adminKeysFedimintd;
           };
         };
+
+      makeIroh = { name, ... }@args:
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            topLevelModule
+
+            disko.nixosModules.disko
+            agenix.nixosModules.default
+
+            ./hosts/iroh/configuration.nix
+          ];
+          specialArgs = {
+            inherit inputs;
+            inherit adminKeys;
+            hostName = name;
+          };
+        };
     in
     {
       nixosConfigurations = {
@@ -155,6 +173,8 @@
         fedimintd-02 = makeFedimintd { name = "fedimintd-02"; };
         fedimintd-03 = makeFedimintd { name = "fedimintd-03"; };
         fedimintd-04 = makeFedimintd { name = "fedimintd-04"; };
+
+        iroh-eu-01 = makeIroh { name = "iroh-eu-01"; };
       };
     }
     //
