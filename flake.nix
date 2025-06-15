@@ -135,6 +135,42 @@
             adminKeys = adminKeysFedimintd;
           };
         };
+
+      makeIrohDns = { name, ... }@args:
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            topLevelModule
+
+            disko.nixosModules.disko
+            agenix.nixosModules.default
+
+            ./hosts/iroh-dns/configuration.nix
+          ];
+          specialArgs = {
+            inherit inputs;
+            inherit adminKeys;
+            hostName = name;
+          };
+        };
+
+      makeIrohRelay = { name, ... }@args:
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            topLevelModule
+
+            disko.nixosModules.disko
+            agenix.nixosModules.default
+
+            ./hosts/iroh-relay/configuration.nix
+          ];
+          specialArgs = {
+            inherit inputs;
+            inherit adminKeys;
+            hostName = name;
+          };
+        };
     in
     {
       nixosConfigurations = {
@@ -155,6 +191,9 @@
         fedimintd-02 = makeFedimintd { name = "fedimintd-02"; };
         fedimintd-03 = makeFedimintd { name = "fedimintd-03"; };
         fedimintd-04 = makeFedimintd { name = "fedimintd-04"; };
+
+        irohdns-eu-01 = makeIrohDns { name = "irohdns-eu-01"; };
+        irohrelay-eu-01 = makeIrohRelay { name = "irohrelay-eu-01"; };
       };
     }
     //
