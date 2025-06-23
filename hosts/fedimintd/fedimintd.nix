@@ -81,10 +81,9 @@ in
 
     bitcoin = {
       network = "signet";
-      rpc = {
-        url = "http://bitcoin@127.0.0.1:38332";
-        secretFile = "/run/secrets/bitcoind-signet-pass";
-      };
+      bitcoindUrl = "http://bitcoin@127.0.0.1:38332";
+      esploraUrl = "https://mempool.space/signet/api";
+      bitcoindSecretFile = "/run/secrets/bitcoind-signet-pass";
     };
 
     nginx = {
@@ -124,10 +123,9 @@ in
 
     bitcoin = {
       network = "signet";
-      rpc = {
-        url = "http://bitcoin@127.0.0.1:38332";
-        secretFile = "/run/secrets/bitcoind-signet-pass";
-      };
+      bitcoindUrl = "http://bitcoin@127.0.0.1:38332";
+      esploraUrl = "https://mempool.space/signet/api";
+      bitcoindSecretFile = "/run/secrets/bitcoind-signet-pass";
     };
 
     nginx = {
