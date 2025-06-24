@@ -40,6 +40,8 @@
           perfit = inputs.perfit.packages.${final.system}.perfit;
           fedimint-cli = fedimint.packages.${final.system}.fedimint-cli;
           fedimintd = fedimint.packages.${final.system}.fedimintd;
+          # we need yet unreleased 0.9.0 version of rqbit for `rqbit share`
+          rqbit = final.callPackage ./nix/pkgs/rqbit.nix {};
         })
       ];
 
@@ -100,6 +102,7 @@
             ./disk-config/hetzner-ax162.nix
             ./hosts/runner/hardware-configuration-amd.nix
             ./hosts/runner/check-temp.nix
+            ./modules/seed-assumeutxo.nix
           ] ++ extraModules;
           runners = ["a" "b" "c" "d"];
         });
