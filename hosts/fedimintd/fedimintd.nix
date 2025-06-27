@@ -81,10 +81,9 @@ in
 
     bitcoin = {
       network = "signet";
-      rpc = {
-        url = "http://bitcoin@127.0.0.1:38332";
-        secretFile = "/run/secrets/bitcoind-signet-pass";
-      };
+      bitcoindUrl = "http://bitcoin@127.0.0.1:38332";
+      esploraUrl = "https://mempool.space/signet/api";
+      bitcoindSecretFile = "/run/secrets/bitcoind-signet-pass";
     };
 
     nginx = {
@@ -98,10 +97,12 @@ in
     package = pkgs.fedimintd;
 
     environment = {
-      "RUST_LOG" = "fm=trace,info";
+      "RUST_LOG" = "fm=debug,info";
       "RUST_BACKTRACE" = "1";
       "FM_BIND_METRICS_API" = "[::1]:8275";
-      "FM_FORCE_IROH" = "1";
+      "FM_ENABLE_IROH" = "true";
+      "FM_IROH_DNS" = "https://dns.irohdns-eu-01.dev.fedimint.org";
+      "FM_IROH_RELAY" = "https://irohrelay-eu-01.dev.fedimint.org";
     };
 
     p2p = {
@@ -124,10 +125,9 @@ in
 
     bitcoin = {
       network = "signet";
-      rpc = {
-        url = "http://bitcoin@127.0.0.1:38332";
-        secretFile = "/run/secrets/bitcoind-signet-pass";
-      };
+      bitcoindUrl = "http://bitcoin@127.0.0.1:38332";
+      esploraUrl = "https://mempool.space/signet/api";
+      bitcoindSecretFile = "/run/secrets/bitcoind-signet-pass";
     };
 
     nginx = {

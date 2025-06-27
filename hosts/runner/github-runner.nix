@@ -43,7 +43,7 @@ in
       value = {
         enable = true;
         # this will shut down the whole service after every run,
-        # notably making sure there is no ghosts processses
+        # notably making sure there is no ghosts processes
         ephemeral = true;
         replace = true;
         inherit name;

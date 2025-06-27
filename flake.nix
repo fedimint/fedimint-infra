@@ -1,7 +1,8 @@
 {
   inputs = {
     # https://github.com/NixOS/nixpkgs/pull/397967
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=4f993a759ef3a1432653ce5f117ba7725771c0d8";
+    # nixpkgs.url = "github:NixOS/nixpkgs?rev=4f993a759ef3a1432653ce5f117ba7725771c0d8";
+    nixpkgs.url = "github:NixOS/nixpkgs/25.05";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -18,8 +19,8 @@
 
     fedimint = {
       # url = "github:fedimint/fedimint?ref=v0.7.1";
-      url = "github:fedimint/fedimint?rev=21bc329d51729954a27261812036d05e120cb251";
-      # inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:fedimint/fedimint?rev=de7448559f5ddcff63698d624d6592156870a533";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
@@ -120,12 +121,19 @@
         }:
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
+
           modules = [
             topLevelModule
+
 
             disko.nixosModules.disko
             agenix.nixosModules.default
             inputs.perfit.nixosModules.perfitd
+
+            {
+              disabledModules = [ "services/networking/fedimintd.nix" ];
+            }
+            inputs.fedimint.nixosModules.fedimintd
 
             ./hosts/fedimintd/configuration.nix
           ] ++ extraModules;
