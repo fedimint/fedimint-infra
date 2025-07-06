@@ -147,7 +147,7 @@
           };
         };
 
-      makeIrohDns = { name, ... }@args:
+      makeIrohDns = { name, serverIp, ... }@args:
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
@@ -161,6 +161,7 @@
           specialArgs = {
             inherit inputs;
             inherit adminKeys;
+            inherit serverIp;
             hostName = name;
           };
         };
@@ -203,8 +204,10 @@
         fedimintd-03 = makeFedimintd { name = "fedimintd-03"; };
         fedimintd-04 = makeFedimintd { name = "fedimintd-04"; };
 
-        irohdns-eu-01 = makeIrohDns { name = "irohdns-eu-01"; };
+        irohdns-eu-01 = makeIrohDns { name = "irohdns-eu-01"; serverIp = "157.180.123.56"; };
         irohrelay-eu-01 = makeIrohRelay { name = "irohrelay-eu-01"; };
+        irohdns-us-01 = makeIrohDns { name = "irohdns-us-01"; serverIp = "5.78.106.169"; };
+        irohrelay-us-01 = makeIrohRelay { name = "irohrelay-us-01"; };
       };
     }
     //

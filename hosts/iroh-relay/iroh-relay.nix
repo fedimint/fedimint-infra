@@ -1,6 +1,6 @@
-{ pkgs, ... }:
+{ pkgs, hostName, ... }:
 let
-  domain = "irohrelay-eu-01.dev.fedimint.org";
+  domain = "${hostName}.dev.fedimint.org";
 
   iroh = import ../../modules/iroh-package.nix { inherit pkgs; };
 

@@ -1,4 +1,4 @@
-{ pkgs, hostName, ... }:
+{ pkgs, hostName, serverIp, ... }:
 let
   domain = "${hostName}.dev.fedimint.org";
 
@@ -24,7 +24,7 @@ let
     default_soa = "dns.${domain} hostmaster.${domain} 0 10800 3600 604800 3600"
     default_ttl = 30
     origins = ["dns.${domain}.", "."]
-    rr_a = "157.180.123.56"
+    rr_a = "${serverIp}"
     rr_ns = "${domain}."
 
     [mainline]
