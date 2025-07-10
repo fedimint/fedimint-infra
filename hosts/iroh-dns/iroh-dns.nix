@@ -6,7 +6,7 @@ let
 
   # https://github.com/n0-computer/iroh/blob/d4de591cb54be888e587320e6fb705648036ab38/iroh-dns-server/src/config.rs#L29
   dnsConfig = pkgs.writeText "dns.toml" ''
-    pkarr_put_rate_limit = "smart"
+    pkarr_put_rate_limit = "disabled"
 
     [http]
     port = 80
