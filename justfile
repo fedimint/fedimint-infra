@@ -24,6 +24,17 @@ apply-all-fedimintd:
   just apply-fedimintd "03"
   just apply-fedimintd "04"
 
+apply-all-iroh:
+  just apply irohdns-eu-01 "root@irohdns-eu-01.dev.fedimint.org"
+  just apply irohdns-us-01 "root@irohdns-us-01.dev.fedimint.org"
+  just apply irohrelay-eu-01 "root@irohrelay-eu-01.dev.fedimint.org"
+  just apply irohrelay-us-01 "root@irohrelay-us-01.dev.fedimint.org"
+
+apply-all:
+  just apply-all-runners
+  just apply-all-fedimintd
+  just apply-all-iroh
+
 # Bootstrap host using nixos-anywhere
 bootstrap HOST SSH_HOST:
   nix run github:nix-community/nixos-anywhere -- --flake .#{{HOST}} {{SSH_HOST}}
