@@ -2,7 +2,7 @@
   inputs = {
     # https://github.com/NixOS/nixpkgs/pull/397967
     # nixpkgs.url = "github:NixOS/nixpkgs?rev=4f993a759ef3a1432653ce5f117ba7725771c0d8";
-    nixpkgs.url = "github:NixOS/nixpkgs/25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
 
     flake-utils.url = "github:numtide/flake-utils";
 
