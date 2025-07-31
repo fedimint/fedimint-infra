@@ -3,6 +3,10 @@
 let
   fmFqdn = "${hostName}.dev.fedimint.org";
   fmFqdnIroh = "${hostName}-iroh.dev.fedimint.org";
+  bitcoindPasswordFile = "/run/secrets/bitcoind-signet-pass";
+  bitcoindUrl = "http://127.0.0.1:38332";
+  bitcoindUsername = "bitcoin";
+  esploraUrl = "https://mempool.space/signet/api";
 in
 {
   users.groups = {
@@ -12,7 +16,7 @@ in
   age.secrets = {
     bitcoind-signet-pass = {
       file = ../../secrets/bitcoind-signet-pass.age;
-      path = "/run/secrets/bitcoind-signet-pass";
+      path = bitcoindPasswordFile;
       group = "bitcoind-signet-pass";
       mode = "660";
     };
@@ -69,6 +73,11 @@ in
       "RUST_LOG" = "fm=debug,info";
       "RUST_BACKTRACE" = "1";
       "FM_BIND_METRICS_API" = "[::1]:8175";
+      "FM_BITCOIND_USERNAME" = bitcoindUsername;
+      "FM_BITCOIND_URL" = bitcoindUrl;
+      "FM_BITCOIND_URL_PASSWORD_FILE" = bitcoindPasswordFile;
+      "FM_P2P_URL" = "fedimint://${fmFqdn}:8173/";
+      "FM_API_URL" = "wss://${fmFqdn}/ws/";
     };
 
     api_ws = {
@@ -81,9 +90,9 @@ in
 
     bitcoin = {
       network = "signet";
-      bitcoindUrl = "http://bitcoin@127.0.0.1:38332";
-      esploraUrl = "https://mempool.space/signet/api";
-      bitcoindSecretFile = "/run/secrets/bitcoind-signet-pass";
+      bitcoindUrl = bitcoindUrl;
+      esploraUrl = esploraUrl;
+      bitcoindSecretFile = bitcoindPasswordFile;
     };
 
     nginx = {
@@ -103,6 +112,14 @@ in
       "FM_ENABLE_IROH" = "true";
       "FM_IROH_DNS" = "https://dns.irohdns-eu-01.dev.fedimint.org";
       "FM_IROH_RELAY" = "https://irohrelay-eu-01.dev.fedimint.org";
+      "FM_BITCOIND_USERNAME" = bitcoindUsername;
+      "FM_BITCOIND_URL" = bitcoindUrl;
+      "FM_BITCOIND_URL_PASSWORD_FILE" = bitcoindPasswordFile;
+      "FM_P2P_URL" = "fedimint://${fmFqdnIroh}:8173/";
+      "FM_API_URL" = "wss://${fmFqdnIroh}/ws/";
+      "FM_BIND_P2P" = "0.0.0.0:8273";
+      "FM_BIND_API" = "0.0.0.0:8274";
+      "FM_BIND_UI" = "127.0.0.1:8275";
     };
 
     p2p = {
@@ -125,9 +142,9 @@ in
 
     bitcoin = {
       network = "signet";
-      bitcoindUrl = "http://bitcoin@127.0.0.1:38332";
-      esploraUrl = "https://mempool.space/signet/api";
-      bitcoindSecretFile = "/run/secrets/bitcoind-signet-pass";
+      bitcoindUrl = bitcoindUrl;
+      esploraUrl = esploraUrl;
+      bitcoindSecretFile = bitcoindPasswordFile;
     };
 
     nginx = {
