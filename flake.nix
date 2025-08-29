@@ -80,6 +80,7 @@
           inherit system;
           modules = [
             topLevelModule
+            ./modules/nixos-nixpkgs-last-modified.nix
 
             disko.nixosModules.disko
             agenix.nixosModules.default
@@ -127,7 +128,7 @@
 
           modules = [
             topLevelModule
-
+            ./modules/nixos-nixpkgs-last-modified.nix
 
             disko.nixosModules.disko
             agenix.nixosModules.default
@@ -152,6 +153,7 @@
           system = "x86_64-linux";
           modules = [
             topLevelModule
+            ./modules/nixos-nixpkgs-last-modified.nix
 
             disko.nixosModules.disko
             agenix.nixosModules.default
@@ -171,6 +173,7 @@
           system = "x86_64-linux";
           modules = [
             topLevelModule
+            ./modules/nixos-nixpkgs-last-modified.nix
 
             disko.nixosModules.disko
             agenix.nixosModules.default
