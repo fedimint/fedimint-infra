@@ -47,6 +47,8 @@ in
         ProtectSystem = "full";
         AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
         Environment = "RUST_LOG=iroh=debug";
+        # Increase file descriptor limits to prevent running out of open files
+        LimitNOFILE = "infinity";
       };
     };
 }
