@@ -5,6 +5,10 @@ let
   fmFqdnIroh = "${hostName}-iroh.dev.fedimint.org";
 in
 {
+  imports = [
+    ../../modules/common.nix
+  ];
+
   users.groups = {
     bitcoind-signet-pass = { };
   };

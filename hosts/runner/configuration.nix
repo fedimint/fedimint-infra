@@ -1,9 +1,18 @@
-{ modulesPath, lib, pkgs, inputs, adminKeys, hostName, ... }:
+{
+  modulesPath,
+  lib,
+  pkgs,
+  inputs,
+  adminKeys,
+  hostName,
+  ...
+}:
 
 {
   imports = [
     ./github-runner.nix
     ./cleanup.nix
+    ../../modules/common.nix
   ];
   boot.loader.grub = {
     # no need to set devices, disko will add all devices that have a EF02 partition to the list already
@@ -31,7 +40,6 @@
 
   users.users.root.openssh.authorizedKeys.keys = adminKeys;
 
-
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   networking = {
@@ -40,7 +48,6 @@
       allowPing = true;
     };
   };
-
 
   # General server stuff
   boot.tmp.cleanOnBoot = true;
@@ -54,7 +61,10 @@
     settings = {
       max-jobs = 2;
       auto-optimise-store = true;
-      trusted-users = [ "root" "github-runner" ];
+      trusted-users = [
+        "root"
+        "github-runner"
+      ];
     };
 
     gc = {

@@ -17,6 +17,10 @@ let
   '';
 in
 {
+  imports = [
+    ../../modules/common.nix
+  ];
+
   environment.systemPackages = [
     iroh
   ];
