@@ -115,7 +115,7 @@
             ./disk-config/hetzner-vps.nix
             ./hosts/runner/hardware-configuration-arm.nix
           ] ++ extraModules;
-          runners = [ "a" ];
+          runners = [ "a" "b" ];
         });
 
       makeFedimintd =
