@@ -49,6 +49,17 @@
     };
   };
 
+  # prevent k8s/k3s confusing dhcpd with all its interfaces
+  # showing up and disappearing all the time
+  networking.dhcpcd.denyInterfaces = [
+    "flannel*"
+    "cni0"
+    "veth*"
+    "docker*"
+    "br-*"
+    "lo"
+  ];
+
   # General server stuff
   boot.tmp.cleanOnBoot = true;
   nix = {
