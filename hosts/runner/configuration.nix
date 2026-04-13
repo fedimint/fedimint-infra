@@ -62,6 +62,7 @@
 
   # General server stuff
   boot.tmp.cleanOnBoot = true;
+  boot.runSize = "50%";
   nix = {
     # 2.21 seems to break crane vendoring crates
     # package = pkgs.nixVersions.nix_2_21;
