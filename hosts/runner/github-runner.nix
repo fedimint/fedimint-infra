@@ -35,7 +35,10 @@ in
     extraGroups = [ "docker" ];
   };
 
-  virtualisation.docker.enable = true;
+  virtualisation.docker = {
+    enable = true;
+    package = pkgs.docker_29;
+  };
 
   services.github-runners = lib.listToAttrs (map
     (name: {
@@ -90,7 +93,7 @@ in
         };
         extraPackages = with pkgs; [
           gawk
-          docker
+          docker_29
           cachix
           gnupg
           curl
