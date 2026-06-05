@@ -100,6 +100,7 @@
           extraModules = [
             ./disk-config/hetzner-ax162.nix
             ./hosts/runner/hardware-configuration-amd.nix
+            ./hosts/runner/nix-build-tmpfs.nix
             ./hosts/runner/check-temp.nix
             ./modules/seed-assumeutxo.nix
           ] ++ extraModules;
