@@ -7,7 +7,10 @@ in
 
   boot.tmp.useTmpfs = true;
   boot.tmp.cleanOnBoot = true;
-
+  boot.kernel.sysctl = {
+    "kernel.unprivileged_userns_clone" = 1;
+    "user.max_user_namespaces" = 15000;
+  };
 
   environment.systemPackages = map lib.lowPrio [
   ];
