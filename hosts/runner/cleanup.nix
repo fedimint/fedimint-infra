@@ -27,7 +27,8 @@ in
     description = "Timer for cleaning up /tmp files";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnCalendar = "hourly";
+      OnCalendar = "*-*-* *:05:00";
+      RandomizedDelaySec = "30min";
     };
   };
 
@@ -50,7 +51,8 @@ in
     description = "Timer for cleaning up /tmp files";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnCalendar = "daily";
+      OnCalendar = "*-*-* 02:17:00";
+      RandomizedDelaySec = "3h";
     };
   };
 
@@ -73,7 +75,8 @@ in
     description = "Timer for gc the /nix store";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnCalendar = "daily";
+      OnCalendar = "*-*-* 03:23:00";
+      RandomizedDelaySec = "8h";
     };
   };
 }
