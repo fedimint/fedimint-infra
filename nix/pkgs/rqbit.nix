@@ -6,7 +6,7 @@
   pkg-config,
   openssl,
   buildNpmPackage,
-  nodejs_20,
+  nodejs,
   nix-update-script,
 }:
 let
@@ -24,7 +24,7 @@ let
   rqbit-webui = buildNpmPackage {
     pname = "rqbit-webui";
 
-    nodejs = nodejs_20;
+    inherit nodejs;
 
     inherit version src;
 
@@ -85,4 +85,3 @@ rustPlatform.buildRustPackage {
     mainProgram = "rqbit";
   };
 }
-

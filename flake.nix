@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -18,7 +18,6 @@
     fedimint = {
       # url = "github:fedimint/fedimint?ref=v0.7.1";
       url = "github:fedimint/fedimint?rev=de7448559f5ddcff63698d624d6592156870a533";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
