@@ -31,7 +31,7 @@
     pkgs.btop
     pkgs.htop
     pkgs.psmisc
-    inputs.agenix.packages."${pkgs.system}".default
+    inputs.agenix.packages."${pkgs.stdenv.hostPlatform.system}".default
   ];
 
   system.stateVersion = "23.11";
