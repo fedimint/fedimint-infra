@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ lib, pkgs, ... }: {
 
   age.secrets = {
     radicle-seednode = {
@@ -10,11 +10,9 @@
     };
   };
 
-
   services.radicle = {
     enable = true;
-    privateKeyFile = "/run/secrets/radicle/seednode";
-    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMYKej/5RMfmhoyaOqHr/AZmhxrQGYBIm/U4dnfrLHSd dpc@ren";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMYKej/5RMfmhoyaOqHr/AZmhxrQGYBIm/U4dnfrLHSd";
     node.openFirewall = true;
     node.listenAddress = "[::0]";
     settings = {
@@ -34,6 +32,10 @@
     httpd.nginx.forceSSL = true;
   };
 
+  systemd.services.radicle-node.serviceConfig = {
+    ImportCredential = lib.mkForce [ ];
+    LoadCredential = [ "dev.radicle.node.secret:/run/secrets/radicle/seednode" ];
+  };
 
   environment.systemPackages = with pkgs; [
     perfit
