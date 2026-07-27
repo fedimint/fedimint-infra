@@ -31,6 +31,7 @@
     pkgs.btop
     pkgs.htop
     pkgs.psmisc
+    pkgs.bubblewrap
     inputs.agenix.packages."${pkgs.stdenv.hostPlatform.system}".default
   ];
 
