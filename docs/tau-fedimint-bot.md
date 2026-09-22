@@ -28,8 +28,12 @@ unit exits and systemd retries it after 10 seconds.
   its socket, not the key or dpc's personal agent.
 - Basic coordinator, reviewer, researcher, and engineer roles adapted from the
   local Tau setup.
-- Tau, `isolate`, and `gh-isolate` packages pinned as flake inputs. The latter
-  two come from dpc's public Radicle seed and are locked to explicit revisions.
+- Tau, `isolate`, `gh-isolate`, and `clank` packages pinned as flake inputs.
+  The latter three come from dpc's public Radicle seed and are locked to
+  explicit revisions.
+- A narrow writable Clank state directory at
+  `/home/tau-fedimint/.local/state/clank`. The bot can keep project tickets
+  without receiving write access to the rest of its home or state hierarchy.
 - External service extensions disabled. This is fail-closed: no GitHub webhook,
   Slack, Zulip, or other event source is implied by this configuration.
 
@@ -64,10 +68,13 @@ turn the whole agent into a hostile-code security boundary.
    or parent directory. Confirm whether one checkout or multiple repositories
    below it are desired.
 5. **Known users and services:** choose the actual ingress service and stable
-   numeric/account identifiers. Configure an explicit allowlist in that
-   extension before enabling it. Unknown, missing, renamed, or unauthenticated
-   identities must remain denied. No broad GitHub event integration has been
-   invented here.
+   numeric/account identifiers. The ingress must authenticate the sender
+   independently; a username or identity claim in message content is not
+   evidence. The coordinator prompt then requires
+   `fedimint-github-requester check USERNAME either` before acting on a GitHub
+   request. Any failed, denied, malformed, rate-limited, or unavailable check
+   must remain denied. No broad GitHub event integration or enforced admission
+   hook has been invented here.
 6. **Model:** confirm `codex/gpt-5.6-luna`, or change `model` to the canonical ID
    published by the manually configured provider.
 7. **Runtime validation:** inspect
@@ -78,8 +85,62 @@ turn the whole agent into a hostile-code security boundary.
     `tau session list` and `tau attach tau-fedimint-bot` work from an ordinary
     SSH login as `tau-fedimint`; only the owner-private
     `/run/user/UID/tau` discovery subtree is shared with the sandbox. GitHub
-    authentication and Git pushes are expected to fail until step 1 and step 2
-    are complete.
+   authentication and Git pushes are expected to fail until step 1 and step 2
+   are complete.
+
+## GitHub requester policy
+
+The authorization helper fixes `fedimint/fedimint` as the canonical project and
+uses only intercepted `gh` calls:
+
+```console
+fedimint-github-requester check USERNAME maintainer
+fedimint-github-requester check USERNAME contributor
+fedimint-github-requester check USERNAME either
+fedimint-github-requester list maintainers
+fedimint-github-requester list contributors
+```
+
+`maintainer` means the account currently has effective write, maintain, or
+admin access. The helper requires GitHub's complete collaborator list and
+accepts only entries whose returned permissions include push access; read and
+triage access do not authorize requests.
+
+`contributor` has a deliberately different meaning: the username appears in
+GitHub's historical commit-contributor list. GitHub caches that list for
+several hours, and appearing in it does not imply current repository access.
+This is the current draft policy requested for the bot, not a claim that
+contributors are maintainers.
+
+The helper validates usernames, buffers complete paginated results before using
+them, and returns failure unless the selected rule succeeds. In `either` mode it
+tries the contributor rule only after a successful maintainer lookup that did
+not contain the username; it does not turn an API error into fallback
+authorization. Authentication failures, insufficient token permissions, API
+errors, rate limits, malformed responses, and broker denials therefore fail
+closed. Do not replace these calls with `curl`, another client, a token file, or
+an unapproved `gh api` shape.
+
+This prompt policy guides the coordinator but is not a security boundary and
+does not authenticate ingress by itself. Keep service-side sender
+authentication and admission controls separate.
+
+## Clank tickets
+
+Use `clank` from inside a project checkout for durable local task state. The
+repository stores only its Clank project locator; ticket descriptions and
+attachments live under the dedicated writable state directory. Typical
+non-interactive operations are:
+
+```console
+clank create 'Investigate flaky recovery test'
+clank show 0x1234
+clank replace 0x1234 'Updated complete ticket description'
+clank close 0x1234
+```
+
+Do not put credentials or other secrets in tickets. Clank is local task
+tracking; it does not publish or authenticate GitHub requests.
 
 ## Known integration gap
 
