@@ -170,6 +170,7 @@ let
         ];
       };
       tau_state_access = "hidden";
+      aliases.providers.codex = cfg.providerProfile;
       extensions = {
         core-shell = {
           enable = true;
@@ -487,7 +488,12 @@ in
     model = lib.mkOption {
       type = lib.types.str;
       default = "codex/gpt-5.6-luna";
-      description = "Model configured manually with tau provider add/login.";
+      description = "Provider-neutral model reference used by every bot role.";
+    };
+    providerProfile = lib.mkOption {
+      type = lib.types.str;
+      default = "chatgpt-dpc";
+      description = "Canonical Tau provider profile targeted by the codex alias.";
     };
     uid = lib.mkOption {
       type = lib.types.ints.positive;
@@ -657,6 +663,11 @@ in
         RestartSec = "10s";
         WorkingDirectory = projectRoot;
         UMask = "0077";
+        UnsetEnvironment = [
+          "TAU_MODEL_ALIASES"
+          "TAU_PROFILE"
+          "TAU_PROVIDER_ALIASES"
+        ];
       };
     };
   };

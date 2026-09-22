@@ -4,9 +4,11 @@
 `tau-fedimint` account. The initial agenix credentials are intentionally invalid:
 the GitHub token is random data, and the SSH key is fresh but is not registered
 with GitHub or any repository. This allows account, service, and isolation
-testing without granting repository access. Tau itself cannot stay running until
-its `codex-default` provider profile is configured manually; until then, the bot
-unit exits and systemd retries it after 10 seconds.
+testing without granting repository access. Bot roles use the stable
+`codex/gpt-5.6-luna` model reference, while Nix maps the `codex` provider name
+to the existing `chatgpt-dpc` provider profile. The profile keeps its actual
+name and credentials, so changing the backing account later requires only a
+new alias target.
 
 ## Implemented shape
 
@@ -28,6 +30,9 @@ unit exits and systemd retries it after 10 seconds.
   its socket, not the key or dpc's personal agent.
 - Basic coordinator, reviewer, researcher, and engineer roles adapted from the
   local Tau setup.
+- A startup-only provider alias from `codex` to `chatgpt-dpc`. This rewrites
+  configured role model references; it does not rename, copy, authenticate, or
+  otherwise modify the provider profile.
 - Tau, `tau-ext-github`, `isolate`, `gh-isolate`, and `clank` packages pinned
   as flake inputs.
   Tau is pinned to the reviewed protocol 8.1 revision needed by the notification
@@ -72,8 +77,7 @@ Redeploy the fix from this repository:
 just apply-runner "01"
 ```
 
-Then connect as root and verify the repaired paths and expected pre-provider
-state:
+Then connect as root and verify the repaired paths and service state:
 
 ```console
 stat -c '%A %U:%G %n' \
@@ -94,11 +98,18 @@ journalctl _UID="$(id -u tau-fedimint)" \
   _SYSTEMD_USER_UNIT=tau-fedimint-bot.service -n 20 --no-pager
 ```
 
-Before provider setup, the directories should be owner-private, both generated
-config files should be `0600`, and the bot should restart with
-`unknown configuration profile: codex-default`. If the journal still reports
-`Permission denied`, do not continue with provider login; inspect the deployed
-tmpfiles rules and path ownership first.
+The directories should be owner-private and both generated config files should
+be `0600`. If the journal still reports `Permission denied`, do not continue;
+inspect the deployed tmpfiles rules and path ownership first.
+
+An earlier local build-sandbox smoke test reported
+`unknown configuration profile: codex-default`. That was not a provider error
+and was never observed on `runner-01`: the smoke command inherited
+`TAU_PROFILE=codex-default,credentialed-web-all` from the operator's active Tau
+session while loading the bot's independent harness config, which intentionally
+defines no such configuration profiles. The systemd unit now removes ambient
+`TAU_PROFILE`, `TAU_PROVIDER_ALIASES`, and `TAU_MODEL_ALIASES` so the
+Nix-generated startup configuration is deterministic.
 
 ## Remaining setup and validation
 
@@ -110,13 +121,16 @@ tmpfiles rules and path ownership first.
 2. **Push policy:** the dedicated SSH agent is independent of `gh-broker`.
    Register its public key only after confirming repository grants and branch
    policy; the broker cannot restrict `jj git push`.
-3. **Provider login:** SSH in as `tau-fedimint`, stop the expected retry loop
-   with `systemctl --user stop tau-fedimint-bot`, run `tau provider add`, then
-   `tau provider login` for the Codex account. Start it with
-   `systemctl --user start tau-fedimint-bot` after the `codex-default` profile
-   exists. Check it with `systemctl --user status tau-fedimint-bot` and
-   `journalctl --user -u tau-fedimint-bot`. Provider credentials stay in that
-   user's Tau state and are not managed by agenix.
+3. **Provider mapping:** keep the existing `chatgpt-dpc` provider profile; do
+   not rename or recreate it. The generated harness maps the role-facing
+   `codex` name to `chatgpt-dpc` with `aliases.providers.codex`. Provider
+   metadata and credentials are per Unix account, so inspect them while logged
+   in as `tau-fedimint` with `tau provider list` and
+   `tau provider show chatgpt-dpc`. Run
+   `tau provider login chatgpt-dpc` only if Tau reports that this existing
+   profile needs authentication. To change backing providers later, set
+   `services.tau-fedimint-bot.providerProfile` to the new canonical profile
+   name; roles remain on `codex/...`.
 4. **Checkout:** create `/home/tau-fedimint/fedimint` as the intended repository
    or parent directory. Confirm whether one checkout or multiple repositories
    below it are desired.
@@ -128,8 +142,9 @@ tmpfiles rules and path ownership first.
    `fedimint-github-requester check USERNAME either` before acting on a GitHub
    request. Any failed, denied, malformed, rate-limited, or unavailable check
    must remain denied.
-6. **Model:** confirm `codex/gpt-5.6-luna`, or change `model` to the canonical ID
-   published by the manually configured provider.
+6. **Model:** confirm that `chatgpt-dpc` publishes the model selected by
+   `codex/gpt-5.6-luna`, or change `model` while retaining the provider-neutral
+   `codex/...` form.
 7. **Runtime validation:** inspect
     `isolate plan --profile fedimint-bot --command -- gh --version`, verify the
     sandbox cannot read either agenix secret or another home directory, verify

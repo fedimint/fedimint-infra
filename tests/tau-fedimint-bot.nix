@@ -3,6 +3,7 @@
   nixpkgs,
   agenix,
   module,
+  tauPackage,
   githubNotificationsPackage,
 }:
 
@@ -21,7 +22,7 @@ let
   sshKey = builtins.toFile "ssh-private-key.age" "test-only";
   common = {
     enable = true;
-    tauPackage = dummyPackage "tau";
+    inherit tauPackage;
     isolatePackage = dummyPackage "isolate";
     ghBrokerPackage = dummyPackage "gh-broker";
     clankPackage = dummyPackage "clank";
@@ -30,7 +31,10 @@ let
     sshAuthorizedKeys = [ "ssh-ed25519 test-only" ];
   };
   mkSystem =
-    githubNotifications:
+    {
+      githubNotifications,
+      providerProfile ? null,
+    }:
     nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
@@ -38,27 +42,42 @@ let
         module
         {
           system.stateVersion = "26.05";
-          services.tau-fedimint-bot = common // {
-            inherit githubNotifications;
-          };
+          services.tau-fedimint-bot =
+            common
+            // {
+              inherit githubNotifications;
+            }
+            // lib.optionalAttrs (providerProfile != null) {
+              inherit providerProfile;
+            };
         }
       ];
     };
-  defaultDisabled = mkSystem { };
+  defaultDisabled = mkSystem {
+    githubNotifications = { };
+  };
   disabled = mkSystem {
-    package = githubNotificationsPackage;
+    githubNotifications.package = githubNotificationsPackage;
+  };
+  alternateProvider = mkSystem {
+    githubNotifications = { };
+    providerProfile = "future-provider";
   };
   enabled = mkSystem {
-    enable = true;
-    package = githubNotificationsPackage;
-    tokenAgeFile = notificationToken;
-    identityKeyAgeFile = identityKey;
+    githubNotifications = {
+      enable = true;
+      package = githubNotificationsPackage;
+      tokenAgeFile = notificationToken;
+      identityKeyAgeFile = identityKey;
+    };
   };
   reusedToken = mkSystem {
-    enable = true;
-    package = githubNotificationsPackage;
-    tokenAgeFile = actionToken;
-    identityKeyAgeFile = identityKey;
+    githubNotifications = {
+      enable = true;
+      package = githubNotificationsPackage;
+      tokenAgeFile = actionToken;
+      identityKeyAgeFile = identityKey;
+    };
   };
   failedBotAssertions =
     systemConfig:
@@ -72,6 +91,8 @@ let
       )
     ) systemConfig.config.assertions;
   disabledStart = disabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  alternateProviderStart =
+    alternateProvider.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   enabledStart = enabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   privateDirectoryRules = map (path: "d ${path} 0700 tau-fedimint tau-fedimint -") [
     "/home/tau-fedimint/fedimint"
@@ -100,18 +121,50 @@ let
         disabled_harness=$(
           sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${disabledStart}
         )
+        alternate_provider_harness=$(
+          sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${alternateProviderStart}
+        )
         enabled_harness=$(
           sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${enabledStart}
         )
         test -n "$disabled_harness"
+        test -n "$alternate_provider_harness"
         test -n "$enabled_harness"
 
         jq -e '
           (.extensions["github-notifications"] == null)
+          and (.aliases.providers.codex == "chatgpt-dpc")
+          and (.agents.model == "codex/gpt-5.6-luna")
           and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == [])
         ' "$disabled_harness" >/dev/null
+        jq -e '
+          (.aliases.providers.codex == "future-provider")
+          and (.agents.model == "codex/gpt-5.6-luna")
+        ' "$alternate_provider_harness" >/dev/null
         ! grep -q 'TAU_SECRET_GITHUB_' ${disabledStart}
         ! grep -q '${githubNotificationsPackage}' "$disabled_harness"
+        bot_unit=${
+          disabled.config.systemd.user.units."tau-fedimint-bot.service".unit
+        }/tau-fedimint-bot.service
+        grep -q '^UnsetEnvironment=TAU_MODEL_ALIASES$' "$bot_unit"
+        grep -q '^UnsetEnvironment=TAU_PROFILE$' "$bot_unit"
+        grep -q '^UnsetEnvironment=TAU_PROVIDER_ALIASES$' "$bot_unit"
+
+        test_home="$TMPDIR/tau-home"
+        test_workspace="$TMPDIR/workspace"
+        mkdir -p "$test_home/.config/tau" "$test_workspace"
+        jq --arg workspace "$test_workspace" '
+          .extensions["core-shell"].config.working_directory = $workspace
+          | .extensions["core-shell"].config.shell.allowlist[0].workdir = $workspace
+          | .extensions["core-shell"].config.shell.allowlist[1].workdir = ($workspace + "/**")
+          | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
+        ' "$disabled_harness" >"$test_home/.config/tau/harness.yaml"
+        env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
+          HOME="$test_home" \
+          XDG_CONFIG_HOME="$test_home/.config" \
+          XDG_STATE_HOME="$test_home/.local/state" \
+          XDG_CACHE_HOME="$test_home/.cache" \
+          ${tauPackage}/bin/tau --role coordinator dev print-system-prompt >/dev/null
 
         jq -e '
           .extensions["github-notifications"] as $extension

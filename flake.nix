@@ -321,6 +321,7 @@
             tau-fedimint-bot-config = import ./tests/tau-fedimint-bot.nix {
               inherit system nixpkgs agenix;
               module = ./modules/tau-fedimint-bot.nix;
+              tauPackage = inputs.tau.packages.${system}.tau;
               githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
             };
             runner-01-root-ssh-authorization = import ./tests/runner-01-root-ssh-authorization.nix {
