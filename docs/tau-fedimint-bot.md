@@ -1,0 +1,85 @@
+# Tau Fedimint bot draft
+
+This is deliberately a **non-activating draft**. `runner-01` imports the module,
+but `services.tau-fedimint-bot.enable` remains `false`. Do not enable or deploy it
+until this checklist is reviewed.
+
+## Implemented shape
+
+- One normal Linux account, `tau-fedimint`, with dpc's existing runner SSH
+  authorized keys and a persistent user systemd manager.
+- One fixed durable Tau session, `tau-fedimint-bot`, served by
+  `tau serve --create-or-existing`.
+- An isolate profile whose only writable project checkout is
+  `/home/tau-fedimint/fedimint`.
+- Private PID namespace and intercepted `gh` routed through `gh-broker`.
+  The GitHub token never enters the sandbox.
+- A dedicated SSH agent loaded from an agenix private key. The sandbox sees only
+  its socket, not the key or dpc's personal agent.
+- Basic coordinator, reviewer, researcher, and engineer roles adapted from the
+  local Tau setup.
+- External service extensions disabled. This is fail-closed: no GitHub webhook,
+  Slack, Zulip, or other event source is implied by this draft.
+
+This profile targets accidental-agent containment, not hostile-code isolation.
+`isolate` is a defense-in-depth guardrail and its own security documentation
+explicitly excludes hostile code actively trying to escape or steal data. The
+sandbox intentionally exposes its normal read-only runtime baseline (including
+system paths such as `/etc`, `/nix`, and `/sys`), the Tau config read-only, the
+project/Tau state/Tau cache/Tau runtime subtree read-write, and the dedicated
+SSH-agent socket. It inherits normal network access. `gh-broker` is a privileged
+host component with a narrow command protocol, but neither it nor role prompts
+turn the whole agent into a hostile-code security boundary.
+
+## Review and setup decisions
+
+1. **Runner:** confirm `runner-01`, or move the module import to another single
+   runner. Confirm that UID `1001` is unused there, or set the module's `uid`
+   option to another stable unused normal-user UID.
+2. **Publish inputs:** `tau` is pinned as a flake input. Publish stable flake
+   URLs for dpc's `isolate` and `gh-isolate`, add and lock those inputs, then set
+   `isolatePackage` and `ghBrokerPackage`. The module refuses to enable without
+   them; it does not substitute similarly named nixpkgs software.
+3. **Secrets and identity:** create a separate GitHub bot account and SSH key.
+   Add encrypted files (suggested names:
+   `secrets/tau-fedimint-github-token.age` and
+   `secrets/tau-fedimint-ssh-private-key.age`), update `secrets.nix`, and set the
+   two `*AgeFile` options. Do not reuse a personal token or key.
+4. **GitHub grants:** give the token only the repositories and permissions needed
+   for review, comments, draft PRs, and status inspection. `gh-broker` constrains
+   command shape, but GitHub remains the authority boundary.
+5. **Push policy:** the dedicated SSH agent is independent of `gh-broker`.
+   Confirm repository deploy-key/account grants and branch policy; the broker
+   cannot restrict `jj git push`.
+6. **Provider login:** after the account exists, SSH in as `tau-fedimint`, run
+   `tau provider add`, then `tau provider login` for the Codex account. Provider
+   credentials stay in that user's Tau state and are not managed by agenix.
+7. **Checkout:** create `/home/tau-fedimint/fedimint` as the intended repository
+   or parent directory. Confirm whether one checkout or multiple repositories
+   below it are desired.
+8. **Known users and services:** choose the actual ingress service and stable
+   numeric/account identifiers. Configure an explicit allowlist in that
+   extension before enabling it. Unknown, missing, renamed, or unauthenticated
+   identities must remain denied. No broad GitHub event integration has been
+   invented here.
+9. **Model:** confirm `codex/gpt-5.6-luna`, or change `model` to the canonical ID
+   published by the manually configured provider.
+10. **Validation before activation:** build the chosen host, inspect
+    `isolate plan --profile fedimint-bot --command -- gh --version`, verify the
+    sandbox cannot read either agenix secret or another home directory, verify
+    the SSH agent exposes only the bot key, and test allowed and denied broker
+    commands. Start the service in a controlled activation test, then confirm
+    `tau session list` and `tau attach tau-fedimint-bot` work from an ordinary
+    SSH login as `tau-fedimint`; only the owner-private
+    `/run/user/UID/tau` discovery subtree is shared with the sandbox.
+11. **Activation gate:** only after the preceding checks, set `enable = true`,
+    build again, and separately approve deployment. This draft performs no
+    switch, activation, login, restart, push, or credential creation.
+
+## Known integration gap
+
+The goal mentions reviews and other services for known GitHub users, but does
+not select an event transport. `gh-broker` supplies constrained outbound GitHub
+CLI access; it does not receive GitHub events or authenticate message senders.
+Add a narrowly scoped ingress only after choosing its protocol and stable
+identity mapping.
