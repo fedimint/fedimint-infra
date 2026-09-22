@@ -88,6 +88,11 @@
       adminKeysFedimintd = adminKeys ++ [
       ];
 
+      fedimintAutomationPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ3EKT3vVlYnZ4v3jBBlt+ug6Q+msgQEFT+ErT6ZDEs5 fedimint-infra-agent@dpc.pw";
+
+      runnerRootAuthorizedKeys =
+        hostName: adminKeys ++ nixpkgs.lib.optional (hostName == "runner-01") fedimintAutomationPublicKey;
+
       makeRunner =
         {
           system,
@@ -112,6 +117,7 @@
             inherit inputs;
             hostName = name;
             inherit adminKeys;
+            rootAuthorizedKeys = runnerRootAuthorizedKeys name;
             inherit runners;
           };
         };
@@ -234,8 +240,6 @@
             hostName = name;
           };
         };
-    in
-    {
       nixosConfigurations = {
         runner-01 = makeRunnerAmd {
           name = "runner-01";
@@ -250,6 +254,8 @@
                 clankPackage = inputs.clank.packages.x86_64-linux.default;
                 githubTokenAgeFile = ./secrets/tau-fedimint-github-token.age;
                 sshPrivateKeyAgeFile = ./secrets/tau-fedimint-ssh-private-key.age;
+                # The automation key is root-only. This unprivileged bot account
+                # remains reachable only with the shared administrator keys.
                 sshAuthorizedKeys = adminKeys;
                 # Starting this extension changes persistent GitHub watch preferences
                 # before an agent registers. Keep it absent until its dedicated
@@ -290,6 +296,9 @@
         };
         irohrelay-us-01 = makeIrohRelay { name = "irohrelay-us-01"; };
       };
+    in
+    {
+      inherit nixosConfigurations;
     }
     //
 
@@ -313,6 +322,17 @@
               inherit system nixpkgs agenix;
               module = ./modules/tau-fedimint-bot.nix;
               githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
+            };
+            runner-01-root-ssh-authorization = import ./tests/runner-01-root-ssh-authorization.nix {
+              inherit system nixpkgs;
+              automationPublicKey = fedimintAutomationPublicKey;
+              adminKeys = adminKeys;
+              runner01RootAuthorizedKeys =
+                nixosConfigurations.runner-01.config.users.users.root.openssh.authorizedKeys.keys;
+              runner02RootAuthorizedKeys =
+                nixosConfigurations.runner-02.config.users.users.root.openssh.authorizedKeys.keys;
+              botAuthorizedKeys =
+                nixosConfigurations.runner-01.config.users.users.tau-fedimint.openssh.authorizedKeys.keys;
             };
           };
         }

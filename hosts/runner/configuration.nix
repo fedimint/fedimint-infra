@@ -4,6 +4,7 @@
   pkgs,
   inputs,
   adminKeys,
+  rootAuthorizedKeys,
   hostName,
   ...
 }:
@@ -39,7 +40,7 @@
 
   networking.enableIPv6 = true;
 
-  users.users.root.openssh.authorizedKeys.keys = adminKeys;
+  users.users.root.openssh.authorizedKeys.keys = rootAuthorizedKeys;
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
