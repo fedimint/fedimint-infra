@@ -53,6 +53,53 @@ SSH-agent socket. It inherits normal network access. `gh-broker` is a privileged
 host component with a narrow command protocol, but neither it nor role prompts
 turn the whole agent into a hostile-code security boundary.
 
+## Deployment ownership repair
+
+The first `runner-01` activation on September 22, 2026 exposed a startup bug:
+systemd-tmpfiles implicitly created `.config`, `.local`, `.local/state`, and
+`.cache` as `root:root 0755` while processing their child paths. The bot then
+failed before reaching Tau because it could not create its config and state
+directories.
+
+The module now declares every required parent directory explicitly as
+`tau-fedimint:tau-fedimint 0700`. A subsequent activation repairs those exact
+already-existing parent directories as well as creating missing children. It
+does not recursively change ownership elsewhere in the home directory.
+
+Redeploy the fix from this repository:
+
+```console
+just apply-runner "01"
+```
+
+Then connect as root and verify the repaired paths and expected pre-provider
+state:
+
+```console
+stat -c '%A %U:%G %n' \
+  /home/tau-fedimint/.config \
+  /home/tau-fedimint/.config/tau \
+  /home/tau-fedimint/.config/isolate \
+  /home/tau-fedimint/.local \
+  /home/tau-fedimint/.local/state \
+  /home/tau-fedimint/.local/state/tau \
+  /home/tau-fedimint/.cache \
+  /home/tau-fedimint/.cache/tau
+stat -c '%A %U:%G %n' \
+  /home/tau-fedimint/.config/tau/harness.yaml \
+  /home/tau-fedimint/.config/isolate/isolate.yaml
+systemctl --user --machine=tau-fedimint@ show tau-fedimint-bot \
+  -p ActiveState -p SubState -p Result -p ExecMainStatus
+journalctl _UID="$(id -u tau-fedimint)" \
+  _SYSTEMD_USER_UNIT=tau-fedimint-bot.service -n 20 --no-pager
+```
+
+Before provider setup, the directories should be owner-private, both generated
+config files should be `0600`, and the bot should restart with
+`unknown configuration profile: codex-default`. If the journal still reports
+`Permission denied`, do not continue with provider login; inspect the deployed
+tmpfiles rules and path ownership first.
+
 ## Remaining setup and validation
 
 1. **GitHub identity:** replace both placeholder agenix secrets with credentials

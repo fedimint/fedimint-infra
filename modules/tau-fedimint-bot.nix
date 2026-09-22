@@ -596,10 +596,14 @@ in
 
     systemd.tmpfiles.rules = [
       "d ${projectRoot} 0700 ${user} ${user} -"
+      "d ${home}/.config 0700 ${user} ${user} -"
       "d ${home}/.config/isolate 0700 ${user} ${user} -"
       "d ${home}/.config/tau 0700 ${user} ${user} -"
+      "d ${home}/.local 0700 ${user} ${user} -"
+      "d ${home}/.local/state 0700 ${user} ${user} -"
       "d ${home}/.local/state/tau 0700 ${user} ${user} -"
       "d ${clankState} 0700 ${user} ${user} -"
+      "d ${home}/.cache 0700 ${user} ${user} -"
       "d ${home}/.cache/tau 0700 ${user} ${user} -"
     ];
 
