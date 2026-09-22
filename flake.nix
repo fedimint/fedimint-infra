@@ -19,6 +19,26 @@
       # url = "github:fedimint/fedimint?ref=v0.7.1";
       url = "github:fedimint/fedimint?rev=de7448559f5ddcff63698d624d6592156870a533";
     };
+
+    tau = {
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=24def4156c132074912e86ad94f53b82ce871933";
+    };
+
+    tau-ext-github = {
+      url = "git+https://iris.radicle.network/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=13cd5663a833da0683e4f663833436a7accbc535";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+
+    isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=d1bb459b921775fe1baab9e916c3d6fa55709a8a";
+
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=7a9aea508d107dee7291d7fa323094ddede8b430";
+
+    clank = {
+      url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=56a03fecf62ca8090c3e5f5a089b6d9c62483c8d";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
 
   outputs =
@@ -38,7 +58,7 @@
           fedimint-cli = fedimint.packages.${final.system}.fedimint-cli;
           fedimintd = fedimint.packages.${final.system}.fedimintd;
           # we need yet unreleased 0.9.0 version of rqbit for `rqbit share`
-          rqbit = final.callPackage ./nix/pkgs/rqbit.nix {};
+          rqbit = final.callPackage ./nix/pkgs/rqbit.nix { };
         })
       ];
 
@@ -54,9 +74,11 @@
         };
       };
 
-      adminKeys = [
-        # dpc
+      dpcKeys = [
         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDRa93v8pzO+EXEH73odhh80VjkLVzPCaRw4K0sObdE9mbZqFB6k791Jm1cVQzHA+sCR4bnyOvA563ExLSGArw4IRxCZvZICSb8RI4QaIhCgf0NtwndKaBxnS2aWrJ/VKNmlZ4OsHMxrFtDRg0AHXBkj0H2O06bJ0+fiwiKdun1tqqi78qQPZkjaJoB227ipx3T0f9Oflj09iWVT3C0saaAiCtpa50ggjImom1FAwNF0gLhPGbSgUzsHzAndwexXWD5StAfWuePaapbQ0IIAY9ahlTKCXGSV0oS/IrBDjOfIaXoyzzgT4/xTz6dwie2g255mGTDn6k0CYkWX19H8xzT2TQ7e4ikNrXVdcRRRy4rd22MA75546RVD2mm36C0DnaUsnBUwymuQ02z33iTm8U7CZXQWpiKjwgqCtvs9zrsRx1YECHCw5ehUDt2nMw4ino42jthxV9bgQDQg/On7frBUXeKkd7L0UVfC71DW9AQQTvdHA2POpPhtoi7BznOeFMoVXxBMgJSgwGTH3ErY0zbvMLJNNROXby4rABmb7XTl5bav5DYD2lWzhcseN6a+/PgREyzllQxJqWQVQvA00JFuaNFLI7JeyIULUgyYuS5n/jEvmKKnzhwuGlHnIKF5UPViaF3WRiFSTop6taZNptBFWGBsG7eT8rTxb/FKtylVw== cardno:20_514_157"
+      ];
+
+      adminKeys = dpcKeys ++ [
         # elsirion
         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC+t2YktQZWLbv2BmIkWv9G98L5nNwnsVGMszcbnTu3W25bp0CJ4MtBmvmagygfAd+td9dPe44assaU5XNk1+eK9CMx3X3LlkJ4sVr6EYDG+HrBiFSWSIGlYA6EblXXiCIzKh6i+dAM+c35YUZLBxfKaqaWEF1REiR7O1DQxH6TU3qCMStxY5PF1rtiLjVHPBTiWv41zynRRqfA5L+sE+/NYrZj6NIKL5p6zAhKwV8YRavVTOzGDr+Rn+10t907JHjydFK6LfKpUADr4c/XkMY8IRgKCZsBeu9C+N2y93CbyfPua5+s/6caO6wHNjBYi2599Ky84XBtVt/WUQtq5WwXAe97j6Z+3M8bEqUFLUQxQh4r1hOE9ApEUYY6T//wDvqPDVMsKTkMe8HiAjOZawjzjQWYutAjGjuug9efFoP9WJ39J3SfmTDUHo+4Pyf+2ntqUyp6SMmBu7eTHOw1a4kDaQvIltBcokdhMm12RNdTwCLMS0YvFiRcJmzuemiTw78="
         # Bradley
@@ -65,6 +87,11 @@
 
       adminKeysFedimintd = adminKeys ++ [
       ];
+
+      fedimintAutomationPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ3EKT3vVlYnZ4v3jBBlt+ug6Q+msgQEFT+ErT6ZDEs5 fedimint-infra-agent@dpc.pw";
+
+      runnerRootAuthorizedKeys =
+        hostName: adminKeys ++ nixpkgs.lib.optional (hostName == "runner-01") fedimintAutomationPublicKey;
 
       makeRunner =
         {
@@ -84,37 +111,63 @@
             inputs.perfit.nixosModules.perfitd
 
             ./hosts/runner/configuration.nix
-          ] ++ extraModules;
+          ]
+          ++ extraModules;
           specialArgs = {
             inherit inputs;
             hostName = name;
             inherit adminKeys;
+            rootAuthorizedKeys = runnerRootAuthorizedKeys name;
             inherit runners;
           };
         };
 
-      makeRunnerAmd = { extraModules ? [], ... }@args:
-        makeRunner (args // {
-          system = "x86_64-linux";
-          extraModules = [
-            ./disk-config/hetzner-ax162.nix
-            ./hosts/runner/hardware-configuration-amd.nix
-            ./hosts/runner/nix-build-tmpfs.nix
-            ./hosts/runner/check-temp.nix
-            ./modules/seed-assumeutxo.nix
-          ] ++ extraModules;
-          runners = ["a" "b" "c" "d"];
-        });
+      makeRunnerAmd =
+        {
+          extraModules ? [ ],
+          ...
+        }@args:
+        makeRunner (
+          args
+          // {
+            system = "x86_64-linux";
+            extraModules = [
+              ./disk-config/hetzner-ax162.nix
+              ./hosts/runner/hardware-configuration-amd.nix
+              ./hosts/runner/nix-build-tmpfs.nix
+              ./hosts/runner/check-temp.nix
+              ./modules/seed-assumeutxo.nix
+            ]
+            ++ extraModules;
+            runners = [
+              "a"
+              "b"
+              "c"
+              "d"
+            ];
+          }
+        );
 
-      makeRunnerArm = { extraModules ? [], ... }@args:
-        makeRunner (args // {
-          system = "aarch64-linux";
-          extraModules = [
-            ./disk-config/hetzner-vps.nix
-            ./hosts/runner/hardware-configuration-arm.nix
-          ] ++ extraModules;
-          runners = [ "a" "b" ];
-        });
+      makeRunnerArm =
+        {
+          extraModules ? [ ],
+          ...
+        }@args:
+        makeRunner (
+          args
+          // {
+            system = "aarch64-linux";
+            extraModules = [
+              ./disk-config/hetzner-vps.nix
+              ./hosts/runner/hardware-configuration-arm.nix
+            ]
+            ++ extraModules;
+            runners = [
+              "a"
+              "b"
+            ];
+          }
+        );
 
       makeFedimintd =
         {
@@ -138,7 +191,8 @@
             inputs.fedimint.nixosModules.fedimintd
 
             ./hosts/fedimintd/configuration.nix
-          ] ++ extraModules;
+          ]
+          ++ extraModules;
           specialArgs = {
             inherit inputs;
             hostName = name;
@@ -146,7 +200,8 @@
           };
         };
 
-      makeIrohDns = { name, serverIp, ... }@args:
+      makeIrohDns =
+        { name, serverIp, ... }@args:
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
@@ -166,7 +221,8 @@
           };
         };
 
-      makeIrohRelay = { name, ... }@args:
+      makeIrohRelay =
+        { name, ... }@args:
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
@@ -184,10 +240,34 @@
             hostName = name;
           };
         };
-    in
-    {
       nixosConfigurations = {
-        runner-01 = makeRunnerAmd { name = "runner-01"; };
+        runner-01 = makeRunnerAmd {
+          name = "runner-01";
+          extraModules = [
+            ./modules/tau-fedimint-bot.nix
+            {
+              services.tau-fedimint-bot = {
+                enable = true;
+                tauPackage = inputs.tau.packages.x86_64-linux.tau;
+                isolatePackage = inputs.isolate.packages.x86_64-linux.default;
+                ghBrokerPackage = inputs.gh-isolate.packages.x86_64-linux.default;
+                clankPackage = inputs.clank.packages.x86_64-linux.default;
+                githubTokenAgeFile = ./secrets/tau-fedimint-github-token.age;
+                sshPrivateKeyAgeFile = ./secrets/tau-fedimint-ssh-private-key.age;
+                # The automation key is root-only. This unprivileged bot account
+                # remains reachable only with the shared administrator keys.
+                sshAuthorizedKeys = adminKeys;
+                # Starting this extension changes persistent GitHub watch preferences
+                # before an agent registers. Keep it absent until its dedicated
+                # credentials and activation are explicitly approved.
+                githubNotifications = {
+                  enable = false;
+                  package = inputs.tau-ext-github.packages.x86_64-linux.default;
+                };
+              };
+            }
+          ];
+        };
         runner-02 = makeRunnerAmd { name = "runner-02"; };
         # runner-03 = makeRunner { name = "runner-03"; };
         runner-04 = makeRunnerAmd {
@@ -205,11 +285,20 @@
         fedimintd-03 = makeFedimintd { name = "fedimintd-03"; };
         fedimintd-04 = makeFedimintd { name = "fedimintd-04"; };
 
-        irohdns-eu-01 = makeIrohDns { name = "irohdns-eu-01"; serverIp = "157.180.123.56"; };
+        irohdns-eu-01 = makeIrohDns {
+          name = "irohdns-eu-01";
+          serverIp = "157.180.123.56";
+        };
         irohrelay-eu-01 = makeIrohRelay { name = "irohrelay-eu-01"; };
-        irohdns-us-01 = makeIrohDns { name = "irohdns-us-01"; serverIp = "5.78.106.169"; };
+        irohdns-us-01 = makeIrohDns {
+          name = "irohdns-us-01";
+          serverIp = "5.78.106.169";
+        };
         irohrelay-us-01 = makeIrohRelay { name = "irohrelay-us-01"; };
       };
+    in
+    {
+      inherit nixosConfigurations;
     }
     //
 
@@ -226,6 +315,25 @@
                 inputs.perfit.packages.${pkgs.system}.perfit
                 pkgs.just
               ];
+            };
+          };
+          checks = nixpkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+            tau-fedimint-bot-config = import ./tests/tau-fedimint-bot.nix {
+              inherit system nixpkgs agenix;
+              module = ./modules/tau-fedimint-bot.nix;
+              tauPackage = inputs.tau.packages.${system}.tau;
+              githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
+            };
+            runner-01-root-ssh-authorization = import ./tests/runner-01-root-ssh-authorization.nix {
+              inherit system nixpkgs;
+              automationPublicKey = fedimintAutomationPublicKey;
+              adminKeys = adminKeys;
+              runner01RootAuthorizedKeys =
+                nixosConfigurations.runner-01.config.users.users.root.openssh.authorizedKeys.keys;
+              runner02RootAuthorizedKeys =
+                nixosConfigurations.runner-02.config.users.users.root.openssh.authorizedKeys.keys;
+              botAuthorizedKeys =
+                nixosConfigurations.runner-01.config.users.users.tau-fedimint.openssh.authorizedKeys.keys;
             };
           };
         }

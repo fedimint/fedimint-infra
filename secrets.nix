@@ -32,10 +32,13 @@ let
 in
 {
   "secrets/github-runner.age".publicKeys = runners ++ users;
+  "secrets/tau-fedimint-github-token.age".publicKeys = [ runner-01 ] ++ users;
+  "secrets/tau-fedimint-ssh-private-key.age".publicKeys = [ runner-01 ] ++ users;
   "secrets/perfitd.age".publicKeys = [
     runner-01
     runner-04
-  ] ++ users;
+  ]
+  ++ users;
   "secrets/perfitd-info.age".publicKeys = users;
   "secrets/radicle-seednode.age".publicKeys = [ runner-04 ] ++ users;
   "secrets/bitcoind-signet-pass.age".publicKeys = fedimintds ++ users;
