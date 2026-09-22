@@ -643,6 +643,7 @@ in
       description = "Fixed isolated Tau Fedimint bot session";
       wantedBy = [ "default.target" ];
       unitConfig.ConditionUser = user;
+      path = [ pkgs.bubblewrap ];
       after = [
         "network-online.target"
         "tau-fedimint-ssh-agent.service"

@@ -259,6 +259,7 @@ assert !(defaultDisabled.config.age.secrets ? "tau-fedimint-github-notifications
 assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-token");
 assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-identity-key");
 assert !(lib.elem githubNotificationsPackage disabled.config.environment.systemPackages);
+assert lib.elem pkgs.bubblewrap disabled.config.systemd.user.services.tau-fedimint-bot.path;
 pkgs.linkFarm "tau-fedimint-bot-checks" [
   {
     name = "config";
