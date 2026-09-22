@@ -1,10 +1,9 @@
 # Tau Fedimint bot
 
 `runner-01` enables one isolated Tau session under the dedicated
-`tau-fedimint` account. The initial agenix credentials are intentionally invalid:
-the GitHub token is random data, and the SSH key is fresh but is not registered
-with GitHub or any repository. This allows account, service, and isolation
-testing without granting repository access. Bot roles use the stable
+`tau-fedimint` account. Its agenix credentials belong to the dedicated
+`fedimint-tau` GitHub account: one action token, one notification-reader token,
+one outbound SSH identity, and one stable notification identity key. Bot roles use the stable
 `codex/gpt-5.6-luna` model reference, while Nix maps the `codex` provider name
 to the existing `chatgpt-dpc` provider profile. The profile keeps its actual
 name and credentials, so changing the backing account later requires only a
@@ -45,11 +44,10 @@ new alias target.
 - A narrow writable Clank state directory at
   `/home/tau-fedimint/.local/state/clank`. The bot can keep project tickets
   without receiving write access to the rest of its home or state hierarchy.
-- External service extensions disabled. The module has reviewed GitHub
-  notification settings, but `githubNotifications.enable` defaults to false and
-  `runner-01` keeps it false. The extension process is therefore absent, not
-  merely denied a registration tool. No GitHub watch preference, notification
-  read state, webhook, Slack, Zulip, or other event source is changed.
+- One enabled inbound GitHub notification extension. It watches
+  `fedimint/fedimint` and `fedimint/fedimint-sdk`, dynamically admits actors with
+  effective push access in the relevant repository, and polls every 60 seconds.
+  It does not add action tools or provide a complete GitHub activity feed.
 
 This profile targets accidental-agent containment, not hostile-code isolation.
 `isolate` is a defense-in-depth guardrail and its own security documentation
@@ -116,15 +114,11 @@ Nix-generated startup configuration is deterministic.
 
 ## Remaining setup and validation
 
-1. **GitHub identity:** replace both placeholder agenix secrets with credentials
-   for a separate bot account. Give its token only the repositories and
-   permissions needed for review, comments, draft PRs, and status inspection.
-   `gh-broker` constrains command shape, but GitHub remains the authority
-   boundary.
-2. **Push policy:** the dedicated SSH agent is independent of `gh-broker`.
-   Register its public key only after confirming repository grants and branch
-   policy; the broker cannot restrict `jj git push`.
-3. **Provider mapping:** keep the existing `chatgpt-dpc` provider profile; do
+1. **GitHub authority:** the credentials belong to `fedimint-tau`, whose
+   organization and repository grants remain the authority boundary.
+   `gh-broker` constrains action-token command shape, but the dedicated SSH agent
+   is independent and the broker cannot restrict `jj git push`.
+2. **Provider mapping:** keep the existing `chatgpt-dpc` provider profile; do
    not rename or recreate it. The generated harness maps the role-facing
    `codex` name to `chatgpt-dpc` with `aliases.providers.codex`. Provider
    metadata and credentials are per Unix account, so inspect them while logged
@@ -134,10 +128,10 @@ Nix-generated startup configuration is deterministic.
    profile needs authentication. To change backing providers later, set
    `services.tau-fedimint-bot.providerProfile` to the new canonical profile
    name; roles remain on `codex/...`.
-4. **Checkout:** create `/home/tau-fedimint/fedimint` as the intended repository
+3. **Checkout:** create `/home/tau-fedimint/fedimint` as the intended repository
    or parent directory. Confirm whether one checkout or multiple repositories
    below it are desired.
-5. **Known users and services:** the prepared inbound configuration watches
+4. **Known users and services:** the inbound configuration watches
    `fedimint/fedimint` and `fedimint/fedimint-sdk`. For each repository, it
    admits actors from GitHub's complete collaborator roster when their effective
    `permissions.push` is true. This filters received activity; it does not
@@ -145,10 +139,10 @@ Nix-generated startup configuration is deterministic.
    `fedimint-github-requester check USERNAME either` before acting on a GitHub
    request. Any failed, denied, malformed, rate-limited, or unavailable check
    must remain denied.
-6. **Model:** confirm that `chatgpt-dpc` publishes the model selected by
+5. **Model:** confirm that `chatgpt-dpc` publishes the model selected by
    `codex/gpt-5.6-luna`, or change `model` while retaining the provider-neutral
    `codex/...` form.
-7. **Runtime validation:** inspect
+6. **Runtime validation:** inspect
     `isolate plan --profile fedimint-bot --command -- gh --version`, verify the
     sandbox cannot read either agenix secret or another home directory, verify
     the SSH agent exposes only the bot key, and test allowed and denied broker
@@ -156,14 +150,12 @@ Nix-generated startup configuration is deterministic.
     `tau session list` and `tau attach tau-fedimint-bot` work from an ordinary
     SSH login as `tau-fedimint`; only the owner-private
     `/run/user/UID/tau` discovery subtree is shared with the sandbox. GitHub
-   authentication and Git pushes are expected to fail until step 1 and step 2
-   are complete.
+   authentication and Git pushes use only the dedicated bot identities.
 
 ## Inbound GitHub notifications
 
-The module contains a reversible, disabled configuration for
-`tau-ext-github`. Enabling it would start one inbound-only extension instance
-with this fixed policy:
+`runner-01` enables one inbound-only `tau-ext-github` instance with this fixed
+policy:
 
 - repositories: `fedimint/fedimint` and `fedimint/fedimint-sdk`
 - actor admission: current collaborators with effective push access in each
@@ -178,33 +170,35 @@ request activity. It is not a complete GitHub activity feed. GitHub coalesces
 notifications, and unsupported or over-limit activity follows the extension's
 documented fail-closed or discard behavior.
 
-Do not enable it until all of these conditions hold:
+The extension uses a dedicated classic PAT and a separate stable 64-hex-digit
+identity key. It does not reuse `tau-fedimint-github-token`, which grants action
+authority through `gh-broker`. The PAT needs `repo, read:org` so it can read
+notification subjects and enumerate the complete collaborator roster used by
+the dynamic maintainer filter.
 
-1. Use a dedicated GitHub account, then create two new agenix secrets: its
-   dedicated classic PAT for notification ingress and a stable identity key
-   containing exactly 64 hexadecimal digits. Do not reuse
-   `tau-fedimint-github-token`, which grants action authority through
-   `gh-broker`. The PAT needs notification and subject access plus the repository
-   privileges needed to list all collaborators.
-2. Set `githubNotifications.tokenAgeFile` and `identityKeyAgeFile`, then set
-   `githubNotifications.enable = true`. The deployable configuration already
-   supplies the reviewed, pinned `githubNotifications.package`.
-3. Deliberately approve the startup side effect. On startup, a valid extension
-   process subscribes its account to each configured repository and clears its
-   ignored state before any agent calls `github_register`. Those GitHub watch
-   preferences persist after the process stops. The extension can mark
-   successfully examined notification batches read after its repository-wide
-   acknowledgement barrier, including batches rejected by the actor filter or
-   unsupported by the extension. Stopping or disabling the extension prevents
-   further polling but does not undo the persistent GitHub watch subscriptions;
-   change those preferences separately if rollback requires it.
+On startup, the extension subscribes `fedimint-tau` to each configured
+repository and clears its ignored state before any agent calls
+`github_register`. Those GitHub watch preferences persist after the process
+stops. The extension can mark successfully examined notification batches read
+after its repository-wide acknowledgement barrier, including batches rejected
+by the actor filter or unsupported by the extension. Stopping or disabling the
+extension prevents further polling but does not undo the persistent GitHub watch
+subscriptions; change those preferences separately if rollback requires it.
 
-At startup, the service reads the two agenix files into one-shot
-`TAU_SECRET_GITHUB_TOKEN` and `TAU_SECRET_GITHUB_IDENTITY_KEY` inputs. Tau
-consumes those values into the extension's declared managed-secret names
-`github_token` and `github_identity_key`; the generated harness configuration,
-Nix store, logs, and tool results contain only names and file paths, never the
-secret values.
+Startup and polling do not by themselves select a receiving agent.
+The coordinator role has the project-supported `github_register` tool and must
+call it with `{"enabled":true}`. Registration intent is durable and restored
+from the session event history after a service restart. Calling it with
+`{"enabled":false}` stops delivery to that agent without undoing repository
+subscriptions.
+
+At startup, isolate reads the two agenix files through explicit `setenv` file
+sources after its deny-by-default environment filtering and supplies one-shot
+`TAU_SECRET_GITHUB_TOKEN` and `TAU_SECRET_GITHUB_IDENTITY_KEY` inputs to Tau.
+Tau consumes those values into the extension's declared managed-secret names
+`github_token` and `github_identity_key`; the generated harness and isolate
+configuration, Nix store, logs, and tool results contain only names and file
+paths, never the secret values.
 
 Receiving an admitted maintainer's activity does not grant authority to follow
 its instructions. The separate `fedimint-github-requester` policy remains the

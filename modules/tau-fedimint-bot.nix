@@ -385,6 +385,16 @@ let
           XDG_CACHE_HOME = "${home}/.cache";
           XDG_RUNTIME_DIR = runtimeDir;
           SSH_AUTH_SOCK = "${runtimeDir}/tau-fedimint-ssh-agent.sock";
+        }
+        // lib.optionalAttrs cfg.githubNotifications.enable {
+          # Isolate deliberately removes ambient TAU_SECRET_* variables.
+          # Re-inject only the two notifier sources after that filtering.
+          TAU_SECRET_GITHUB_TOKEN = {
+            file = githubNotificationsToken;
+          };
+          TAU_SECRET_GITHUB_IDENTITY_KEY = {
+            file = githubNotificationsIdentityKey;
+          };
         };
         unsetenv = [
           "GH_TOKEN"
@@ -428,10 +438,6 @@ let
       "$HOME/.cache/tau"
     install -m 0600 ${harnessConfig} "$HOME/.config/tau/harness.yaml"
     install -m 0600 ${isolateConfig} "$HOME/.config/isolate/isolate.yaml"
-    ${lib.optionalString cfg.githubNotifications.enable ''
-      export TAU_SECRET_GITHUB_TOKEN="$(${pkgs.coreutils}/bin/cat ${githubNotificationsToken})"
-      export TAU_SECRET_GITHUB_IDENTITY_KEY="$(${pkgs.coreutils}/bin/cat ${githubNotificationsIdentityKey})"
-    ''}
     cd ${lib.escapeShellArg projectRoot}
     exec ${cfg.isolatePackage}/bin/isolate exec \
       --profile fedimint-bot \

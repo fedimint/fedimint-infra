@@ -33,6 +33,7 @@ in
 {
   "secrets/github-runner.age".publicKeys = runners ++ users;
   "secrets/tau-fedimint-github-token.age".publicKeys = [ runner-01 ] ++ users;
+  "secrets/tau-fedimint-github-notifications-identity-key.age".publicKeys = [ runner-01 ] ++ users;
   "secrets/tau-fedimint-github-notifications-token.age".publicKeys = [ runner-01 ] ++ users;
   "secrets/tau-fedimint-ssh-private-key.age".publicKeys = [ runner-01 ] ++ users;
   "secrets/perfitd.age".publicKeys = [

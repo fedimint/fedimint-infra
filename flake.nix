@@ -257,12 +257,14 @@
                 # The automation key is root-only. This unprivileged bot account
                 # remains reachable only with the shared administrator keys.
                 sshAuthorizedKeys = adminKeys;
-                # Starting this extension changes persistent GitHub watch preferences
-                # before an agent registers. Keep it absent until its dedicated
-                # credentials and activation are explicitly approved.
+                # Startup subscribes the dedicated bot account to both configured
+                # repositories and clears their ignored state. Those persistent
+                # GitHub-side effects are explicitly approved for this deployment.
                 githubNotifications = {
-                  enable = false;
+                  enable = true;
                   package = inputs.tau-ext-github.packages.x86_64-linux.default;
+                  tokenAgeFile = ./secrets/tau-fedimint-github-notifications-token.age;
+                  identityKeyAgeFile = ./secrets/tau-fedimint-github-notifications-identity-key.age;
                 };
               };
             }

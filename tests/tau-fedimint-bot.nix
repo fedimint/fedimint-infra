@@ -130,10 +130,14 @@ let
         disabled_isolate=$(
           sed -n 's#.*install -m 0600 \([^ ]*isolate.yaml\).*#\1#p' ${disabledStart}
         )
+        enabled_isolate=$(
+          sed -n 's#.*install -m 0600 \([^ ]*isolate.yaml\).*#\1#p' ${enabledStart}
+        )
         test -n "$disabled_harness"
         test -n "$alternate_provider_harness"
         test -n "$enabled_harness"
         test -n "$disabled_isolate"
+        test -n "$enabled_isolate"
 
         jq -e '
           (.extensions["github-notifications"] == null)
@@ -145,7 +149,10 @@ let
           (.aliases.providers.codex == "future-provider")
           and (.agents.model == "codex/gpt-5.6-luna")
         ' "$alternate_provider_harness" >/dev/null
-        ! grep -q 'TAU_SECRET_GITHUB_' ${disabledStart}
+        jq -e '
+          (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
+          and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)
+        ' "$disabled_isolate" >/dev/null
         ! grep -q '${githubNotificationsPackage}' "$disabled_harness"
         bot_unit=${
           disabled.config.systemd.user.units."tau-fedimint-bot.service".unit
@@ -186,8 +193,15 @@ let
           and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == ["github_register"])
         ' "$enabled_harness" >/dev/null
         grep -q '${githubNotificationsPackage}/bin/tau-ext-github' "$enabled_harness"
-        grep -q 'TAU_SECRET_GITHUB_TOKEN=' ${enabledStart}
-        grep -q 'TAU_SECRET_GITHUB_IDENTITY_KEY=' ${enabledStart}
+        jq -e \
+          --arg token '/run/agenix/tau-fedimint-github-notifications-token' \
+          --arg identity '/run/agenix/tau-fedimint-github-notifications-identity-key' '
+          (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == {"file": $token})
+          and (
+            .profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY
+            == {"file": $identity}
+          )
+        ' "$enabled_isolate" >/dev/null
         jq -e '
           [.profiles["fedimint-bot"].bind[]
             | select(.path == "/run/systemd/resolve/stub-resolv.conf")]
