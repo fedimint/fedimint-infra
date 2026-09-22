@@ -232,7 +232,7 @@
               services.tau-fedimint-bot = {
                 enable = false;
                 tauPackage = inputs.tau.packages.x86_64-linux.tau;
-                sshAuthorizedKeys = dpcKeys;
+                sshAuthorizedKeys = adminKeys;
               };
             }
           ];
