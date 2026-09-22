@@ -28,10 +28,12 @@ unit exits and systemd retries it after 10 seconds.
   its socket, not the key or dpc's personal agent.
 - Basic coordinator, reviewer, researcher, and engineer roles adapted from the
   local Tau setup.
-- Tau, `isolate`, `gh-isolate`, and `clank` packages pinned as flake inputs.
+- Tau, `tau-ext-github`, `isolate`, `gh-isolate`, and `clank` packages pinned
+  as flake inputs.
   Tau is pinned to the reviewed protocol 8.1 revision needed by the notification
-  extension. The inputs come from public sources and are locked to explicit
-  revisions.
+  extension. `tau-ext-github` is pinned to its reviewed public Radicle revision
+  through the Iris HTTPS gateway. The inputs come from public sources and are
+  locked to explicit revisions.
 - A narrow writable Clank state directory at
   `/home/tau-fedimint/.local/state/clank`. The bot can keep project tickets
   without receiving write access to the rest of its home or state hierarchy.
@@ -112,18 +114,16 @@ documented fail-closed or discard behavior.
 
 Do not enable it until all of these conditions hold:
 
-1. Publish `tau-ext-github` from its reviewed revision and add that exact,
-   fetchable revision as a flake input. Do not use a local path or an
-   unresolvable placeholder in a deployable configuration.
-2. Use a dedicated GitHub account, then create two new agenix secrets: its
+1. Use a dedicated GitHub account, then create two new agenix secrets: its
    dedicated classic PAT for notification ingress and a stable identity key
    containing exactly 64 hexadecimal digits. Do not reuse
    `tau-fedimint-github-token`, which grants action authority through
    `gh-broker`. The PAT needs notification and subject access plus the repository
    privileges needed to list all collaborators.
-3. Set `githubNotifications.package`, `tokenAgeFile`, and `identityKeyAgeFile`,
-   then set `githubNotifications.enable = true`.
-4. Deliberately approve the startup side effect. A valid extension process
+2. Set `githubNotifications.tokenAgeFile` and `identityKeyAgeFile`, then set
+   `githubNotifications.enable = true`. The deployable configuration already
+   supplies the reviewed, pinned `githubNotifications.package`.
+3. Deliberately approve the startup side effect. A valid extension process
    subscribes its account to the configured repository and clears the ignored
    state before any agent calls `github_register`. Successfully examined
    filter-rejected or unsupported notifications can later be marked read after

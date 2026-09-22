@@ -24,6 +24,12 @@
       url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=24def4156c132074912e86ad94f53b82ce871933";
     };
 
+    tau-ext-github = {
+      url = "git+https://iris.radicle.network/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=13cd5663a833da0683e4f663833436a7accbc535";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=d1bb459b921775fe1baab9e916c3d6fa55709a8a";
 
     gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=7a9aea508d107dee7291d7fa323094ddede8b430";
@@ -246,9 +252,12 @@
                 sshPrivateKeyAgeFile = ./secrets/tau-fedimint-ssh-private-key.age;
                 sshAuthorizedKeys = adminKeys;
                 # Starting this extension changes persistent GitHub watch preferences
-                # before an agent registers. Keep it absent until its source is
-                # published and its dedicated credentials are provisioned.
-                githubNotifications.enable = false;
+                # before an agent registers. Keep it absent until its dedicated
+                # credentials and activation are explicitly approved.
+                githubNotifications = {
+                  enable = false;
+                  package = inputs.tau-ext-github.packages.x86_64-linux.default;
+                };
               };
             }
           ];
@@ -303,6 +312,7 @@
             tau-fedimint-bot-config = import ./tests/tau-fedimint-bot.nix {
               inherit system nixpkgs agenix;
               module = ./modules/tau-fedimint-bot.nix;
+              githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
             };
           };
         }

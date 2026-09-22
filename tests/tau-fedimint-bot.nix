@@ -3,6 +3,7 @@
   nixpkgs,
   agenix,
   module,
+  githubNotificationsPackage,
 }:
 
 let
@@ -43,16 +44,19 @@ let
         }
       ];
     };
-  disabled = mkSystem { };
+  defaultDisabled = mkSystem { };
+  disabled = mkSystem {
+    package = githubNotificationsPackage;
+  };
   enabled = mkSystem {
     enable = true;
-    package = dummyPackage "tau-ext-github";
+    package = githubNotificationsPackage;
     tokenAgeFile = notificationToken;
     identityKeyAgeFile = identityKey;
   };
   reusedToken = mkSystem {
     enable = true;
-    package = dummyPackage "tau-ext-github";
+    package = githubNotificationsPackage;
     tokenAgeFile = actionToken;
     identityKeyAgeFile = identityKey;
   };
@@ -70,11 +74,15 @@ let
   disabledStart = disabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   enabledStart = enabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
 in
+assert failedBotAssertions defaultDisabled == [ ];
 assert failedBotAssertions disabled == [ ];
 assert failedBotAssertions enabled == [ ];
 assert builtins.length (failedBotAssertions reusedToken) == 1;
+assert !(defaultDisabled.config.age.secrets ? "tau-fedimint-github-notifications-token");
+assert !(defaultDisabled.config.age.secrets ? "tau-fedimint-github-notifications-identity-key");
 assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-token");
 assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-identity-key");
+assert !(lib.elem githubNotificationsPackage disabled.config.environment.systemPackages);
 pkgs.runCommand "tau-fedimint-bot-config-check"
   {
     nativeBuildInputs = [
@@ -100,6 +108,7 @@ pkgs.runCommand "tau-fedimint-bot-config-check"
       and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == [])
     ' "$disabled_harness" >/dev/null
     ! grep -q 'TAU_SECRET_GITHUB_' ${disabledStart}
+    ! grep -q '${githubNotificationsPackage}' "$disabled_harness"
 
     jq -e '
       .extensions["github-notifications"] as $extension
@@ -116,6 +125,7 @@ pkgs.runCommand "tau-fedimint-bot-config-check"
       })
       and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == ["github_register"])
     ' "$enabled_harness" >/dev/null
+    grep -q '${githubNotificationsPackage}/bin/tau-ext-github' "$enabled_harness"
     grep -q 'TAU_SECRET_GITHUB_TOKEN=' ${enabledStart}
     grep -q 'TAU_SECRET_GITHUB_IDENTITY_KEY=' ${enabledStart}
 
