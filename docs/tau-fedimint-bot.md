@@ -138,10 +138,10 @@ Nix-generated startup configuration is deterministic.
    or parent directory. Confirm whether one checkout or multiple repositories
    below it are desired.
 5. **Known users and services:** the prepared inbound configuration watches
-   `fedimint/fedimint` and admits actors from GitHub's complete collaborator
-   roster when their effective `permissions.push` is true. This filters received
-   activity; it does not authorize the bot to act. The coordinator prompt still
-   requires
+   `fedimint/fedimint` and `fedimint/fedimint-sdk`. For each repository, it
+   admits actors from GitHub's complete collaborator roster when their effective
+   `permissions.push` is true. This filters received activity; it does not
+   authorize the bot to act. The coordinator prompt still requires
    `fedimint-github-requester check USERNAME either` before acting on a GitHub
    request. Any failed, denied, malformed, rate-limited, or unavailable check
    must remain denied.
@@ -165,8 +165,9 @@ The module contains a reversible, disabled configuration for
 `tau-ext-github`. Enabling it would start one inbound-only extension instance
 with this fixed policy:
 
-- repository: `fedimint/fedimint`
-- actor admission: current repository collaborators with effective push access
+- repositories: `fedimint/fedimint` and `fedimint/fedimint-sdk`
+- actor admission: current collaborators with effective push access in each
+  repository
 - poll interval: 60 seconds
 - model-visible tool: unprefixed `github_register`, enabled only for the
   coordinator role
@@ -188,14 +189,15 @@ Do not enable it until all of these conditions hold:
 2. Set `githubNotifications.tokenAgeFile` and `identityKeyAgeFile`, then set
    `githubNotifications.enable = true`. The deployable configuration already
    supplies the reviewed, pinned `githubNotifications.package`.
-3. Deliberately approve the startup side effect. A valid extension process
-   subscribes its account to the configured repository and clears the ignored
-   state before any agent calls `github_register`. Successfully examined
-   filter-rejected or unsupported notifications can later be marked read after
-   the extension's repository-wide acknowledgement barrier. Stopping or
-   disabling the extension prevents further polling but does not undo the
-   persistent GitHub watch subscription; change that preference separately if
-   rollback requires it.
+3. Deliberately approve the startup side effect. On startup, a valid extension
+   process subscribes its account to each configured repository and clears its
+   ignored state before any agent calls `github_register`. Those GitHub watch
+   preferences persist after the process stops. The extension can mark
+   successfully examined notification batches read after its repository-wide
+   acknowledgement barrier, including batches rejected by the actor filter or
+   unsupported by the extension. Stopping or disabling the extension prevents
+   further polling but does not undo the persistent GitHub watch subscriptions;
+   change those preferences separately if rollback requires it.
 
 At startup, the service reads the two agenix files into one-shot
 `TAU_SECRET_GITHUB_TOKEN` and `TAU_SECRET_GITHUB_IDENTITY_KEY` inputs. Tau

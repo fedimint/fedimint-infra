@@ -180,7 +180,7 @@ let
             "actors": {"mode": "repository_maintainers"},
             "identity_key_secret": "github_identity_key",
             "poll_seconds": 60,
-            "repositories": ["fedimint/fedimint"],
+            "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk"],
             "token_secret": "github_token"
           })
           and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == ["github_register"])

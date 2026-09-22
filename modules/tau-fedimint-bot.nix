@@ -215,7 +215,10 @@ let
           config = {
             token_secret = "github_token";
             identity_key_secret = "github_identity_key";
-            repositories = [ "fedimint/fedimint" ];
+            repositories = [
+              "fedimint/fedimint"
+              "fedimint/fedimint-sdk"
+            ];
             actors.mode = "repository_maintainers";
             poll_seconds = 60;
           };
