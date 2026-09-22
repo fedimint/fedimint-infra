@@ -12,6 +12,8 @@ let
   projectRoot = "${home}/fedimint";
   runtimeDir = "/run/user/${toString cfg.uid}";
   githubToken = "/run/agenix/tau-fedimint-github-token";
+  githubNotificationsToken = "/run/agenix/tau-fedimint-github-notifications-token";
+  githubNotificationsIdentityKey = "/run/agenix/tau-fedimint-github-notifications-identity-key";
   sshPrivateKey = "/run/agenix/tau-fedimint-ssh-private-key";
   clankState = "${home}/.local/state/clank";
 
@@ -200,6 +202,23 @@ let
         std-pim.enable = false;
         std-swarm.enable = false;
         std-rostra.enable = false;
+      }
+      // lib.optionalAttrs cfg.githubNotifications.enable {
+        github-notifications = {
+          enable = true;
+          command = [ "${cfg.githubNotifications.package}/bin/tau-ext-github" ];
+          secrets = {
+            github_token = { };
+            github_identity_key = { };
+          };
+          config = {
+            token_secret = "github_token";
+            identity_key_secret = "github_identity_key";
+            repositories = [ "fedimint/fedimint" ];
+            actors.mode = "repository_maintainers";
+            poll_seconds = 60;
+          };
+        };
       };
       agents = {
         default_role = "coordinator";
@@ -299,6 +318,7 @@ let
           coordinator.roles.coordinator = {
             order = 0;
             description = "Coordinates work and delivers the integrated result.";
+            enable_tools = lib.optionals cfg.githubNotifications.enable [ "github_register" ];
           };
         };
       };
@@ -399,6 +419,10 @@ let
       "$HOME/.cache/tau"
     install -m 0600 ${harnessConfig} "$HOME/.config/tau/harness.yaml"
     install -m 0600 ${isolateConfig} "$HOME/.config/isolate/isolate.yaml"
+    ${lib.optionalString cfg.githubNotifications.enable ''
+      export TAU_SECRET_GITHUB_TOKEN="$(${pkgs.coreutils}/bin/cat ${githubNotificationsToken})"
+      export TAU_SECRET_GITHUB_IDENTITY_KEY="$(${pkgs.coreutils}/bin/cat ${githubNotificationsIdentityKey})"
+    ''}
     cd ${lib.escapeShellArg projectRoot}
     exec ${cfg.isolatePackage}/bin/isolate exec \
       --profile fedimint-bot \
@@ -436,6 +460,24 @@ in
       type = lib.types.nullOr lib.types.path;
       default = null;
       description = "Agenix source for the bot GitHub token.";
+    };
+    githubNotifications = {
+      enable = lib.mkEnableOption "inbound GitHub maintainer notifications";
+      package = lib.mkOption {
+        type = lib.types.nullOr lib.types.package;
+        default = null;
+        description = "tau-ext-github package supplied by a pinned flake input.";
+      };
+      tokenAgeFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.path;
+        default = null;
+        description = "Agenix source for the dedicated notification-reader classic PAT.";
+      };
+      identityKeyAgeFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.path;
+        default = null;
+        description = "Agenix source for the stable 64-hex-digit notification identity key.";
+      };
     };
     sshPrivateKeyAgeFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
@@ -489,21 +531,56 @@ in
         assertion = cfg.sshAuthorizedKeys != [ ];
         message = "tau-fedimint-bot requires an explicit non-empty SSH login key list";
       }
+      {
+        assertion = !cfg.githubNotifications.enable || cfg.githubNotifications.package != null;
+        message = "GitHub notifications require tau-ext-github from a pinned flake input";
+      }
+      {
+        assertion = !cfg.githubNotifications.enable || cfg.githubNotifications.tokenAgeFile != null;
+        message = "GitHub notifications require a dedicated agenix classic PAT source";
+      }
+      {
+        assertion = !cfg.githubNotifications.enable || cfg.githubNotifications.identityKeyAgeFile != null;
+        message = "GitHub notifications require an agenix stable identity-key source";
+      }
+      {
+        assertion =
+          !cfg.githubNotifications.enable || cfg.githubNotifications.tokenAgeFile != cfg.githubTokenAgeFile;
+        message = "GitHub notification ingress must not reuse the GitHub action token";
+      }
     ];
 
-    age.secrets.tau-fedimint-github-token = {
-      file = cfg.githubTokenAgeFile;
-      path = githubToken;
-      owner = user;
-      group = user;
-      mode = "0400";
-    };
-    age.secrets.tau-fedimint-ssh-private-key = {
-      file = cfg.sshPrivateKeyAgeFile;
-      path = sshPrivateKey;
-      owner = user;
-      group = user;
-      mode = "0400";
+    age.secrets = {
+      tau-fedimint-github-token = {
+        file = cfg.githubTokenAgeFile;
+        path = githubToken;
+        owner = user;
+        group = user;
+        mode = "0400";
+      };
+      tau-fedimint-ssh-private-key = {
+        file = cfg.sshPrivateKeyAgeFile;
+        path = sshPrivateKey;
+        owner = user;
+        group = user;
+        mode = "0400";
+      };
+    }
+    // lib.optionalAttrs cfg.githubNotifications.enable {
+      tau-fedimint-github-notifications-token = {
+        file = cfg.githubNotifications.tokenAgeFile;
+        path = githubNotificationsToken;
+        owner = user;
+        group = user;
+        mode = "0400";
+      };
+      tau-fedimint-github-notifications-identity-key = {
+        file = cfg.githubNotifications.identityKeyAgeFile;
+        path = githubNotificationsIdentityKey;
+        owner = user;
+        group = user;
+        mode = "0400";
+      };
     };
 
     users.groups.${user} = { };
@@ -533,7 +610,8 @@ in
       githubRequester
       cfg.ghBrokerPackage
       pkgs.jujutsu
-    ];
+    ]
+    ++ lib.optional cfg.githubNotifications.enable cfg.githubNotifications.package;
 
     systemd.user.services.tau-fedimint-ssh-agent = {
       description = "SSH agent for the Tau Fedimint bot identity";

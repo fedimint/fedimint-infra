@@ -21,7 +21,7 @@
     };
 
     tau = {
-      url = "github:dpc/tau?rev=f1b1af56b4d592cde7ca825725ddad0b850ba968";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=24def4156c132074912e86ad94f53b82ce871933";
     };
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=d1bb459b921775fe1baab9e916c3d6fa55709a8a";
@@ -245,6 +245,10 @@
                 githubTokenAgeFile = ./secrets/tau-fedimint-github-token.age;
                 sshPrivateKeyAgeFile = ./secrets/tau-fedimint-ssh-private-key.age;
                 sshAuthorizedKeys = adminKeys;
+                # Starting this extension changes persistent GitHub watch preferences
+                # before an agent registers. Keep it absent until its source is
+                # published and its dedicated credentials are provisioned.
+                githubNotifications.enable = false;
               };
             }
           ];
@@ -293,6 +297,12 @@
                 inputs.perfit.packages.${pkgs.system}.perfit
                 pkgs.just
               ];
+            };
+          };
+          checks = nixpkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+            tau-fedimint-bot-config = import ./tests/tau-fedimint-bot.nix {
+              inherit system nixpkgs agenix;
+              module = ./modules/tau-fedimint-bot.nix;
             };
           };
         }

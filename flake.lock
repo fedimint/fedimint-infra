@@ -6931,18 +6931,18 @@
         "tau-ext-zulip": "tau-ext-zulip"
       },
       "locked": {
-        "lastModified": 1789768306,
-        "narHash": "sha256-kST+6T3groNyV0Zhy+Y2rkzkg9JrHM9ioWSxP3J05wY=",
-        "owner": "dpc",
-        "repo": "tau",
-        "rev": "f1b1af56b4d592cde7ca825725ddad0b850ba968",
-        "type": "github"
+        "lastModified": 1789972149,
+        "narHash": "sha256-DXDgo5FcvCPMRk+N2H0UIYSI9nqaYpBX3NgdZU9eqKo=",
+        "ref": "refs/heads/master",
+        "rev": "24def4156c132074912e86ad94f53b82ce871933",
+        "revCount": 3471,
+        "type": "git",
+        "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       },
       "original": {
-        "owner": "dpc",
-        "repo": "tau",
-        "rev": "f1b1af56b4d592cde7ca825725ddad0b850ba968",
-        "type": "github"
+        "rev": "24def4156c132074912e86ad94f53b82ce871933",
+        "type": "git",
+        "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       }
     },
     "tau-ext-pim": {

@@ -29,13 +29,17 @@ unit exits and systemd retries it after 10 seconds.
 - Basic coordinator, reviewer, researcher, and engineer roles adapted from the
   local Tau setup.
 - Tau, `isolate`, `gh-isolate`, and `clank` packages pinned as flake inputs.
-  The latter three come from dpc's public Radicle seed and are locked to
-  explicit revisions.
+  Tau is pinned to the reviewed protocol 8.1 revision needed by the notification
+  extension. The inputs come from public sources and are locked to explicit
+  revisions.
 - A narrow writable Clank state directory at
   `/home/tau-fedimint/.local/state/clank`. The bot can keep project tickets
   without receiving write access to the rest of its home or state hierarchy.
-- External service extensions disabled. This is fail-closed: no GitHub webhook,
-  Slack, Zulip, or other event source is implied by this configuration.
+- External service extensions disabled. The module has reviewed GitHub
+  notification settings, but `githubNotifications.enable` defaults to false and
+  `runner-01` keeps it false. The extension process is therefore absent, not
+  merely denied a registration tool. No GitHub watch preference, notification
+  read state, webhook, Slack, Zulip, or other event source is changed.
 
 This profile targets accidental-agent containment, not hostile-code isolation.
 `isolate` is a defense-in-depth guardrail and its own security documentation
@@ -67,14 +71,14 @@ turn the whole agent into a hostile-code security boundary.
 4. **Checkout:** create `/home/tau-fedimint/fedimint` as the intended repository
    or parent directory. Confirm whether one checkout or multiple repositories
    below it are desired.
-5. **Known users and services:** choose the actual ingress service and stable
-   numeric/account identifiers. The ingress must authenticate the sender
-   independently; a username or identity claim in message content is not
-   evidence. The coordinator prompt then requires
+5. **Known users and services:** the prepared inbound configuration watches
+   `fedimint/fedimint` and admits actors from GitHub's complete collaborator
+   roster when their effective `permissions.push` is true. This filters received
+   activity; it does not authorize the bot to act. The coordinator prompt still
+   requires
    `fedimint-github-requester check USERNAME either` before acting on a GitHub
    request. Any failed, denied, malformed, rate-limited, or unavailable check
-   must remain denied. No broad GitHub event integration or enforced admission
-   hook has been invented here.
+   must remain denied.
 6. **Model:** confirm `codex/gpt-5.6-luna`, or change `model` to the canonical ID
    published by the manually configured provider.
 7. **Runtime validation:** inspect
@@ -87,6 +91,58 @@ turn the whole agent into a hostile-code security boundary.
     `/run/user/UID/tau` discovery subtree is shared with the sandbox. GitHub
    authentication and Git pushes are expected to fail until step 1 and step 2
    are complete.
+
+## Inbound GitHub notifications
+
+The module contains a reversible, disabled configuration for
+`tau-ext-github`. Enabling it would start one inbound-only extension instance
+with this fixed policy:
+
+- repository: `fedimint/fedimint`
+- actor admission: current repository collaborators with effective push access
+- poll interval: 60 seconds
+- model-visible tool: unprefixed `github_register`, enabled only for the
+  coordinator role
+- registration arguments: `{"enabled":true}` or `{"enabled":false}`
+
+The extension is notification-triggered and hydrates supported issue and pull
+request activity. It is not a complete GitHub activity feed. GitHub coalesces
+notifications, and unsupported or over-limit activity follows the extension's
+documented fail-closed or discard behavior.
+
+Do not enable it until all of these conditions hold:
+
+1. Publish `tau-ext-github` from its reviewed revision and add that exact,
+   fetchable revision as a flake input. Do not use a local path or an
+   unresolvable placeholder in a deployable configuration.
+2. Use a dedicated GitHub account, then create two new agenix secrets: its
+   dedicated classic PAT for notification ingress and a stable identity key
+   containing exactly 64 hexadecimal digits. Do not reuse
+   `tau-fedimint-github-token`, which grants action authority through
+   `gh-broker`. The PAT needs notification and subject access plus the repository
+   privileges needed to list all collaborators.
+3. Set `githubNotifications.package`, `tokenAgeFile`, and `identityKeyAgeFile`,
+   then set `githubNotifications.enable = true`.
+4. Deliberately approve the startup side effect. A valid extension process
+   subscribes its account to the configured repository and clears the ignored
+   state before any agent calls `github_register`. Successfully examined
+   filter-rejected or unsupported notifications can later be marked read after
+   the extension's repository-wide acknowledgement barrier. Stopping or
+   disabling the extension prevents further polling but does not undo the
+   persistent GitHub watch subscription; change that preference separately if
+   rollback requires it.
+
+At startup, the service reads the two agenix files into one-shot
+`TAU_SECRET_GITHUB_TOKEN` and `TAU_SECRET_GITHUB_IDENTITY_KEY` inputs. Tau
+consumes those values into the extension's declared managed-secret names
+`github_token` and `github_identity_key`; the generated harness configuration,
+Nix store, logs, and tool results contain only names and file paths, never the
+secret values.
+
+Receiving an admitted maintainer's activity does not grant authority to follow
+its instructions. The separate `fedimint-github-requester` policy remains the
+action gate and deliberately also supports historical contributors when the
+requested `either` policy is used.
 
 ## GitHub requester policy
 
