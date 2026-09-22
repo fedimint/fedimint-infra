@@ -22,8 +22,11 @@
 
     tau = {
       url = "github:dpc/tau?rev=f1b1af56b4d592cde7ca825725ddad0b850ba968";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=d1bb459b921775fe1baab9e916c3d6fa55709a8a";
+
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=ce3740ca2c5e0803790b907437842be3645d04db";
   };
 
   outputs =
@@ -222,16 +225,18 @@
     in
     {
       nixosConfigurations = {
-        # Draft placement for the Tau bot. The module is deliberately disabled
-        # until the review/setup checklist in docs/tau-fedimint-bot.md is done.
         runner-01 = makeRunnerAmd {
           name = "runner-01";
           extraModules = [
             ./modules/tau-fedimint-bot.nix
             {
               services.tau-fedimint-bot = {
-                enable = false;
+                enable = true;
                 tauPackage = inputs.tau.packages.x86_64-linux.tau;
+                isolatePackage = inputs.isolate.packages.x86_64-linux.default;
+                ghBrokerPackage = inputs.gh-isolate.packages.x86_64-linux.default;
+                githubTokenAgeFile = ./secrets/tau-fedimint-github-token.age;
+                sshPrivateKeyAgeFile = ./secrets/tau-fedimint-ssh-private-key.age;
                 sshAuthorizedKeys = adminKeys;
               };
             }

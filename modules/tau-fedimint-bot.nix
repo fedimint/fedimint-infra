@@ -237,9 +237,9 @@ let
     install -m 0600 ${harnessConfig} "$HOME/.config/tau/harness.yaml"
     install -m 0600 ${isolateConfig} "$HOME/.config/isolate/isolate.yaml"
     cd ${lib.escapeShellArg projectRoot}
-    exec ${cfg.isolatePackage}/bin/isolate \
+    exec ${cfg.isolatePackage}/bin/isolate exec \
       --profile fedimint-bot \
-      exec -- \
+      -- \
       ${cfg.tauPackage}/bin/tau serve \
         --session tau-fedimint-bot \
         --create-or-existing
