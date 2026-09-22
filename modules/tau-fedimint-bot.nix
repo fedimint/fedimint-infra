@@ -369,6 +369,11 @@ let
             required = true;
             kind = "socket";
           }
+          {
+            path = "/run/systemd/resolve/stub-resolv.conf";
+            required = true;
+            kind = "file";
+          }
         ];
         setenv = {
           HOME = home;

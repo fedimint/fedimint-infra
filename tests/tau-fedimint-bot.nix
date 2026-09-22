@@ -127,9 +127,13 @@ let
         enabled_harness=$(
           sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${enabledStart}
         )
+        disabled_isolate=$(
+          sed -n 's#.*install -m 0600 \([^ ]*isolate.yaml\).*#\1#p' ${disabledStart}
+        )
         test -n "$disabled_harness"
         test -n "$alternate_provider_harness"
         test -n "$enabled_harness"
+        test -n "$disabled_isolate"
 
         jq -e '
           (.extensions["github-notifications"] == null)
@@ -184,6 +188,15 @@ let
         grep -q '${githubNotificationsPackage}/bin/tau-ext-github' "$enabled_harness"
         grep -q 'TAU_SECRET_GITHUB_TOKEN=' ${enabledStart}
         grep -q 'TAU_SECRET_GITHUB_IDENTITY_KEY=' ${enabledStart}
+        jq -e '
+          [.profiles["fedimint-bot"].bind[]
+            | select(.path == "/run/systemd/resolve/stub-resolv.conf")]
+          == [{
+            path: "/run/systemd/resolve/stub-resolv.conf",
+            required: true,
+            kind: "file"
+          }]
+        ' "$disabled_isolate" >/dev/null
 
         touch "$out"
       '';

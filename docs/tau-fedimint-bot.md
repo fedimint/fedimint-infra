@@ -28,6 +28,9 @@ new alias target.
   The GitHub token never enters the sandbox.
 - A dedicated SSH agent loaded from an agenix private key. The sandbox sees only
   its socket, not the key or dpc's personal agent.
+- Read-only access to systemd-resolved's stub resolver file. The sandbox shares
+  the host network namespace, but its private `/run` would otherwise leave
+  NixOS's `/etc/resolv.conf` symlink dangling and prevent provider DNS lookups.
 - Basic coordinator, reviewer, researcher, and engineer roles adapted from the
   local Tau setup.
 - A startup-only provider alias from `codex` to `chatgpt-dpc`. This rewrites
