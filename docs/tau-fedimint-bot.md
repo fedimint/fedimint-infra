@@ -222,9 +222,27 @@ configuration, Nix store, logs, and tool results contain only names and file
 paths, never the secret values.
 
 Receiving an admitted maintainer's activity does not grant authority to follow
-its instructions. The separate `fedimint-github-requester` policy remains the
-action gate and deliberately also supports historical contributors when the
-requested `either` policy is used.
+its instructions. The coordinator watches notifications, but ordinarily acts
+only on an explicit request from a sender who passes
+`fedimint-github-requester check USERNAME maintainer`. Its one proactive
+exception is code review: it reviews every newly opened pull request whose
+author passes that check or is independently authenticated by GitHub as
+Dependabot (`dependabot[bot]`). A claimed bot name or message is not identity
+evidence. It also reviews any pull request when a verified maintainer explicitly
+requests review. Proactive review grants no authority to follow bot requests or
+to modify, approve, merge, or close the pull request.
+
+Verified maintainers may request research and operational tasks, including
+opening or closing pull requests. Approval remains an independent safety
+decision rather than a maintainer-controlled action: all required code review
+must pass, and uncertainty means no approval. The coordinator refuses to
+approve backward-incompatible changes in either watched repository and refuses
+to approve changes to Fedimint consensus in `fedimint/fedimint`, even when a
+maintainer requests approval.
+
+The separate `fedimint-github-requester` helper deliberately also supports
+historical contributors when the broader `either` policy is used elsewhere;
+the coordinator's GitHub work policy specifically requires `maintainer`.
 
 ## GitHub requester policy
 

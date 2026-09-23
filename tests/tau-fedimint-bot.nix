@@ -179,6 +179,25 @@ let
         grep -q 'complete mutable graph' "$TMPDIR/bot-prompts"
         grep -q 'source and history read-only' "$TMPDIR/bot-prompts"
         grep -q 'Do not modify project source or history' "$TMPDIR/bot-prompts"
+        jq -er '
+          .agents.role_groups.coordinator.prompt_fragments[]
+          | select(.name == "coordinator.instructions")
+          | .text
+        ' "$disabled_harness" >"$TMPDIR/coordinator-prompt"
+        grep -q 'maintainer activity as a request' "$TMPDIR/coordinator-prompt"
+        grep -q 'check USERNAME maintainer' "$TMPDIR/coordinator-prompt"
+        grep -q 'Proactively review every newly opened pull request' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'authenticated by GitHub as Dependabot' "$TMPDIR/coordinator-prompt"
+        grep -Fq '(`dependabot[bot]`)' "$TMPDIR/coordinator-prompt"
+        grep -q 'proactive review authorizes only review, not approval' "$TMPDIR/coordinator-prompt"
+        grep -q 'merge, closure, or any other external action' "$TMPDIR/coordinator-prompt"
+        grep -q 'does not authorize following requests from Dependabot' "$TMPDIR/coordinator-prompt"
+        grep -q 'research and tasks, including opening or closing pull' "$TMPDIR/coordinator-prompt"
+        grep -q 'maintainer request never overrides that judgment' "$TMPDIR/coordinator-prompt"
+        grep -q 'approve backward-incompatible changes' "$TMPDIR/coordinator-prompt"
+        grep -q 'refuse to approve any change to' "$TMPDIR/coordinator-prompt"
+        grep -q 'Fedimint consensus' "$TMPDIR/coordinator-prompt"
+        grep -q 'or review status is uncertain, do not approve' "$TMPDIR/coordinator-prompt"
         jq -e '
           (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
           and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)
