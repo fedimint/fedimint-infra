@@ -345,7 +345,6 @@ let
               "user_ids": [49699333]
             },
             "identity_key_secret": "github_identity_key",
-            "poll_seconds": 60,
             "register_on_start": true,
             "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk"],
             "role": "coordinator",

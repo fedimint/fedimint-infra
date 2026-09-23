@@ -67,8 +67,9 @@ target.
 - One enabled inbound GitHub notification extension. It watches
   `fedimint/fedimint` and `fedimint/fedimint-sdk`, dynamically admits actors with
   effective push access in the relevant repository plus the verified numeric
-  user ID for `dependabot[bot]`, and polls every 60 seconds. It does not add
-  action tools or provide a complete GitHub activity feed.
+  user ID for `dependabot[bot]`, and follows GitHub's response headers for poll
+  timing and rate-limit delays. It does not add action tools or provide a
+  complete GitHub activity feed.
 
 This profile targets accidental-agent containment, not hostile-code isolation.
 `isolate` is a defense-in-depth guardrail and its own security documentation
@@ -186,7 +187,9 @@ policy:
 - repositories: `fedimint/fedimint` and `fedimint/fedimint-sdk`
 - actor admission: current collaborators with effective push access in each
   repository
-- poll interval: 60 seconds
+- poll timing: GitHub's `X-Poll-Interval` and `Retry-After` headers, plus
+  rate-limit reset headers when the reported quota is exhausted, with
+  conservative fallback and backoff when guidance is unavailable
 - automatic receiver role: `coordinator`
 - model-visible tool: unprefixed `github_register`, enabled only for the
   coordinator role
@@ -197,6 +200,10 @@ The extension is notification-triggered and hydrates supported issue and pull
 request activity. It is not a complete GitHub activity feed. GitHub coalesces
 notifications, and unsupported or over-limit activity follows the extension's
 documented fail-closed or discard behavior.
+
+Header-driven spacing also applies to stabilization and read validation, so it
+can increase delivery and checkpoint latency. An active batch remains serial
+and can delay scans of the other configured repository.
 
 The extension uses a dedicated classic PAT and a separate stable 64-hex-digit
 identity key. It does not reuse `tau-fedimint-github-token`, which grants action

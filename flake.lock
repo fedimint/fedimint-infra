@@ -7520,18 +7520,18 @@
         "selfci": "selfci_9"
       },
       "locked": {
-        "lastModified": 1790135831,
-        "narHash": "sha256-ZeLkcFbynOcENGkHOj6ri/YAIl9izQTyxHYJkuUA2/M=",
+        "lastModified": 1790141967,
+        "narHash": "sha256-3y6HwfFnlIvELevWFAb6onxsXn5XkAfJXAzI54IiDc4=",
         "ref": "refs/heads/master",
-        "rev": "9c915150c784e30b26ef4ec18d71b350a2f6a791",
-        "revCount": 6,
+        "rev": "e1d0fcda3e4dabfddbd2d9b34df381022153c5ef",
+        "revCount": 7,
         "type": "git",
-        "url": "https://iris.radicle.network/rad:zeY514sMfgDNMC8czs3C1V1MFsaH.git"
+        "url": "https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git"
       },
       "original": {
-        "rev": "9c915150c784e30b26ef4ec18d71b350a2f6a791",
+        "rev": "e1d0fcda3e4dabfddbd2d9b34df381022153c5ef",
         "type": "git",
-        "url": "https://iris.radicle.network/rad:zeY514sMfgDNMC8czs3C1V1MFsaH.git"
+        "url": "https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git"
       }
     },
     "tau-ext-pim": {

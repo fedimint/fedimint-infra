@@ -252,7 +252,6 @@ let
               mode = "repository_maintainers";
               user_ids = [ 49699333 ];
             };
-            poll_seconds = 60;
             register_on_start = true;
             role = "coordinator";
           };
