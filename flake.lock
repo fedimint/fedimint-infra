@@ -7494,17 +7494,16 @@
         "tau-ext-zulip": "tau-ext-zulip"
       },
       "locked": {
-        "lastModified": 1790133665,
-        "narHash": "sha256-tNNsAP4TgyJFQtuUPsW8gw8oYv39bQxtYs+egCjVrYA=",
-        "ref": "namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/tags/compat-protocol-8.1-gpt6-81c114fa",
-        "rev": "81c114fa60a4f08177a4f51cc76457bcdb21c21e",
-        "revCount": 3477,
+        "lastModified": 1790135342,
+        "narHash": "sha256-DNoZ4WKCAkC1zGaY2M7eamUtJM3/5TtjborHmRJrryU=",
+        "ref": "refs/heads/master",
+        "rev": "30c8b43410a84294f31f74451f9f7f09a94df473",
+        "revCount": 3480,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       },
       "original": {
-        "ref": "namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/tags/compat-protocol-8.1-gpt6-81c114fa",
-        "rev": "81c114fa60a4f08177a4f51cc76457bcdb21c21e",
+        "rev": "30c8b43410a84294f31f74451f9f7f09a94df473",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       }
@@ -7521,18 +7520,18 @@
         "selfci": "selfci_9"
       },
       "locked": {
-        "lastModified": 1790133662,
-        "narHash": "sha256-OTUpmErdfLX5XMt/ieFyJB68p3i0z+aHx5kXcfR/sAs=",
+        "lastModified": 1790135831,
+        "narHash": "sha256-ZeLkcFbynOcENGkHOj6ri/YAIl9izQTyxHYJkuUA2/M=",
         "ref": "refs/heads/master",
-        "rev": "24a7ff56a217c12b7dbea4a6339fad68632497c5",
-        "revCount": 4,
+        "rev": "9c915150c784e30b26ef4ec18d71b350a2f6a791",
+        "revCount": 6,
         "type": "git",
-        "url": "https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git"
+        "url": "https://iris.radicle.network/rad:zeY514sMfgDNMC8czs3C1V1MFsaH.git"
       },
       "original": {
-        "rev": "24a7ff56a217c12b7dbea4a6339fad68632497c5",
+        "rev": "9c915150c784e30b26ef4ec18d71b350a2f6a791",
         "type": "git",
-        "url": "https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git"
+        "url": "https://iris.radicle.network/rad:zeY514sMfgDNMC8czs3C1V1MFsaH.git"
       }
     },
     "tau-ext-pim": {

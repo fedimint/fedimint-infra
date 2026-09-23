@@ -57,10 +57,10 @@ target.
   otherwise modify the provider profile.
 - Tau, `tau-ext-github`, `isolate`, `gh-isolate`, and `clank` packages pinned
   as flake inputs.
-  Tau is pinned to the reviewed protocol 8.1 revision needed by the notification
-  extension. `tau-ext-github` is pinned to its reviewed public Radicle revision
-  through the Iris HTTPS gateway. The inputs come from public sources and are
-  locked to explicit revisions.
+  Tau and `tau-ext-github` are pinned together at their reviewed protocol 9
+  revisions. `tau-ext-github` comes from its public Radicle repository through
+  the Iris HTTPS gateway. The inputs come from public sources and are locked to
+  explicit revisions.
 - A narrow writable Clank state directory at
   `/home/tau-fedimint/.local/state/clank`. The bot can keep project tickets
   without receiving write access to the rest of its home or state hierarchy.
@@ -187,9 +187,11 @@ policy:
 - actor admission: current collaborators with effective push access in each
   repository
 - poll interval: 60 seconds
+- automatic receiver role: `coordinator`
 - model-visible tool: unprefixed `github_register`, enabled only for the
   coordinator role
-- registration arguments: `{"enabled":true}` or `{"enabled":false}`
+- manual self-designation: `github_register {}` (`{"enabled":true}` remains a
+  compatibility spelling)
 
 The extension is notification-triggered and hydrates supported issue and pull
 request activity. It is not a complete GitHub activity feed. GitHub coalesces
@@ -203,26 +205,27 @@ notification subjects and enumerate the complete collaborator roster used by
 the dynamic maintainer filter.
 
 On startup, the extension subscribes `fedimint-tau` to each configured
-repository and clears its ignored state before any agent calls
-`github_register`. Those GitHub watch preferences persist after the process
-stops. The extension can mark successfully examined notification batches read
-after its repository-wide acknowledgement barrier, including batches rejected
-by the actor filter or unsupported by the extension. Stopping or disabling the
-extension prevents further polling but does not undo the persistent GitHub watch
-subscriptions; change those preferences separately if rollback requires it.
+repository, clears its ignored state, and automatically selects the oldest
+eligible loaded coordinator. The service still uses Tau's supported bootstrap
+prompt to create the default coordinator and tell it to follow its existing
+instructions; registration no longer depends on prompt compliance. Because each
+service start creates a fresh session, there is no prior receiver to restore.
+If admitted activity arrives before an eligible coordinator exists, the
+configured role lets Tau create one lazily; startup probes, filtered activity,
+and unsupported activity do not create agents.
 
-Startup and polling do not by themselves select a receiving agent.
-The coordinator role has the project-supported `github_register` tool and must
-call it with `{"enabled":true}`. Because every service start now creates a fresh
-session, a restart deliberately discards both the receiving agent membership and
-its registration intent. After Tau and its extensions become ready, the service
-uses Tau's supported bootstrap-prompt mechanism to create the default coordinator
-and tell it first to call `github_register` with `{"enabled":true}`, verify the
-tool succeeds, and then follow its existing instructions. A successful tool result
-confirms registration; until then, the extension remains running and preserves its
-GitHub watch subscriptions, but it has no agent to receive polled activity.
-Calling `github_register` with `{"enabled":false}` stops delivery to that agent
-without undoing repository subscriptions.
+The coordinator retains `github_register` for explicit self-designation or
+handoff. Call it with `{}`; legacy `{"enabled":true}` remains accepted, while
+`{"enabled":false}` is rejected rather than unregistering the receiver. A saved
+eligible designation is preferred when durable session state is retained, and
+the configured role constraint still applies.
+
+GitHub watch preferences persist after the process stops. The extension can mark
+successfully examined notification batches read after its repository-wide
+acknowledgement barrier, including batches rejected by the actor filter or
+unsupported by the extension. Stopping or disabling the extension prevents
+further polling but does not undo the persistent GitHub watch subscriptions;
+change those preferences separately if rollback requires it.
 
 At startup, isolate reads the two agenix files through explicit `setenv` file
 sources after its deny-by-default environment filtering and supplies one-shot

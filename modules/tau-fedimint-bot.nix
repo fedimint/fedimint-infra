@@ -21,15 +21,7 @@ let
       name = fedimint-tau
       email = 332691140+fedimint-tau@users.noreply.github.com
   '';
-  bootstrapPrompt = pkgs.writeText "tau-fedimint-bootstrap-prompt" (
-    if cfg.githubNotifications.enable then
-      ''
-        First call `github_register` with `{"enabled":true}` and verify that it
-        succeeds. Then follow your instructions.
-      ''
-    else
-      "Follow your instructions."
-  );
+  bootstrapPrompt = pkgs.writeText "tau-fedimint-bootstrap-prompt" "Follow your instructions.";
 
   githubRequester = pkgs.writeShellApplication {
     name = "fedimint-github-requester";
@@ -273,6 +265,8 @@ let
               user_ids = [ 49699333 ];
             };
             poll_seconds = 60;
+            register_on_start = true;
+            role = "coordinator";
           };
         };
       };

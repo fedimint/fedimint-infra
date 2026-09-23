@@ -278,8 +278,8 @@ let
           sed -n 's#.*--bootstrap-prompt-file \([^ ]*\).*#\1#p' ${enabledStart}
         )
         test -n "$bootstrap_prompt"
-        grep -Fq 'First call `github_register` with `{"enabled":true}`' "$bootstrap_prompt"
-        grep -Fq 'succeeds. Then follow your instructions.' "$bootstrap_prompt"
+        grep -Fxq 'Follow your instructions.' "$bootstrap_prompt"
+        ! grep -Fq 'github_register' "$bootstrap_prompt"
 
         clear_session=$(
           grep -Eo '/nix/store/[^ ]+-tau-fedimint-clear-session' ${disabledStart}
@@ -347,7 +347,9 @@ let
             },
             "identity_key_secret": "github_identity_key",
             "poll_seconds": 60,
+            "register_on_start": true,
             "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk"],
+            "role": "coordinator",
             "token_secret": "github_token"
           })
           and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == ["github_register"])
