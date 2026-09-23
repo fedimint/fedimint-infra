@@ -21,18 +21,18 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=24def4156c132074912e86ad94f53b82ce871933";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=30c8b43410a84294f31f74451f9f7f09a94df473";
     };
 
     tau-ext-github = {
-      url = "git+https://iris.radicle.network/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=13cd5663a833da0683e4f663833436a7accbc535";
+      url = "git+https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=539566b262c068d370924f99008bd0afee61b66c";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
 
-    isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=d1bb459b921775fe1baab9e916c3d6fa55709a8a";
+    isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f";
 
-    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=7a9aea508d107dee7291d7fa323094ddede8b430";
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=49c140006d13d4a91bbf85909a5b9c3e27f71a20";
 
     clank = {
       url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=56a03fecf62ca8090c3e5f5a089b6d9c62483c8d";
@@ -257,12 +257,14 @@
                 # The automation key is root-only. This unprivileged bot account
                 # remains reachable only with the shared administrator keys.
                 sshAuthorizedKeys = adminKeys;
-                # Starting this extension changes persistent GitHub watch preferences
-                # before an agent registers. Keep it absent until its dedicated
-                # credentials and activation are explicitly approved.
+                # Startup subscribes the dedicated bot account to both configured
+                # repositories and clears their ignored state. Those persistent
+                # GitHub-side effects are explicitly approved for this deployment.
                 githubNotifications = {
-                  enable = false;
+                  enable = true;
                   package = inputs.tau-ext-github.packages.x86_64-linux.default;
+                  tokenAgeFile = ./secrets/tau-fedimint-github-notifications-token.age;
+                  identityKeyAgeFile = ./secrets/tau-fedimint-github-notifications-identity-key.age;
                 };
               };
             }
@@ -322,6 +324,8 @@
               inherit system nixpkgs agenix;
               module = ./modules/tau-fedimint-bot.nix;
               tauPackage = inputs.tau.packages.${system}.tau;
+              isolatePackage = inputs.isolate.packages.${system}.default;
+              ghBrokerPackage = inputs.gh-isolate.packages.${system}.default;
               githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
             };
             runner-01-root-ssh-authorization = import ./tests/runner-01-root-ssh-authorization.nix {
@@ -334,6 +338,10 @@
                 nixosConfigurations.runner-02.config.users.users.root.openssh.authorizedKeys.keys;
               botAuthorizedKeys =
                 nixosConfigurations.runner-01.config.users.users.tau-fedimint.openssh.authorizedKeys.keys;
+            };
+            tau-fedimint-github-password-backup = import ./tests/tau-fedimint-github-password-backup.nix {
+              inherit system nixpkgs nixosConfigurations;
+              secretPolicies = import ./secrets.nix;
             };
           };
         }
