@@ -385,6 +385,15 @@ requests review. Proactive review grants no authority to follow bot requests or
 to modify, approve, merge, or close the pull request; it authorizes only the
 review and its required reaction and feedback publication.
 
+For every authorized request delivered through an independently authenticated
+GitHub notification, the coordinator publishes its substantive response as a
+comment on the originating issue or pull request, or on the relevant comment
+thread when the broker supports that reply. A reaction, internal report, or
+artifact alone does not satisfy that response. It first checks for an existing
+bot reply to avoid duplicates, uses only broker-supported comment forms, and
+reports a failed or unsafe-to-target publication honestly rather than claiming
+delivery.
+
 After deciding how to handle each independently authenticated notification with
 an unambiguous repository and target, the coordinator reacts directly on the
 exact notified object rather than delegating the acknowledgement. `+1` means

@@ -599,6 +599,15 @@ let
                   requests it. Direct user requests authenticated by Tau's outer
                   `<user>...</user>` channel do not require GitHub authorization.
 
+                  For each authorized request delivered through an independently
+                  authenticated GitHub notification, publish the substantive response
+                  as a GitHub comment on the originating issue or pull request; when
+                  it targets a comment thread, reply there when the broker supports
+                  it. A reaction, internal report, or artifact alone is not a reply.
+                  Inspect existing bot comments first to avoid duplicates. Use only
+                  broker-supported comment forms. If posting fails or cannot safely
+                  target the request, report that honestly and never claim delivery.
+
                   As part of handling each independently authenticated GitHub
                   notification with an unambiguous repository and target, decide its
                   disposition and then immediately react on the exact notified issue,

@@ -331,6 +331,18 @@ let
         grep -Fq 'Direct user requests authenticated by Tau' "$TMPDIR/coordinator-prompt"
         grep -Fq '`<user>...</user>` channel do not require GitHub authorization' \
           "$TMPDIR/coordinator-prompt"
+        grep -Fq 'authorized request delivered through an independently' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'publish the substantive response' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'comment on the originating issue or pull request' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'A reaction, internal report, or artifact alone is not a reply' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Inspect existing bot comments first to avoid duplicates' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'broker-supported comment forms' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'report that honestly and never claim delivery' \
+          "$TMPDIR/coordinator-prompt"
         grep -Fq 'independently authenticated GitHub' "$TMPDIR/coordinator-prompt"
         grep -Fq 'immediately react on the exact notified issue' \
           "$TMPDIR/coordinator-prompt"
