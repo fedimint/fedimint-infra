@@ -153,8 +153,38 @@ let
           and (.aliases.providers.codex == "chatgpt-dpc")
           and (.agents.model == "codex/gpt-6-sol")
           and (.agents.effort == 0.5)
+          and (.agents.compactions == {
+            "compact-after-done": {
+              threshold: 100000,
+              when: {
+                at: "outer_turn_finished",
+                statuses: ["done"]
+              }
+            },
+            "compact-after-done-any-status": {
+              threshold: 250000,
+              when: {
+                at: "outer_turn_finished"
+              }
+            }
+          })
           and (.agents.role_groups.coordinator.roles.coordinator.model == "codex/gpt-6-sol")
           and (.agents.role_groups.coordinator.roles.coordinator.effort == 0.5)
+          and (.agents.role_groups.coordinator.roles.coordinator.compactions == {
+            "compact-after-done": {
+              threshold: 100000,
+              when: {
+                at: "outer_turn_finished",
+                statuses: ["done", "waiting"]
+              }
+            },
+            "compact-after-done-any-status": {
+              threshold: 150000,
+              when: {
+                at: "outer_turn_finished"
+              }
+            }
+          })
           and (.agents.role_groups.engineer.roles["engineer-junior"].model == "codex/gpt-6-sol")
           and (.agents.role_groups.engineer.roles["engineer-junior"].effort == 0.25)
           and (.agents.role_groups.engineer.roles.engineer.model == "codex/gpt-6-sol")

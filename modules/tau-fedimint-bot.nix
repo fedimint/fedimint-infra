@@ -234,6 +234,19 @@ let
         model = cfg.model;
         effort = 0.5;
         id_template = "{{role}}-{{random_alphanumeric 4}}";
+        compactions = {
+          compact-after-done = {
+            threshold = 100000;
+            when = {
+              at = "outer_turn_finished";
+              statuses = [ "done" ];
+            };
+          };
+          compact-after-done-any-status = {
+            threshold = 250000;
+            when.at = "outer_turn_finished";
+          };
+        };
         prompt_fragments = [
           {
             name = "fedimint-bot.communication";
@@ -443,6 +456,22 @@ let
               model = "codex/gpt-6-sol";
               effort = 0.5;
               description = "Coordinates work and delivers the integrated result.";
+              compactions = {
+                compact-after-done = {
+                  threshold = 100000;
+                  when = {
+                    at = "outer_turn_finished";
+                    statuses = [
+                      "done"
+                      "waiting"
+                    ];
+                  };
+                };
+                compact-after-done-any-status = {
+                  threshold = 150000;
+                  when.at = "outer_turn_finished";
+                };
+              };
               enable_tools = lib.optionals cfg.githubNotifications.enable [ "github_register" ];
             };
           };
