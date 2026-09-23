@@ -339,6 +339,10 @@
               botAuthorizedKeys =
                 nixosConfigurations.runner-01.config.users.users.tau-fedimint.openssh.authorizedKeys.keys;
             };
+            tau-fedimint-github-password-backup = import ./tests/tau-fedimint-github-password-backup.nix {
+              inherit system nixpkgs nixosConfigurations;
+              secretPolicies = import ./secrets.nix;
+            };
           };
         }
       );
