@@ -25,7 +25,7 @@
     };
 
     tau-ext-github = {
-      url = "git+https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=11572feba7c7771dacea4b6d57b4b75334740f27";
+      url = "git+https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=539566b262c068d370924f99008bd0afee61b66c";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };

@@ -248,6 +248,11 @@ malformed-activity, and other documented hard-limit failures remain
 fail-closed, while unsupported activity follows the extension's documented
 discard behavior.
 
+Within one repository poll, the extension completes the batch and delivers
+admitted activities oldest-to-newest by their actual activity timestamp.
+Deterministic thread and activity identifiers break equal-timestamp ties. This
+ordering does not span repositories or separate poll batches.
+
 Header-driven spacing also applies to stabilization and read validation, so it
 can increase delivery and checkpoint latency. An active batch remains serial
 and can delay scans of the other configured repository.
