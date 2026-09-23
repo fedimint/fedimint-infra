@@ -198,8 +198,14 @@ policy:
 
 The extension is notification-triggered and hydrates supported issue and pull
 request activity. It is not a complete GitHub activity feed. GitHub coalesces
-notifications, and unsupported or over-limit activity follows the extension's
-documented fail-closed or discard behavior.
+notifications. Each delivered activity includes its admitted author, activity
+type, time, canonical GitHub URL, and original body/details size. Body and
+structured details totaling up to 4096 UTF-8 bytes remain inline; larger
+content is omitted entirely with a notice directing the coordinator to fetch
+it from the canonical URL if needed. Genuine fetch, count, transport,
+malformed-activity, and other documented hard-limit failures remain
+fail-closed, while unsupported activity follows the extension's documented
+discard behavior.
 
 Header-driven spacing also applies to stabilization and read validation, so it
 can increase delivery and checkpoint latency. An active batch remains serial
