@@ -247,6 +247,10 @@ let
         grep -q 'relevant history' "$TMPDIR/bot-prompts"
         grep -q 'source and history read-only' "$TMPDIR/bot-prompts"
         grep -q 'Do not modify project source or history' "$TMPDIR/bot-prompts"
+        grep -Fq '/tmp/public' "$TMPDIR/bot-prompts"
+        grep -Fq 'shared mode-1733' "$TMPDIR/bot-prompts"
+        grep -Fq 'non-listable dropbox' "$TMPDIR/bot-prompts"
+        grep -Fq '`mktemp`' "$TMPDIR/bot-prompts"
         grep -Fq '`direnv-dpc exec .`' "$TMPDIR/bot-prompts"
         grep -Fq 'then run `direnv-dpc allow` in that workdir' "$TMPDIR/bot-prompts"
         grep -Fq "equivalent of \`direnv allow\`" "$TMPDIR/bot-prompts"
@@ -301,6 +305,16 @@ let
         jq -e '
           (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
           and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)
+        ' "$disabled_isolate" >/dev/null
+        jq -e '
+          [.profiles["fedimint-bot"].bind[]
+            | select(.path == "/tmp/public")]
+          == [{
+            path: "/tmp/public",
+            rw: true,
+            required: true,
+            kind: "dir"
+          }]
         ' "$disabled_isolate" >/dev/null
         jq -e '
           [.profiles["fedimint-bot"].bind[]
@@ -740,6 +754,8 @@ let
 
       machine.succeed(
           "rm -rf "
+          "/tmp/public "
+          "/tmp/public-target "
           "/home/tau-fedimint/.config/isolate "
           "/home/tau-fedimint/.config/tau "
           "/home/tau-fedimint/.local/state/tau "
@@ -764,7 +780,27 @@ let
           "/home/tau-fedimint/.cache"
       )
 
+      machine.succeed(
+          "install -d -m 0700 /tmp/public-target && "
+          "ln -s /tmp/public-target /tmp/public"
+      )
       machine.succeed("systemd-tmpfiles --create")
+      machine.succeed(
+          "test -L /tmp/public && "
+          "test \"$(stat -Lc '%u:%g:%a' /tmp/public-target)\" = 0:0:700"
+      )
+      machine.succeed(
+          "rm /tmp/public && systemd-tmpfiles --create && "
+          "test \"$(stat -c '%u:%g:%a' /tmp/public)\" = 65534:65534:1733"
+      )
+      machine.fail("runuser -u tau-fedimint -- ls /tmp/public")
+      machine.succeed(
+          "runuser -u tau-fedimint -- sh -euc '"
+          "artifact=$(mktemp /tmp/public/host-artifact-XXXXXX); "
+          "printf shared >\"$artifact\"; "
+          "test \"$(cat \"$artifact\")\" = shared; "
+          "rm \"$artifact\"'"
+      )
 
       for path in ${
         builtins.toJSON [
@@ -831,7 +867,8 @@ let
       machine.succeed(
           "cat >/home/tau-fedimint/.config/isolate/isolate.yaml <<'EOF'\n"
           '{"version":1,"profiles":{"tool-test":{"pid":{"mode":"private"},'
-          '"bind_repo_root":true,"setenv":{"HOME":"/home/tau-fedimint",'
+          '"bind_repo_root":true,"bind":[{"path":"/tmp/public","rw":true,'
+          '"required":true,"kind":"dir"}],"setenv":{"HOME":"/home/tau-fedimint",'
           '"XDG_CONFIG_HOME":"/home/tau-fedimint/.config",'
           '"XDG_STATE_HOME":"/home/tau-fedimint/.local/state",'
           '"XDG_CACHE_HOME":"/home/tau-fedimint/.cache",'
@@ -873,7 +910,12 @@ let
           "lock_before=$(sha256sum flake.lock); "
           "nix develop --offline --no-write-lock-file .#default "
           "--command just --version | grep -q \"^just \"; "
-          "test \"$(sha256sum flake.lock)\" = \"$lock_before\"'"
+          "test \"$(sha256sum flake.lock)\" = \"$lock_before\"; "
+          "artifact=$(mktemp /tmp/public/isolate-artifact-XXXXXX); "
+          "printf shared >\"$artifact\"; "
+          "test \"$(cat \"$artifact\")\" = shared; "
+          "! ls /tmp/public >/dev/null 2>&1; "
+          "rm \"$artifact\"'"
       )
     '';
   };

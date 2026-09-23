@@ -37,6 +37,9 @@ target.
   agenix paths but contain no secret values.
 - An isolate profile whose only writable project checkout is
   `/home/tau-fedimint/fedimint`.
+- A writable `/tmp/public` bind matching the operator sandbox: a shared
+  `nobody:nogroup` mode-1733 dropbox for artifacts passed between agent sessions.
+  Agents cannot list it, so they use `mktemp` names and pass exact paths.
 - Private PID namespace and intercepted `gh` routed through `gh-broker`.
   The GitHub token never enters the sandbox.
 - A dedicated SSH agent loaded from an agenix private key. The sandbox sees only
@@ -90,6 +93,19 @@ project/Tau state/Tau cache/Tau runtime subtree read-write, and the dedicated
 SSH-agent socket. It inherits normal network access. `gh-broker` is a privileged
 host component with a narrow command protocol, but neither it nor role prompts
 turn the whole agent into a hostile-code security boundary.
+
+The `/tmp/public` bind exposes that directory only, not the rest of the host's
+`/tmp`. `systemd-tmpfiles` creates it as `nobody:nogroup` mode `1733`; if the
+path is replaced by a symlink, tmpfiles refuses to follow it and isolate also
+requires the bind source to be a directory. The sticky bit prevents users from
+removing files they do not own, while the missing read bit prevents directory
+listing. Artifact names are still capabilities: use unpredictable `mktemp`
+names, do not store secrets there, and send collaborators the exact path.
+
+This dropbox does not broaden any privileged host command or file-import
+policy. In particular, placing a review body in `/tmp/public` does not make it
+acceptable to the GitHub broker, which continues to accept only its documented
+safe repository-root-relative inputs.
 
 ## Project development shell
 
