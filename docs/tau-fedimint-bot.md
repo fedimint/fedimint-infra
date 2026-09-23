@@ -215,10 +215,11 @@ Startup and polling do not by themselves select a receiving agent.
 The coordinator role has the project-supported `github_register` tool and must
 call it with `{"enabled":true}`. Because every service start now creates a fresh
 session, a restart deliberately discards both the receiving agent membership and
-its registration intent. After every restart, connect to the new session, create
-or load its coordinator, and explicitly register that coordinator again.
-The service does not submit a bootstrap model prompt on the operator's behalf.
-Until registration succeeds, the extension remains running and preserves its
+its registration intent. After Tau and its extensions become ready, the service
+uses Tau's supported bootstrap-prompt mechanism to create the default coordinator
+and tell it first to call `github_register` with `{"enabled":true}`, verify the
+tool succeeds, and then follow its existing instructions. A successful tool result
+confirms registration; until then, the extension remains running and preserves its
 GitHub watch subscriptions, but it has no agent to receive polled activity.
 Calling `github_register` with `{"enabled":false}` stops delivery to that agent
 without undoing repository subscriptions.

@@ -21,6 +21,15 @@ let
       name = fedimint-tau
       email = 332691140+fedimint-tau@users.noreply.github.com
   '';
+  bootstrapPrompt = pkgs.writeText "tau-fedimint-bootstrap-prompt" (
+    if cfg.githubNotifications.enable then
+      ''
+        First call `github_register` with `{"enabled":true}` and verify that it
+        succeeds. Then follow your instructions.
+      ''
+    else
+      "Follow your instructions."
+  );
 
   githubRequester = pkgs.writeShellApplication {
     name = "fedimint-github-requester";
@@ -626,7 +635,9 @@ let
       -- \
       ${cfg.tauPackage}/bin/tau serve \
         --session tau-fedimint-bot \
-        --create
+        --create \
+        --bootstrap-prompt-file ${bootstrapPrompt} \
+        --bootstrap-id fedimint-coordinator-v1
   '';
 in
 {

@@ -256,8 +256,16 @@ let
         grep -q '^UnsetEnvironment=TAU_MODEL_ALIASES$' "$bot_unit"
         grep -q '^UnsetEnvironment=TAU_PROFILE$' "$bot_unit"
         grep -q '^UnsetEnvironment=TAU_PROVIDER_ALIASES$' "$bot_unit"
-        grep -q -- '--create$' ${disabledStart}
+        grep -q -- '--create \\' ${disabledStart}
         ! grep -q -- '--create-or-existing' ${disabledStart}
+        grep -q -- '--bootstrap-id fedimint-coordinator-v1$' ${disabledStart}
+
+        bootstrap_prompt=$(
+          sed -n 's#.*--bootstrap-prompt-file \([^ ]*\).*#\1#p' ${enabledStart}
+        )
+        test -n "$bootstrap_prompt"
+        grep -Fq 'First call `github_register` with `{"enabled":true}`' "$bootstrap_prompt"
+        grep -Fq 'succeeds. Then follow your instructions.' "$bootstrap_prompt"
 
         clear_session=$(
           grep -Eo '/nix/store/[^ ]+-tau-fedimint-clear-session' ${disabledStart}
