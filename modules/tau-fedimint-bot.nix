@@ -468,6 +468,14 @@ let
                   Fedimint consensus. If safety, compatibility, consensus
                   impact, or review status is uncertain, do not approve.
 
+                  Publish substantive feedback for every completed pull-request
+                  review, whether it passes or fails. Approve only when the
+                  preceding approval rules permit it; otherwise publish a
+                  comment-only review. Never turn a failing or unsafe review
+                  into an approval merely to publish feedback. Avoid duplicate
+                  reviews. If publication is blocked, preserve the feedback,
+                  report it as pending, and do not claim that it was posted.
+
                   Use `clank` for major project tasks that must survive the
                   session. Reuse and update the task's existing ticket when one
                   exists; keep its request, decisions, important progress,
@@ -633,6 +641,50 @@ let
     rm -rf --one-file-system -- "$session"
   '';
 
+  configureGitPush = pkgs.writeShellScript "tau-fedimint-configure-git-push" ''
+    set -euo pipefail
+    checkout=$1
+    expected_https=$2
+    expected_ssh=$3
+
+    mapfile -t origins < <(${pkgs.git}/bin/git -C "$checkout" remote get-url --all origin)
+    mapfile -t pushes < <(${pkgs.git}/bin/git -C "$checkout" remote get-url --push --all origin)
+    [ "''${#origins[@]}" -eq 1 ] || {
+      echo "refusing multiple origin URLs for $checkout" >&2
+      exit 1
+    }
+    [ "''${#pushes[@]}" -eq 1 ] || {
+      echo "refusing multiple push URLs for $checkout" >&2
+      exit 1
+    }
+    origin=''${origins[0]}
+    push=''${pushes[0]}
+    case "$origin" in
+      "$expected_https" | "$expected_https.git") ;;
+      *)
+        echo "refusing unexpected origin URL for $checkout: $origin" >&2
+        exit 1
+        ;;
+    esac
+    case "$push" in
+      "$origin" | "$expected_ssh") ;;
+      *)
+        echo "refusing unexpected push URL for $checkout: $push" >&2
+        exit 1
+        ;;
+    esac
+
+    ${pkgs.git}/bin/git -C "$checkout" remote set-url --push origin "$expected_ssh"
+    mapfile -t configured_pushes < <(
+      ${pkgs.git}/bin/git -C "$checkout" remote get-url --push --all origin
+    )
+    if [ "''${#configured_pushes[@]}" -ne 1 ] || [ "''${configured_pushes[0]}" != "$expected_ssh" ]; then
+      ${pkgs.git}/bin/git -C "$checkout" config --unset-all remote.origin.pushurl
+      echo "configured push URL does not resolve to $expected_ssh for $checkout" >&2
+      exit 1
+    fi
+  '';
+
   startBot = pkgs.writeShellScript "tau-fedimint-start" ''
     set -euo pipefail
     install -d -m 0700 \
@@ -645,6 +697,10 @@ let
     install -m 0600 ${harnessConfig} "$HOME/.config/tau/harness.yaml"
     install -m 0600 ${isolateConfig} "$HOME/.config/isolate/isolate.yaml"
     cd ${lib.escapeShellArg projectRoot}
+    ${configureGitPush} \
+      ${lib.escapeShellArg projectRoot} \
+      https://github.com/fedimint/fedimint \
+      git@github.com:fedimint/fedimint.git
     exec ${cfg.isolatePackage}/bin/isolate exec \
       --profile fedimint-bot \
       -- \
@@ -822,6 +878,11 @@ in
       openssh.authorizedKeys.keys = cfg.sshAuthorizedKeys;
     };
 
+    programs.ssh.knownHosts.github-ed25519 = {
+      hostNames = [ "github.com" ];
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+    };
+
     systemd.tmpfiles.rules = [
       "d ${projectRoot} 0700 ${user} ${user} -"
       "d ${home}/.config 0700 ${user} ${user} -"
@@ -842,6 +903,7 @@ in
       githubRequester
       cfg.ghBrokerPackage
       pkgs.git
+      pkgs.just
     ]
     ++ lib.optional cfg.githubNotifications.enable cfg.githubNotifications.package;
 
@@ -865,7 +927,10 @@ in
       description = "Fixed isolated Tau Fedimint bot session";
       wantedBy = [ "default.target" ];
       unitConfig.ConditionUser = user;
-      path = [ pkgs.bubblewrap ];
+      path = [
+        pkgs.bubblewrap
+        pkgs.just
+      ];
       after = [
         "network-online.target"
         "tau-fedimint-ssh-agent.service"

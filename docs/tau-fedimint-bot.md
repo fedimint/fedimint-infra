@@ -55,6 +55,16 @@ target.
 - A startup-only provider alias from `codex` to `chatgpt-dpc`. This rewrites
   configured role model references; it does not rename, copy, authenticate, or
   otherwise modify the provider profile.
+- The managed `fedimint/fedimint` checkout retains its HTTPS fetch URL but gets
+  an exact SSH push URL, where the dedicated agent supplies the bot key.
+  Startup refuses unexpected fetch or push URLs instead of broadening the
+  rewrite to other GitHub repositories. GitHub's published ED25519 host key is
+  pinned in the system SSH known-hosts configuration.
+- `just` is present in both the bot service path and the system profile path
+  retained by isolate, so sandbox commands can resolve it. Project recipes can
+  still require the repository's development environment and tools beyond
+  `just`; run those through the project's supported dev shell rather than
+  broadening the bot's ambient toolchain.
 - Tau, `tau-ext-github`, `isolate`, `gh-isolate`, and `clank` packages pinned
   as flake inputs.
   Tau and `tau-ext-github` are pinned together at their reviewed protocol 9
@@ -150,9 +160,9 @@ Nix-generated startup configuration is deterministic.
    profile needs authentication. To change backing providers later, set
    `services.tau-fedimint-bot.providerProfile` to the new canonical profile
    name; roles remain on `codex/...`.
-3. **Checkout:** create `/home/tau-fedimint/fedimint` as the intended repository
-   or parent directory. Confirm whether one checkout or multiple repositories
-   below it are desired.
+3. **Checkout:** clone `fedimint/fedimint` directly at
+   `/home/tau-fedimint/fedimint`. Startup requires that exact managed checkout
+   and refuses unexpected fetch or push URLs.
 4. **Known users and services:** the inbound configuration watches
    `fedimint/fedimint` and `fedimint/fedimint-sdk`. For each repository, it
    admits actors from GitHub's complete collaborator roster when their effective
@@ -268,7 +278,10 @@ decision rather than a maintainer-controlled action: all required code review
 must pass, and uncertainty means no approval. The coordinator refuses to
 approve backward-incompatible changes in either watched repository and refuses
 to approve changes to Fedimint consensus in `fedimint/fedimint`, even when a
-maintainer requests approval.
+maintainer requests approval. Every completed review must still publish
+substantive feedback. Passing reviews may approve only when those rules permit;
+all other completed reviews use comment-only feedback. A blocked publication
+remains pending and must not be reported as posted.
 
 The separate `fedimint-github-requester` helper deliberately also supports
 historical contributors when the broader `either` policy is used elsewhere;

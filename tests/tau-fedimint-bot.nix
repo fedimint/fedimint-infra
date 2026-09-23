@@ -4,6 +4,7 @@
   agenix,
   module,
   tauPackage,
+  isolatePackage,
   githubNotificationsPackage,
 }:
 
@@ -260,6 +261,10 @@ let
         grep -q 'refuse to approve any change to' "$TMPDIR/coordinator-prompt"
         grep -q 'Fedimint consensus' "$TMPDIR/coordinator-prompt"
         grep -q 'or review status is uncertain, do not approve' "$TMPDIR/coordinator-prompt"
+        grep -q 'feedback for every completed pull-request' "$TMPDIR/coordinator-prompt"
+        grep -q 'comment-only review' "$TMPDIR/coordinator-prompt"
+        grep -q 'Never turn a failing or unsafe review' "$TMPDIR/coordinator-prompt"
+        grep -q 'report it as pending' "$TMPDIR/coordinator-prompt"
         jq -e '
           (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
           and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)
@@ -318,6 +323,81 @@ let
           exit 1
         fi
         test -e "$external_sessions/tau-fedimint-bot/keep"
+
+        configure_git_push=$(
+          grep -Eo '/nix/store/[^ ]+-tau-fedimint-configure-git-push' ${disabledStart}
+        )
+        test -n "$configure_git_push"
+        for suffix in "" ".git"; do
+          checkout="$TMPDIR/fedimint''${suffix//./-}"
+          ${pkgs.git}/bin/git init -q "$checkout"
+          ${pkgs.git}/bin/git -C "$checkout" remote add origin \
+            "https://github.com/fedimint/fedimint$suffix"
+          "$configure_git_push" \
+            "$checkout" \
+            https://github.com/fedimint/fedimint \
+            git@github.com:fedimint/fedimint.git
+          test "$(${pkgs.git}/bin/git -C "$checkout" remote get-url origin)" = \
+            "https://github.com/fedimint/fedimint$suffix"
+          test "$(${pkgs.git}/bin/git -C "$checkout" remote get-url --push origin)" = \
+            "git@github.com:fedimint/fedimint.git"
+          "$configure_git_push" \
+            "$checkout" \
+            https://github.com/fedimint/fedimint \
+            git@github.com:fedimint/fedimint.git
+        done
+        unexpected="$TMPDIR/unexpected"
+        ${pkgs.git}/bin/git init -q "$unexpected"
+        ${pkgs.git}/bin/git -C "$unexpected" remote add origin \
+          https://github.com/fedimint/fedimint-infra
+        ! "$configure_git_push" \
+          "$unexpected" \
+          https://github.com/fedimint/fedimint \
+          git@github.com:fedimint/fedimint.git
+        test "$(${pkgs.git}/bin/git -C "$unexpected" remote get-url --push origin)" = \
+          "https://github.com/fedimint/fedimint-infra"
+        ssh_origin="$TMPDIR/ssh-origin"
+        ${pkgs.git}/bin/git init -q "$ssh_origin"
+        ${pkgs.git}/bin/git -C "$ssh_origin" remote add origin \
+          git@github.com:fedimint/fedimint.git
+        ! "$configure_git_push" \
+          "$ssh_origin" \
+          https://github.com/fedimint/fedimint \
+          git@github.com:fedimint/fedimint.git
+        ambiguous="$TMPDIR/ambiguous"
+        ${pkgs.git}/bin/git init -q "$ambiguous"
+        ${pkgs.git}/bin/git -C "$ambiguous" remote add origin \
+          https://github.com/fedimint/fedimint
+        ${pkgs.git}/bin/git -C "$ambiguous" config --add remote.origin.pushurl \
+          git@github.com:fedimint/fedimint.git
+        ${pkgs.git}/bin/git -C "$ambiguous" config --add remote.origin.pushurl \
+          git@github.com:fedimint/other.git
+        ! "$configure_git_push" \
+          "$ambiguous" \
+          https://github.com/fedimint/fedimint \
+          git@github.com:fedimint/fedimint.git
+        unexpected_push="$TMPDIR/unexpected-push"
+        ${pkgs.git}/bin/git init -q "$unexpected_push"
+        ${pkgs.git}/bin/git -C "$unexpected_push" remote add origin \
+          https://github.com/fedimint/fedimint
+        ${pkgs.git}/bin/git -C "$unexpected_push" remote set-url --push origin \
+          git@github.com:fedimint/other.git
+        ! "$configure_git_push" \
+          "$unexpected_push" \
+          https://github.com/fedimint/fedimint \
+          git@github.com:fedimint/fedimint.git
+        rewritten="$TMPDIR/rewritten"
+        ${pkgs.git}/bin/git init -q "$rewritten"
+        ${pkgs.git}/bin/git -C "$rewritten" remote add origin \
+          https://github.com/fedimint/fedimint
+        ${pkgs.git}/bin/git -C "$rewritten" config \
+          'url.ssh://git@other.example/.insteadOf' git@github.com:
+        ! "$configure_git_push" \
+          "$rewritten" \
+          https://github.com/fedimint/fedimint \
+          git@github.com:fedimint/fedimint.git
+        test "$(${pkgs.git}/bin/git -C "$rewritten" remote get-url --push origin)" = \
+          "https://github.com/fedimint/fedimint"
 
         test_home="$TMPDIR/tau-home"
         test_workspace="$TMPDIR/workspace"
@@ -493,6 +573,12 @@ let
         createHome = true;
       };
       systemd.tmpfiles.rules = disabled.config.systemd.tmpfiles.rules;
+      environment.systemPackages = [
+        isolatePackage
+        pkgs.bubblewrap
+        pkgs.git
+        pkgs.just
+      ];
     };
     testScript = ''
       start_all()
@@ -539,6 +625,26 @@ let
           machine.succeed(
               f"test \"$(stat -c '%u:%g:%a' '{path}')\" = 1001:991:700"
           )
+
+      machine.succeed(
+          "cat >/home/tau-fedimint/.config/isolate/isolate.yaml <<'EOF'\n"
+          '{"version":1,"profiles":{"tool-test":{"pid":{"mode":"private"},'
+          '"bind_repo_root":true,"setenv":{"HOME":"/home/tau-fedimint",'
+          '"XDG_CONFIG_HOME":"/home/tau-fedimint/.config",'
+          '"XDG_STATE_HOME":"/home/tau-fedimint/.local/state",'
+          '"XDG_CACHE_HOME":"/home/tau-fedimint/.cache",'
+          '"XDG_RUNTIME_DIR":"/home/tau-fedimint/.runtime"}}}}\n'
+          "EOF\n"
+          "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
+          "/home/tau-fedimint/.runtime\n"
+          "chown tau-fedimint:tau-fedimint "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "runuser -u tau-fedimint -- git -C /home/tau-fedimint/fedimint init -q\n"
+          "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+          "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
+          "isolate -c /home/tau-fedimint/fedimint "
+          "exec --profile tool-test -- just --version | grep -q '^just '"
+      )
     '';
   };
 in
@@ -553,8 +659,14 @@ assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-token"
 assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-identity-key");
 assert !(lib.elem githubNotificationsPackage disabled.config.environment.systemPackages);
 assert lib.elem pkgs.git disabled.config.environment.systemPackages;
+assert lib.elem pkgs.just disabled.config.environment.systemPackages;
 assert !(lib.elem pkgs.jujutsu disabled.config.environment.systemPackages);
 assert lib.elem pkgs.bubblewrap disabled.config.systemd.user.services.tau-fedimint-bot.path;
+assert lib.elem pkgs.just disabled.config.systemd.user.services.tau-fedimint-bot.path;
+assert disabled.config.programs.ssh.knownHosts.github-ed25519.hostNames == [ "github.com" ];
+assert
+  disabled.config.programs.ssh.knownHosts.github-ed25519.publicKey
+  == "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 pkgs.linkFarm "tau-fedimint-bot-checks" [
   {
     name = "config";
