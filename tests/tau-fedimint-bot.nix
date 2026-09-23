@@ -21,6 +21,9 @@ let
   notificationToken = builtins.toFile "notification-token.age" "test-only";
   identityKey = builtins.toFile "notification-identity-key.age" "test-only";
   sshKey = builtins.toFile "ssh-private-key.age" "test-only";
+  devShellSmoke = pkgs.mkShell {
+    packages = [ pkgs.just ];
+  };
   common = {
     enable = true;
     inherit tauPackage;
@@ -564,6 +567,11 @@ let
     name = "tau-fedimint-bot-tmpfiles";
     nodes.machine = {
       system.stateVersion = "26.05";
+      nix.settings.experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+      system.extraDependencies = [ devShellSmoke ];
       users.groups.tau-fedimint.gid = 991;
       users.users.tau-fedimint = {
         isNormalUser = true;
@@ -577,6 +585,7 @@ let
         isolatePackage
         pkgs.bubblewrap
         pkgs.git
+        pkgs.jq
         pkgs.just
       ];
     };
@@ -639,11 +648,40 @@ let
           "/home/tau-fedimint/.runtime\n"
           "chown tau-fedimint:tau-fedimint "
           "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "cat >/home/tau-fedimint/fedimint/flake.nix <<'EOF'\n"
+          "{\n"
+          "  inputs.nixpkgs.url = \"path:${nixpkgs}\";\n"
+          "  outputs = { self, nixpkgs }:\n"
+          "    let pkgs = nixpkgs.legacyPackages.${system};\n"
+          "    in {\n"
+          "      devShells.${system}.default = pkgs.mkShell {\n"
+          "        packages = [ pkgs.just ];\n"
+          "      };\n"
+          "    };\n"
+          "}\n"
+          "EOF\n"
+          "cat >/home/tau-fedimint/fedimint/flake.lock <<'EOF'\n"
+          '{"nodes":{"nixpkgs":{"locked":{"narHash":"${nixpkgs.narHash}",'
+          '"path":"${nixpkgs}","type":"path"},"original":{"path":"${nixpkgs}",'
+          '"type":"path"}},"root":{"inputs":{"nixpkgs":"nixpkgs"}}},'
+          '"root":"root","version":7}\n'
+          "EOF\n"
+          "chown tau-fedimint:tau-fedimint "
+          "/home/tau-fedimint/fedimint/flake.nix "
+          "/home/tau-fedimint/fedimint/flake.lock\n"
           "runuser -u tau-fedimint -- git -C /home/tau-fedimint/fedimint init -q\n"
+          "runuser -u tau-fedimint -- git -C /home/tau-fedimint/fedimint add "
+          "flake.nix flake.lock\n"
           "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
           "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
           "isolate -c /home/tau-fedimint/fedimint "
-          "exec --profile tool-test -- just --version | grep -q '^just '"
+          "exec --profile tool-test -- bash -euc '"
+          "test -S /nix/var/nix/daemon-socket/socket; "
+          "test \"$(nix store info --store daemon --json | jq -r .trusted)\" = false; "
+          "lock_before=$(sha256sum flake.lock); "
+          "nix develop --offline --no-write-lock-file .#default "
+          "--command just --version | grep -q \"^just \"; "
+          "test \"$(sha256sum flake.lock)\" = \"$lock_before\"'"
       )
     '';
   };

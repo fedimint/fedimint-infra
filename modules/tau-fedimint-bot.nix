@@ -327,6 +327,25 @@ let
               session; do not put secrets in tickets.
             '';
           }
+          {
+            name = "fedimint-bot.project-workflow";
+            priority = 20;
+            text = ''
+              Follow the repository's checked-in instructions and use its pinned
+              development shell for project checks. On a fresh sandbox session,
+              populate Cargo's public dependency cache before running the offline
+              final lint:
+
+                  nix develop . --command bash -lc 'cargo fetch --locked && just final-lint'
+
+              Run the actual project check and report its real result. A tool
+              availability probe or synthetic smoke test does not mean the
+              project's lint, tests, or build passed. If dependency fetching,
+              development-shell entry, or the check fails, report that failure
+              rather than bypassing the pinned environment or weakening the
+              sandbox.
+            '';
+          }
         ];
         role_groups = {
           support = {

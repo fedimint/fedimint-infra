@@ -63,8 +63,8 @@ target.
 - `just` is present in both the bot service path and the system profile path
   retained by isolate, so sandbox commands can resolve it. Project recipes can
   still require the repository's development environment and tools beyond
-  `just`; run those through the project's supported dev shell rather than
-  broadening the bot's ambient toolchain.
+  `just`; the bot instructions require the repository's pinned development
+  shell rather than broadening the ambient toolchain.
 - Tau, `tau-ext-github`, `isolate`, `gh-isolate`, and `clank` packages pinned
   as flake inputs.
   Tau and `tau-ext-github` are pinned together at their reviewed protocol 9
@@ -90,6 +90,37 @@ project/Tau state/Tau cache/Tau runtime subtree read-write, and the dedicated
 SSH-agent socket. It inherits normal network access. `gh-broker` is a privileged
 host component with a narrow command protocol, but neither it nor role prompts
 turn the whole agent into a hostile-code security boundary.
+
+## Project development shell
+
+The isolate baseline already exposes `/run/current-system`, `/etc`, and `/nix`
+read-only. The `/nix` bind includes the Nix daemon socket, so the unprivileged
+`tau-fedimint` user can evaluate flakes and request builds without another mount
+or host tool grant. The account remains an untrusted Nix client: it is not in
+`nix.settings.trusted-users`, and the bot configuration does not add trusted
+substituters, signing keys, or Cachix configuration.
+
+On a fresh sandbox session, Cargo's registry cache under the synthetic sandbox
+home is empty. Fedimint's `final-lint` recipe runs Clippy with `--offline`, so
+enter the pinned project shell and fetch locked public dependencies before the
+lint:
+
+```console
+nix develop . --command bash -lc 'cargo fetch --locked && just final-lint'
+```
+
+That cache lasts for the lifetime of the running isolate sandbox and disappears
+when the bot restarts. The checkout's `target-nix` remains writable and can
+consume substantial disk during a real lint. Nix builds requested through the
+daemon can likewise consume host CPU, disk, and store space; their builders run
+under the host daemon's normal Nix build sandbox, not inside the bot's bubblewrap
+namespace. These are existing consequences of isolate's documented Nix baseline,
+not additional access granted by this module.
+
+The NixOS VM test uses the pinned isolate package with a small, locked,
+path-only synthetic flake. It proves that the daemon is reachable, the bot is
+untrusted, and a dev shell can expose `just`; it does not run Fedimint's
+`final-lint` or imply that any project lint, test, or build passed.
 
 ## Deployment ownership repair
 
