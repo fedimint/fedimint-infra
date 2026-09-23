@@ -144,6 +144,13 @@ let
         test -n "$enabled_isolate"
         test -n "$git_config"
 
+        for config in "$disabled_harness" "$alternate_provider_harness" "$enabled_harness" \
+          "$disabled_isolate" "$enabled_isolate"; do
+          test "$(wc -l <"$config")" -gt 1
+          grep -q '^  "' "$config"
+          jq --indent 2 . "$config" | cmp -s - "$config"
+        done
+
         test "$(${pkgs.git}/bin/git config --file "$git_config" user.name)" = "fedimint-tau"
         test "$(${pkgs.git}/bin/git config --file "$git_config" user.email)" = \
           "332691140+fedimint-tau@users.noreply.github.com"

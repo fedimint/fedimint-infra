@@ -160,8 +160,15 @@ let
     '';
   };
 
-  harnessConfig = pkgs.writeText "tau-fedimint-harness.yaml" (
-    builtins.toJSON {
+  writePrettyJSON =
+    name: value:
+    pkgs.runCommand name { nativeBuildInputs = [ pkgs.jq ]; }
+      ''
+        ${pkgs.jq}/bin/jq --indent 2 . \
+          ${pkgs.writeText "${name}.compact" (builtins.toJSON value)} >"$out"
+      '';
+
+  harnessConfig = writePrettyJSON "tau-fedimint-harness.yaml" {
       session_retention = "60d";
       agent_retention = "60d";
       inter_session = {
@@ -480,11 +487,9 @@ let
           };
         };
       };
-    }
-  );
+    };
 
-  isolateConfig = pkgs.writeText "tau-fedimint-isolate.yaml" (
-    builtins.toJSON {
+  isolateConfig = writePrettyJSON "tau-fedimint-isolate.yaml" {
       version = 1;
       profiles.fedimint-bot = {
         pid.mode = "private";
@@ -585,8 +590,7 @@ let
           }
         ];
       };
-    }
-  );
+    };
 
   clearSession = pkgs.writeShellScript "tau-fedimint-clear-session" ''
     set -euo pipefail
