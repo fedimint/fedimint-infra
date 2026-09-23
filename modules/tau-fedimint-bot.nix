@@ -433,6 +433,19 @@ let
             '';
           }
           {
+            name = "fedimint-bot.papercuts";
+            priority = 18;
+            text = ''
+              Use the `papercut` harness tool to report every incidental harness,
+              tooling, or environment issue that prevents completing a request,
+              materially reduces how efficiently you can perform it, or looks
+              suspicious. Report each distinct issue once, concisely and without
+              secrets or unnecessary private data, then continue the primary task
+              when safe. Do not use papercuts for routine status, retry a failed
+              papercut, or enter reporting loops.
+            '';
+          }
+          {
             name = "fedimint-bot.project-workflow";
             priority = 20;
             text = ''

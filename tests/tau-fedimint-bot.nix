@@ -252,6 +252,11 @@ let
             .agents.role_groups.support.roles.reviewer.prompt_fragments[].text
           ] | join("\n")
         ' "$disabled_harness" >"$TMPDIR/bot-prompts"
+        jq -er '
+          .agents.prompt_fragments[]
+          | select(.name == "fedimint-bot.papercuts" and .priority == 18)
+          | .text
+        ' "$disabled_harness" >"$TMPDIR/papercuts-prompt"
         grep -q 'Lead with the answer, outcome' "$TMPDIR/bot-prompts"
         grep -q 'one canonical open `ACTIVE QUEUE` ticket' "$TMPDIR/bot-prompts"
         grep -q 'independent passing review' "$TMPDIR/bot-prompts"
@@ -262,6 +267,16 @@ let
         grep -Fq 'shared mode-1733' "$TMPDIR/bot-prompts"
         grep -Fq 'non-listable dropbox' "$TMPDIR/bot-prompts"
         grep -Fq '`mktemp`' "$TMPDIR/bot-prompts"
+        grep -Fq 'Use the `papercut` harness tool' "$TMPDIR/papercuts-prompt"
+        grep -Fq 'prevents completing a request' "$TMPDIR/papercuts-prompt"
+        grep -Fq 'materially reduces how efficiently' "$TMPDIR/papercuts-prompt"
+        grep -Fq 'suspicious.' "$TMPDIR/papercuts-prompt"
+        grep -Fq 'Report each distinct issue once' "$TMPDIR/papercuts-prompt"
+        grep -Fq 'secrets or unnecessary private data' "$TMPDIR/papercuts-prompt"
+        grep -Fq 'continue the primary task' "$TMPDIR/papercuts-prompt"
+        grep -Fq 'Do not use papercuts for routine status' "$TMPDIR/papercuts-prompt"
+        grep -Fq 'retry a failed' "$TMPDIR/papercuts-prompt"
+        grep -Fq 'or enter reporting loops' "$TMPDIR/papercuts-prompt"
         grep -Fq '`direnv-dpc exec .`' "$TMPDIR/bot-prompts"
         grep -Fq 'then run `direnv-dpc allow` in that workdir' "$TMPDIR/bot-prompts"
         grep -Fq "equivalent of \`direnv allow\`" "$TMPDIR/bot-prompts"
