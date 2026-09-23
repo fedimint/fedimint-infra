@@ -114,6 +114,7 @@ let
     "/home/tau-fedimint/.config"
     "/home/tau-fedimint/.config/isolate"
     "/home/tau-fedimint/.config/tau"
+    "/home/tau-fedimint/.ssh"
     "/home/tau-fedimint/.local"
     "/home/tau-fedimint/.local/share"
     "/home/tau-fedimint/.local/share/direnv"
@@ -154,12 +155,16 @@ let
         git_config=$(
           sed -n 's#.*install -m 0600 \([^ ]*gitconfig\).*#\1#p' ${disabledStart}
         )
+        ssh_config=$(
+          sed -n 's#.*install -m 0600 \([^ ]*ssh-config\).*#\1#p' ${disabledStart}
+        )
         test -n "$disabled_harness"
         test -n "$alternate_provider_harness"
         test -n "$enabled_harness"
         test -n "$disabled_isolate"
         test -n "$enabled_isolate"
         test -n "$git_config"
+        test -n "$ssh_config"
 
         for config in "$disabled_harness" "$alternate_provider_harness" "$enabled_harness" \
           "$disabled_isolate" "$enabled_isolate"; do
@@ -171,6 +176,12 @@ let
         test "$(${pkgs.git}/bin/git config --file "$git_config" user.name)" = "fedimint-tau"
         test "$(${pkgs.git}/bin/git config --file "$git_config" user.email)" = \
           "332691140+fedimint-tau@users.noreply.github.com"
+        test "$(grep -Fxc 'Host *' "$ssh_config")" -eq 1
+        grep -Fqx '  BatchMode yes' "$ssh_config"
+        grep -Fqx '  GlobalKnownHostsFile /etc/ssh/ssh_known_hosts' "$ssh_config"
+        grep -Fqx '  StrictHostKeyChecking yes' "$ssh_config"
+        grep -Fqx '  UserKnownHostsFile /dev/null' "$ssh_config"
+        grep -Fqx 'Host github.com' "$ssh_config"
 
         jq -e '
           (.extensions["github-notifications"] == null)
@@ -441,6 +452,15 @@ let
             "https://github.com/fedimint/fedimint$suffix"
           test "$(${pkgs.git}/bin/git -C "$checkout" remote get-url --push origin)" = \
             "git@github.com:fedimint/fedimint.git"
+          test "$(${pkgs.git}/bin/git -C "$checkout" config --local --get core.sshCommand)" = \
+            "${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config"
+          ${pkgs.git}/bin/git -C "$checkout" \
+            -c user.name=test -c user.email=test@example.com \
+            commit --allow-empty -qm initial
+          worktree="$checkout-worktree"
+          ${pkgs.git}/bin/git -C "$checkout" worktree add -q "$worktree"
+          test "$(${pkgs.git}/bin/git -C "$worktree" config --local --get core.sshCommand)" = \
+            "${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config"
           "$configure_git_push" \
             "$checkout" \
             https://github.com/fedimint/fedimint \
@@ -458,6 +478,8 @@ let
           "https://github.com/fedimint/fedimint-sdk.git"
         test "$(${pkgs.git}/bin/git -C "$sdk_checkout" remote get-url --push origin)" = \
           "git@github.com:fedimint/fedimint-sdk.git"
+        test "$(${pkgs.git}/bin/git -C "$sdk_checkout" config --local --get core.sshCommand)" = \
+          "${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config"
         grep -Fxq '  /home/tau-fedimint/fedimint/fedimint \' ${disabledStart}
         grep -Fxq '  /home/tau-fedimint/fedimint/fedimint-sdk \' ${disabledStart}
         unexpected="$TMPDIR/unexpected"
@@ -785,14 +807,17 @@ let
           "/tmp/public-target "
           "/home/tau-fedimint/.config/isolate "
           "/home/tau-fedimint/.config/tau "
+          "/home/tau-fedimint/.ssh "
           "/home/tau-fedimint/.local/state/tau "
           "/home/tau-fedimint/.local/state/clank "
           "/home/tau-fedimint/.local/share/direnv "
           "/home/tau-fedimint/.cache/tau"
       )
+      machine.succeed("install -d -m 0755 /home/tau-fedimint/.ssh")
       machine.succeed(
           "chown root:root "
           "/home/tau-fedimint/.config "
+          "/home/tau-fedimint/.ssh "
           "/home/tau-fedimint/.local "
           "/home/tau-fedimint/.local/share "
           "/home/tau-fedimint/.local/state "
@@ -801,6 +826,7 @@ let
       machine.succeed(
           "chmod 0755 "
           "/home/tau-fedimint/.config "
+          "/home/tau-fedimint/.ssh "
           "/home/tau-fedimint/.local "
           "/home/tau-fedimint/.local/share "
           "/home/tau-fedimint/.local/state "
@@ -835,6 +861,7 @@ let
           "/home/tau-fedimint/.config"
           "/home/tau-fedimint/.config/isolate"
           "/home/tau-fedimint/.config/tau"
+          "/home/tau-fedimint/.ssh"
           "/home/tau-fedimint/.local"
           "/home/tau-fedimint/.local/share"
           "/home/tau-fedimint/.local/share/direnv"
@@ -888,7 +915,74 @@ let
           "test \"$(runuser -u tau-fedimint -- git -C "
           "/home/tau-fedimint/fedimint/fedimint-sdk "
           "remote get-url --push origin)\" = "
-          "git@github.com:fedimint/fedimint-sdk.git"
+          "git@github.com:fedimint/fedimint-sdk.git\n"
+          "test \"$(stat -c '%u:%g:%a' /home/tau-fedimint/.ssh/config)\" = "
+          "1001:991:600\n"
+          "test \"$(runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint "
+          "config --local --get core.sshCommand)\" = "
+          "'${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config'\n"
+          "test \"$(runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-sdk "
+          "config --local --get core.sshCommand)\" = "
+          "'${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config'"
+      )
+
+      # Reproduce the overflow-owner failure, then run Git's real configured
+      # SSH transport in the same isolate. Port 1 is deliberately closed:
+      # reaching connect(2) proves OpenSSH accepted the bot-owned -F config.
+      machine.succeed(
+          "cp /home/tau-fedimint/.config/isolate/isolate.yaml "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml.saved\n"
+          "printf 'Host *\\n' "
+          ">/home/tau-fedimint/fedimint/root-owned-ssh-config\n"
+          "chmod 0444 /home/tau-fedimint/fedimint/root-owned-ssh-config\n"
+          "printf 'Include "
+          "/home/tau-fedimint/fedimint/root-owned-ssh-config\\n' "
+          ">/home/tau-fedimint/fedimint/negative-ssh-config\n"
+          "chown tau-fedimint:tau-fedimint "
+          "/home/tau-fedimint/fedimint/negative-ssh-config\n"
+          "chmod 0600 /home/tau-fedimint/fedimint/negative-ssh-config\n"
+          "jq '.profiles[\"fedimint-bot\"].bind |= map(select("
+          ".path == \"/home/tau-fedimint/fedimint\" or "
+          ".path == \"/tmp/public\" or "
+          ".path == \"/home/tau-fedimint/.gitconfig\" or "
+          ".path == \"/home/tau-fedimint/.ssh/config\"))' "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml "
+          ">/home/tau-fedimint/.config/isolate/isolate.yaml.new\n"
+          "mv /home/tau-fedimint/.config/isolate/isolate.yaml.new "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "chown tau-fedimint:tau-fedimint "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
+          "/home/tau-fedimint/.runtime\n"
+          "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+          "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
+          "isolate -c /home/tau-fedimint/fedimint "
+          "exec --profile fedimint-bot -- bash -euc '"
+          "cd /home/tau-fedimint/fedimint/fedimint; "
+          "set +e; "
+          "bad_output=$(git -c core.sshCommand=\"${pkgs.openssh}/bin/ssh "
+          "-F /home/tau-fedimint/fedimint/negative-ssh-config\" "
+          "ls-remote ssh://git@127.0.0.1:1/unused 2>&1); "
+          "bad_status=$?; "
+          "set -e; "
+          "test \"$bad_status\" -ne 0; "
+          "printf \"%s\\n\" \"$bad_output\" | grep -F "
+          "\"Bad owner or permissions\"; "
+          "set +e; "
+          "output=$(GIT_TRACE=1 git ls-remote ssh://git@127.0.0.1:1/unused 2>&1); "
+          "status=$?; "
+          "set -e; "
+          "test \"$status\" -ne 0; "
+          "printf \"%s\\n\" \"$output\" | grep -F "
+          "\"${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config\"; "
+          "printf \"%s\\n\" \"$output\" | grep -F \"Connection refused\"; "
+          "! printf \"%s\\n\" \"$output\" | grep -F \"Bad owner or permissions\"'\n"
+          "mv /home/tau-fedimint/.config/isolate/isolate.yaml.saved "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "rm /home/tau-fedimint/fedimint/root-owned-ssh-config "
+          "/home/tau-fedimint/fedimint/negative-ssh-config"
       )
 
       # Exercise the published isolate/broker import-context protocol with the

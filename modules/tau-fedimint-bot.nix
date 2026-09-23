@@ -61,6 +61,18 @@ let
       name = fedimint-tau
       email = 332691140+fedimint-tau@users.noreply.github.com
   '';
+  sshConfig = pkgs.writeText "tau-fedimint-ssh-config" ''
+    Host *
+      BatchMode yes
+      GlobalKnownHostsFile /etc/ssh/ssh_known_hosts
+      StrictHostKeyChecking yes
+      UserKnownHostsFile /dev/null
+
+    Host github.com
+      HostName github.com
+      User git
+  '';
+  gitSshCommand = "${pkgs.openssh}/bin/ssh -F ${home}/.ssh/config";
   bootstrapPrompt = pkgs.writeText "tau-fedimint-bootstrap-prompt" "Follow your instructions.";
 
   githubRequester = pkgs.writeShellApplication {
@@ -660,6 +672,11 @@ let
             kind = "file";
           }
           {
+            path = "${home}/.ssh/config";
+            required = true;
+            kind = "file";
+          }
+          {
             path = "${home}/.local/state/tau";
             rw = true;
             create = "dir";
@@ -802,12 +819,21 @@ let
     esac
 
     ${pkgs.git}/bin/git -C "$checkout" remote set-url --push origin "$expected_ssh"
+    ${pkgs.git}/bin/git -C "$checkout" config --local core.sshCommand \
+      ${lib.escapeShellArg gitSshCommand}
     mapfile -t configured_pushes < <(
       ${pkgs.git}/bin/git -C "$checkout" remote get-url --push --all origin
     )
     if [ "''${#configured_pushes[@]}" -ne 1 ] || [ "''${configured_pushes[0]}" != "$expected_ssh" ]; then
       ${pkgs.git}/bin/git -C "$checkout" config --unset-all remote.origin.pushurl
       echo "configured push URL does not resolve to $expected_ssh for $checkout" >&2
+      exit 1
+    fi
+    configured_ssh_command=$(
+      ${pkgs.git}/bin/git -C "$checkout" config --local --get core.sshCommand
+    )
+    if [ "$configured_ssh_command" != ${lib.escapeShellArg gitSshCommand} ]; then
+      echo "configured SSH command does not use the bot SSH config for $checkout" >&2
       exit 1
     fi
   '';
@@ -818,9 +844,11 @@ let
       "$HOME/.config/isolate" \
       "$HOME/.config/tau" \
       "$HOME/.local/state/tau" \
-      "$HOME/.cache/tau"
+      "$HOME/.cache/tau" \
+      "$HOME/.ssh"
     ${clearSession}
     install -m 0600 ${gitConfig} "$HOME/.gitconfig"
+    install -m 0600 ${sshConfig} "$HOME/.ssh/config"
     install -m 0600 ${harnessConfig} "$HOME/.config/tau/harness.yaml"
     install -m 0600 ${isolateConfig} "$HOME/.config/isolate/isolate.yaml"
     cd ${lib.escapeShellArg projectRoot}
@@ -1020,6 +1048,7 @@ in
       "d ${home}/.config 0700 ${user} ${user} -"
       "d ${home}/.config/isolate 0700 ${user} ${user} -"
       "d ${home}/.config/tau 0700 ${user} ${user} -"
+      "d ${home}/.ssh 0700 ${user} ${user} -"
       "d ${home}/.local 0700 ${user} ${user} -"
       "d ${home}/.local/share 0700 ${user} ${user} -"
       "d ${direnvData} 0700 ${user} ${user} -"
