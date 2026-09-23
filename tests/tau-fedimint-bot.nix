@@ -99,6 +99,9 @@ let
   githubRequesterPackage = lib.findFirst (
     package: lib.getName package == "fedimint-github-requester"
   ) (throw "fedimint-github-requester package missing") disabled.config.environment.systemPackages;
+  direnvDpcPackage = lib.findFirst (
+    package: lib.getName package == "direnv-dpc"
+  ) (throw "direnv-dpc package missing") disabled.config.environment.systemPackages;
   alternateProviderStart =
     alternateProvider.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   enabledStart = enabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
@@ -108,6 +111,8 @@ let
     "/home/tau-fedimint/.config/isolate"
     "/home/tau-fedimint/.config/tau"
     "/home/tau-fedimint/.local"
+    "/home/tau-fedimint/.local/share"
+    "/home/tau-fedimint/.local/share/direnv"
     "/home/tau-fedimint/.local/state"
     "/home/tau-fedimint/.local/state/tau"
     "/home/tau-fedimint/.local/state/clank"
@@ -213,7 +218,11 @@ let
           and (.agents.role_groups.support.roles.reviewer.model == "codex/gpt-6-sol")
           and (.agents.role_groups.support.roles.reviewer.effort == 0.5)
           and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == [])
-          and (.extensions["core-shell"].config | has("shell") | not)
+          and (.extensions["core-shell"].config.shell.prefix == [
+            "direnv-dpc",
+            "exec",
+            "."
+          ])
         ' "$disabled_harness" >/dev/null
         jq -e '
           (.aliases.providers.codex == "future-provider")
@@ -234,6 +243,16 @@ let
         grep -q 'relevant history' "$TMPDIR/bot-prompts"
         grep -q 'source and history read-only' "$TMPDIR/bot-prompts"
         grep -q 'Do not modify project source or history' "$TMPDIR/bot-prompts"
+        grep -Fq '`direnv-dpc exec .`' "$TMPDIR/bot-prompts"
+        grep -Fq 'then run `direnv-dpc allow` in that workdir' "$TMPDIR/bot-prompts"
+        grep -Fq "equivalent of \`direnv allow\`" "$TMPDIR/bot-prompts"
+        grep -Fq 'Do not blindly' "$TMPDIR/bot-prompts"
+        grep -Fq 'Until approval, commands warn and run without the' "$TMPDIR/bot-prompts"
+        grep -Fq 'cargo fetch --locked && just final-lint' "$TMPDIR/bot-prompts"
+        grep -Fq \
+          "nix develop . --command bash -lc 'cargo fetch --locked && just final-lint'" \
+          "$TMPDIR/bot-prompts"
+        ! grep -Fq 'Never run `direnv allow` yourself' "$TMPDIR/bot-prompts"
         ! grep -Eiq 'jujutsu|(^|[^[:alnum:]_])jj([^[:alnum:]_]|$)' "$TMPDIR/bot-prompts"
         jq -er '
           .agents.prompt_fragments[]
@@ -279,6 +298,17 @@ let
           (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
           and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)
         ' "$disabled_isolate" >/dev/null
+        jq -e '
+          [.profiles["fedimint-bot"].bind[]
+            | select(.path == "/home/tau-fedimint/.local/share/direnv")]
+          == [{
+            path: "/home/tau-fedimint/.local/share/direnv",
+            rw: true,
+            create: "dir"
+          }]
+        ' "$disabled_isolate" >/dev/null
+        test -x ${direnvDpcPackage}/bin/direnv-dpc
+        test ! -e ${direnvDpcPackage}/bin/direnv
         jq -er '
           .profiles["fedimint-bot"].exec_priv.allow[]
           | select(.name == "gh-host")
@@ -678,6 +708,7 @@ let
       systemd.tmpfiles.rules = disabled.config.systemd.tmpfiles.rules;
       environment.systemPackages = [
         isolatePackage
+        direnvDpcPackage
         pkgs.bubblewrap
         pkgs.git
         pkgs.jq
@@ -693,12 +724,14 @@ let
           "/home/tau-fedimint/.config/tau "
           "/home/tau-fedimint/.local/state/tau "
           "/home/tau-fedimint/.local/state/clank "
+          "/home/tau-fedimint/.local/share/direnv "
           "/home/tau-fedimint/.cache/tau"
       )
       machine.succeed(
           "chown root:root "
           "/home/tau-fedimint/.config "
           "/home/tau-fedimint/.local "
+          "/home/tau-fedimint/.local/share "
           "/home/tau-fedimint/.local/state "
           "/home/tau-fedimint/.cache"
       )
@@ -706,6 +739,7 @@ let
           "chmod 0755 "
           "/home/tau-fedimint/.config "
           "/home/tau-fedimint/.local "
+          "/home/tau-fedimint/.local/share "
           "/home/tau-fedimint/.local/state "
           "/home/tau-fedimint/.cache"
       )
@@ -719,6 +753,8 @@ let
           "/home/tau-fedimint/.config/isolate"
           "/home/tau-fedimint/.config/tau"
           "/home/tau-fedimint/.local"
+          "/home/tau-fedimint/.local/share"
+          "/home/tau-fedimint/.local/share/direnv"
           "/home/tau-fedimint/.local/state"
           "/home/tau-fedimint/.local/state/tau"
           "/home/tau-fedimint/.local/state/clank"
@@ -793,8 +829,10 @@ assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-identi
 assert !(lib.elem githubNotificationsPackage disabled.config.environment.systemPackages);
 assert lib.elem pkgs.git disabled.config.environment.systemPackages;
 assert lib.elem pkgs.just disabled.config.environment.systemPackages;
+assert lib.elem direnvDpcPackage disabled.config.environment.systemPackages;
 assert !(lib.elem pkgs.jujutsu disabled.config.environment.systemPackages);
 assert lib.elem pkgs.bubblewrap disabled.config.systemd.user.services.tau-fedimint-bot.path;
+assert lib.elem direnvDpcPackage disabled.config.systemd.user.services.tau-fedimint-bot.path;
 assert lib.elem pkgs.just disabled.config.systemd.user.services.tau-fedimint-bot.path;
 assert disabled.config.programs.ssh.knownHosts.github-ed25519.hostNames == [ "github.com" ];
 assert

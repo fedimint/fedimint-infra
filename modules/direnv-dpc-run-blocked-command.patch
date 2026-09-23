@@ -1,0 +1,17 @@
+diff --git a/internal/cmd/cmd_exec.go b/internal/cmd/cmd_exec.go
+index c03b6a3..61c2ce4 100644
+--- a/internal/cmd/cmd_exec.go
++++ b/internal/cmd/cmd_exec.go
+@@ -56 +56,11 @@ func cmdExecAction(env Env, args []string, config *Config) (err error) {
+-		if newEnv, err = config.EnvFromRC(toLoad, previousEnv); err != nil {
++		var rc *RC
++		if rc, err = RCFromPath(toLoad, config); err != nil {
++			return
++		}
++		if rc.Allowed() == NotAllowed {
++			logError(config, "warning: %s is blocked; running command without loading it", rc.Path())
++			newEnv = previousEnv
++		} else {
++			newEnv, err = rc.Load(previousEnv)
++		}
++		if err != nil {

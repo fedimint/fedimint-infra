@@ -93,6 +93,52 @@ turn the whole agent into a hostile-code security boundary.
 
 ## Project development shell
 
+Tau's shell extension uses the same prefix shape as the operator harness:
+
+```yaml
+shell:
+  prefix:
+    - direnv-dpc
+    - exec
+    - .
+```
+
+The initial shell working directory remains `/home/tau-fedimint/fedimint`.
+Tau applies the prefix after selecting each command's effective per-agent
+workdir, so `.` follows the `workdir` tool into a nested checkout such as
+`/home/tau-fedimint/fedimint/fedimint`. The container directory has no
+`.envrc`, while each nested repository can load its own environment.
+`direnv-dpc` is a separately named patched variant used only by the bot. When
+`.envrc` is absent it runs the command normally. When an `.envrc` is present
+but not allowed, it warns and runs the command without loading that file; it
+also removes environment inherited from a previously loaded project. This
+keeps ordinary inspection available without silently trusting changed
+repository code.
+
+Before project commands use the development environment, the bot must inspect
+the intended repository or worktree's `.envrc` and authorize that exact content
+from its current workdir:
+
+```console
+direnv-dpc allow
+```
+
+An administrator can perform the same approval on the host, but must run it as
+the bot account so the approval reaches the bot's home:
+
+```console
+sudo -u tau-fedimint -H sh -c \
+  'cd /home/tau-fedimint/fedimint/fedimint && direnv-dpc allow'
+```
+
+`direnv-dpc allow` is the bot's equivalent of the usual `direnv allow`. The
+approval is stored under the bot's private, persistent `~/.local/share/direnv`
+directory. Any `.envrc` content change invalidates it and requires a new review
+and explicit allow. Each nested checkout is authorized separately. The bot must
+not blindly authorize an unexpected `.envrc` change from an untrusted pull
+request or approve blanket directories. Deployment does not create or refresh
+approvals automatically.
+
 The isolate baseline already exposes `/run/current-system`, `/etc`, and `/nix`
 read-only. The `/nix` bind includes the Nix daemon socket, so the unprivileged
 `tau-fedimint` user can evaluate flakes and request builds without another mount
@@ -102,8 +148,14 @@ substituters, signing keys, or Cachix configuration.
 
 On a fresh sandbox session, Cargo's registry cache under the synthetic sandbox
 home is empty. Fedimint's `final-lint` recipe runs Clippy with `--offline`, so
-enter the pinned project shell and fetch locked public dependencies before the
-lint:
+after the reviewed `.envrc` has loaded the pinned shell, fetch locked public
+dependencies before the lint:
+
+```console
+cargo fetch --locked && just final-lint
+```
+
+The explicit one-shot form also remains supported:
 
 ```console
 nix develop . --command bash -lc 'cargo fetch --locked && just final-lint'

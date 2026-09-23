@@ -16,6 +16,44 @@ let
   githubNotificationsIdentityKey = "/run/agenix/tau-fedimint-github-notifications-identity-key";
   sshPrivateKey = "/run/agenix/tau-fedimint-ssh-private-key";
   clankState = "${home}/.local/state/clank";
+  direnvData = "${home}/.local/share/direnv";
+  direnvDpc = pkgs.direnv.overrideAttrs (old: {
+    pname = "direnv-dpc";
+    patches = (old.patches or [ ]) ++ [ ./direnv-dpc-run-blocked-command.patch ];
+    postFixup = (old.postFixup or "") + ''
+      rm -rf "$out/share"
+      mv "$out/bin/direnv" "$out/bin/direnv-dpc"
+    '';
+    doInstallCheck = true;
+    installCheckPhase = ''
+      test_root="$(mktemp -d)"
+      export DIRENV_CONFIG="$test_root/config"
+      export HOME="$test_root/home"
+      export XDG_DATA_HOME="$test_root/data"
+      mkdir -p "$DIRENV_CONFIG" "$HOME" "$test_root/blocked" "$test_root/source"
+
+      printf 'export BLOCKED_LOADED=yes\n' >"$test_root/blocked/.envrc"
+      printf 'export OLD_PROJECT_ENV=yes\n' >"$test_root/source/.envrc"
+      "$out/bin/direnv-dpc" allow "$test_root/source"
+      outer="$(
+        "$out/bin/direnv-dpc" exec "$test_root/source" \
+          sh -c 'printf "%s" "''${OLD_PROJECT_ENV-no}"'
+      )"
+      test "$outer" = "yes"
+
+      output="$(
+        "$out/bin/direnv-dpc" exec "$test_root/source" \
+          "$out/bin/direnv-dpc" exec "$test_root/blocked" \
+          sh -c 'printf "%s/%s" "''${BLOCKED_LOADED-no}" "''${OLD_PROJECT_ENV-no}"' \
+          2>"$test_root/stderr"
+      )"
+      test "$output" = "no/no"
+      grep -F "is blocked; running command without loading it" "$test_root/stderr"
+    '';
+    meta = (old.meta or { }) // {
+      mainProgram = "direnv-dpc";
+    };
+  });
   gitConfig = pkgs.writeText "tau-fedimint-gitconfig" ''
     [user]
       name = fedimint-tau
@@ -217,6 +255,11 @@ let
           enable = true;
           config = {
             working_directory = projectRoot;
+            shell.prefix = [
+              "direnv-dpc"
+              "exec"
+              "."
+            ];
             dir_lock = {
               enable = true;
               backend = "filesystem";
@@ -332,18 +375,31 @@ let
             priority = 20;
             text = ''
               Follow the repository's checked-in instructions and use its pinned
-              development shell for project checks. On a fresh sandbox session,
+              development shell for project checks. Shell commands automatically
+              enter an allowed `.envrc` through `direnv-dpc exec .`. In an
+              intended project repository or worktree, inspect `.envrc` first,
+              then run `direnv-dpc allow` in that workdir to approve that exact
+              content and load its Nix development shell for future commands.
+              This is the bot's equivalent of `direnv allow`. Do not blindly
+              approve unexpected changes from untrusted pull requests or blanket
+              directories. Until approval, commands warn and run without the
+              project environment.
+
+              On a fresh sandbox session with the project environment loaded,
               populate Cargo's public dependency cache before running the offline
               final lint:
+
+                  cargo fetch --locked && just final-lint
+
+              The explicit one-shot equivalent also remains available:
 
                   nix develop . --command bash -lc 'cargo fetch --locked && just final-lint'
 
               Run the actual project check and report its real result. A tool
               availability probe or synthetic smoke test does not mean the
               project's lint, tests, or build passed. If dependency fetching,
-              development-shell entry, or the check fails, report that failure
-              rather than bypassing the pinned environment or weakening the
-              sandbox.
+              direnv loading, or the check fails, report that failure rather than
+              bypassing the pinned environment or weakening the sandbox.
             '';
           }
         ];
@@ -584,6 +640,11 @@ let
           }
           {
             path = clankState;
+            rw = true;
+            create = "dir";
+          }
+          {
+            path = direnvData;
             rw = true;
             create = "dir";
           }
@@ -924,6 +985,8 @@ in
       "d ${home}/.config/isolate 0700 ${user} ${user} -"
       "d ${home}/.config/tau 0700 ${user} ${user} -"
       "d ${home}/.local 0700 ${user} ${user} -"
+      "d ${home}/.local/share 0700 ${user} ${user} -"
+      "d ${direnvData} 0700 ${user} ${user} -"
       "d ${home}/.local/state 0700 ${user} ${user} -"
       "d ${home}/.local/state/tau 0700 ${user} ${user} -"
       "d ${clankState} 0700 ${user} ${user} -"
@@ -937,6 +1000,7 @@ in
       cfg.clankPackage
       githubRequester
       cfg.ghBrokerPackage
+      direnvDpc
       pkgs.git
       pkgs.just
     ]
@@ -964,6 +1028,7 @@ in
       unitConfig.ConditionUser = user;
       path = [
         pkgs.bubblewrap
+        direnvDpc
         pkgs.just
       ];
       after = [
