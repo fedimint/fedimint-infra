@@ -111,6 +111,7 @@ let
       {
         nativeBuildInputs = [
           pkgs.coreutils
+          pkgs.git
           pkgs.gnugrep
           pkgs.jq
         ];
@@ -133,11 +134,19 @@ let
         enabled_isolate=$(
           sed -n 's#.*install -m 0600 \([^ ]*isolate.yaml\).*#\1#p' ${enabledStart}
         )
+        git_config=$(
+          sed -n 's#.*install -m 0600 \([^ ]*gitconfig\).*#\1#p' ${disabledStart}
+        )
         test -n "$disabled_harness"
         test -n "$alternate_provider_harness"
         test -n "$enabled_harness"
         test -n "$disabled_isolate"
         test -n "$enabled_isolate"
+        test -n "$git_config"
+
+        test "$(${pkgs.git}/bin/git config --file "$git_config" user.name)" = "fedimint-tau"
+        test "$(${pkgs.git}/bin/git config --file "$git_config" user.email)" = \
+          "332691140+fedimint-tau@users.noreply.github.com"
 
         jq -e '
           (.extensions["github-notifications"] == null)
@@ -176,9 +185,10 @@ let
         grep -q 'Lead with the answer, outcome' "$TMPDIR/bot-prompts"
         grep -q 'one canonical open `ACTIVE QUEUE` ticket' "$TMPDIR/bot-prompts"
         grep -q 'independent passing review' "$TMPDIR/bot-prompts"
-        grep -q 'complete mutable graph' "$TMPDIR/bot-prompts"
+        grep -q 'relevant history' "$TMPDIR/bot-prompts"
         grep -q 'source and history read-only' "$TMPDIR/bot-prompts"
         grep -q 'Do not modify project source or history' "$TMPDIR/bot-prompts"
+        ! grep -Eiq 'jujutsu|(^|[^[:alnum:]_])jj([^[:alnum:]_]|$)' "$TMPDIR/bot-prompts"
         jq -er '
           .agents.role_groups.coordinator.prompt_fragments[]
           | select(.name == "coordinator.instructions")
@@ -299,6 +309,15 @@ let
             kind: "file"
           }]
         ' "$disabled_isolate" >/dev/null
+        jq -e '
+          [.profiles["fedimint-bot"].bind[]
+            | select(.path == "/home/tau-fedimint/.gitconfig")]
+          == [{
+            path: "/home/tau-fedimint/.gitconfig",
+            required: true,
+            kind: "file"
+          }]
+        ' "$disabled_isolate" >/dev/null
 
         touch "$out"
       '';
@@ -374,6 +393,8 @@ assert !(defaultDisabled.config.age.secrets ? "tau-fedimint-github-notifications
 assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-token");
 assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-identity-key");
 assert !(lib.elem githubNotificationsPackage disabled.config.environment.systemPackages);
+assert lib.elem pkgs.git disabled.config.environment.systemPackages;
+assert !(lib.elem pkgs.jujutsu disabled.config.environment.systemPackages);
 assert lib.elem pkgs.bubblewrap disabled.config.systemd.user.services.tau-fedimint-bot.path;
 pkgs.linkFarm "tau-fedimint-bot-checks" [
   {

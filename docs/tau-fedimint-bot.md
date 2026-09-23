@@ -47,8 +47,11 @@ target.
 - Coordinator, reviewer, researcher, and engineer workflows adapted from the
   active local Tau harness: concise communication, durable task and active-queue
   tracking, coherent delegation, read-only support roles, independent review,
-  verification, and clean Jujutsu history. Personal messaging, cross-sandbox
+  verification, and clean repository history. Personal messaging, cross-sandbox
   routing, provider identities, and unrelated tools are not copied.
+- A dedicated Git identity for the public `fedimint-tau` GitHub account:
+  `fedimint-tau <332691140+fedimint-tau@users.noreply.github.com>`. The generated
+  `.gitconfig` is installed in the bot home and mounted read-only in the sandbox.
 - A startup-only provider alias from `codex` to `chatgpt-dpc`. This rewrites
   configured role model references; it does not rename, copy, authenticate, or
   otherwise modify the provider profile.
@@ -134,7 +137,7 @@ Nix-generated startup configuration is deterministic.
 1. **GitHub authority:** the credentials belong to `fedimint-tau`, whose
    organization and repository grants remain the authority boundary.
    `gh-broker` constrains action-token command shape, but the dedicated SSH agent
-   is independent and the broker cannot restrict `jj git push`.
+   is independent and the broker cannot restrict pushes over SSH.
 2. **Provider mapping:** keep the existing `chatgpt-dpc` provider profile; do
    not rename or recreate it. The generated harness maps the role-facing
    `codex` name to `chatgpt-dpc` with `aliases.providers.codex`. Provider

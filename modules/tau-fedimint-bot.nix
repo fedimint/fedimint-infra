@@ -16,6 +16,11 @@ let
   githubNotificationsIdentityKey = "/run/agenix/tau-fedimint-github-notifications-identity-key";
   sshPrivateKey = "/run/agenix/tau-fedimint-ssh-private-key";
   clankState = "${home}/.local/state/clank";
+  gitConfig = pkgs.writeText "tau-fedimint-gitconfig" ''
+    [user]
+      name = fedimint-tau
+      email = 332691140+fedimint-tau@users.noreply.github.com
+  '';
 
   githubRequester = pkgs.writeShellApplication {
     name = "fedimint-github-requester";
@@ -326,13 +331,13 @@ let
           engineer = {
             prompt_fragments = [
               {
-                name = "engineer.instructions";
-                priority = 35;
-                text = ''
+                 name = "engineer.instructions";
+                 priority = 35;
+                 text = ''
                   Implement conservative, complete changes that follow project
-                  conventions. Use Jujutsu for history and acquire the project
-                  update lock before changing files. Keep work marked `wip:`
-                  until focused checks and an independent review pass.
+                  conventions. Acquire the project update lock before changing
+                  files. Keep work marked `wip:` until focused checks and an
+                  independent review pass.
 
                   Non-trivial changes require review by one independent
                   `reviewer` agent. Give the reviewer the task context, intent,
@@ -340,10 +345,10 @@ let
                   reviewer to re-review until it passes. Run the project's
                   focused checks and final integration checks where available.
 
-                  Finish with one informative change on a clean, linear path
-                  followed by an empty working-copy change. Remove the `wip:`
-                  prefix only after review and verification pass. Inspect the
-                  complete mutable graph before reporting completion; preserve
+                  Finish with one informative change on clean, linear history
+                  and leave the working tree clean. Remove the `wip:` prefix only
+                  after review and verification pass. Inspect repository status
+                  and relevant history before reporting completion; preserve
                   unrelated work rather than rewriting or discarding it.
                 '';
               }
@@ -465,6 +470,11 @@ let
             kind = "dir";
           }
           {
+            path = "${home}/.gitconfig";
+            required = true;
+            kind = "file";
+          }
+          {
             path = "${home}/.local/state/tau";
             rw = true;
             create = "dir";
@@ -571,6 +581,7 @@ let
       "$HOME/.local/state/tau" \
       "$HOME/.cache/tau"
     ${clearSession}
+    install -m 0600 ${gitConfig} "$HOME/.gitconfig"
     install -m 0600 ${harnessConfig} "$HOME/.config/tau/harness.yaml"
     install -m 0600 ${isolateConfig} "$HOME/.config/isolate/isolate.yaml"
     cd ${lib.escapeShellArg projectRoot}
@@ -768,7 +779,7 @@ in
       cfg.clankPackage
       githubRequester
       cfg.ghBrokerPackage
-      pkgs.jujutsu
+      pkgs.git
     ]
     ++ lib.optional cfg.githubNotifications.enable cfg.githubNotifications.package;
 
