@@ -4594,16 +4594,16 @@
         "nixpkgs": "nixpkgs_6"
       },
       "locked": {
-        "lastModified": 1790049362,
-        "narHash": "sha256-oZVhpjktHcMkuj5mgQKsph41fxHpgy/Si06l0sVdWgU=",
+        "lastModified": 1790131695,
+        "narHash": "sha256-pDuN+WkrphKHR91kWza2Mla53TXgyxIws29sBtUxzDQ=",
         "ref": "refs/heads/master",
-        "rev": "7a9aea508d107dee7291d7fa323094ddede8b430",
-        "revCount": 27,
+        "rev": "5dc791c815f1ab50992698e7403daa642e2b0b89",
+        "revCount": 28,
         "type": "git",
         "url": "https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git"
       },
       "original": {
-        "rev": "7a9aea508d107dee7291d7fa323094ddede8b430",
+        "rev": "5dc791c815f1ab50992698e7403daa642e2b0b89",
         "type": "git",
         "url": "https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git"
       }
