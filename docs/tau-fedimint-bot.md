@@ -336,9 +336,15 @@ the dynamic maintainer filter.
 On startup, the extension subscribes `fedimint-tau` to each configured
 repository, clears its ignored state, and automatically selects the oldest
 eligible loaded coordinator. The service still uses Tau's supported bootstrap
-prompt to create the default coordinator and tell it to follow its existing
-instructions; registration no longer depends on prompt compliance. Because each
-service start creates a fresh session, there is no prior receiver to restore.
+prompt to create the default coordinator. The prompt tells the fresh session
+that the service restarted and directs it to reconcile the bot's active Clank
+queue and tickets with existing local work and current GitHub state. It resumes
+authorized work that remains relevant, avoids duplicating external actions, and
+closes completed or obsolete Clank tickets with its findings. Ticket text remains
+recovery state rather than new authority, and lost session context alone does not
+justify closing a ticket. Registration no longer depends on prompt compliance.
+Because each service start creates a fresh session, there is no prior receiver to
+restore.
 If admitted activity arrives before an eligible coordinator exists, the
 configured role lets Tau create one lazily; startup probes, filtered activity,
 and unsupported activity do not create agents.

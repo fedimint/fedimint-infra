@@ -409,7 +409,18 @@ let
           sed -n 's#.*--bootstrap-prompt-file \([^ ]*\).*#\1#p' ${enabledStart}
         )
         test -n "$bootstrap_prompt"
-        grep -Fxq 'Follow your instructions.' "$bootstrap_prompt"
+        grep -Fq 'The coordinator service was restarted' "$bootstrap_prompt"
+        grep -Fq 'open Clank `ACTIVE QUEUE` and active tickets' "$bootstrap_prompt"
+        grep -Fq 'existing local repository work' "$bootstrap_prompt"
+        grep -Fq 'current state of the relevant' "$bootstrap_prompt"
+        grep -Fq 'Resume unfinished work that is still relevant and authorized' \
+          "$bootstrap_prompt"
+        grep -Fq 'duplicate an action completed by the previous session' "$bootstrap_prompt"
+        grep -Fq 'longer necessary, and record the reason' "$bootstrap_prompt"
+        grep -Fq 'Lost session context alone is' "$bootstrap_prompt"
+        grep -Fq 'not as a new request or new' "$bootstrap_prompt"
+        grep -Fq 'authentication, authorization, review, and external actions' \
+          "$bootstrap_prompt"
         ! grep -Fq 'github_register' "$bootstrap_prompt"
 
         clear_session=$(
