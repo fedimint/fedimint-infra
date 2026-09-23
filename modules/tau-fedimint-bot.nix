@@ -10,6 +10,8 @@ let
   user = "tau-fedimint";
   home = "/home/${user}";
   projectRoot = "${home}/fedimint";
+  fedimintCheckout = "${projectRoot}/fedimint";
+  fedimintSdkCheckout = "${projectRoot}/fedimint-sdk";
   runtimeDir = "/run/user/${toString cfg.uid}";
   githubToken = "/run/agenix/tau-fedimint-github-token";
   githubNotificationsToken = "/run/agenix/tau-fedimint-github-notifications-token";
@@ -794,9 +796,13 @@ let
     install -m 0600 ${isolateConfig} "$HOME/.config/isolate/isolate.yaml"
     cd ${lib.escapeShellArg projectRoot}
     ${configureGitPush} \
-      ${lib.escapeShellArg projectRoot} \
+      ${lib.escapeShellArg fedimintCheckout} \
       https://github.com/fedimint/fedimint \
       git@github.com:fedimint/fedimint.git
+    ${configureGitPush} \
+      ${lib.escapeShellArg fedimintSdkCheckout} \
+      https://github.com/fedimint/fedimint-sdk \
+      git@github.com:fedimint/fedimint-sdk.git
     exec ${cfg.isolatePackage}/bin/isolate exec \
       --profile fedimint-bot \
       -- \

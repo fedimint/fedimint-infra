@@ -18,6 +18,10 @@ let
       echo "test-only package" >&2
       exit 1
     '';
+  dummyIsolatePackage = pkgs.writeShellScriptBin "isolate" ''
+    echo "test-only isolate" >&2
+    exit 42
+  '';
   actionToken = builtins.toFile "action-token.age" "test-only";
   notificationToken = builtins.toFile "notification-token.age" "test-only";
   identityKey = builtins.toFile "notification-identity-key.age" "test-only";
@@ -28,7 +32,7 @@ let
   common = {
     enable = true;
     inherit tauPackage;
-    isolatePackage = dummyPackage "isolate";
+    isolatePackage = dummyIsolatePackage;
     inherit ghBrokerPackage;
     clankPackage = dummyPackage "clank";
     githubTokenAgeFile = actionToken;
@@ -378,9 +382,11 @@ let
         test -e "$external_sessions/tau-fedimint-bot/keep"
 
         configure_git_push=$(
-          grep -Eo '/nix/store/[^ ]+-tau-fedimint-configure-git-push' ${disabledStart}
+          grep -Eo '/nix/store/[^ ]+-tau-fedimint-configure-git-push' ${disabledStart} |
+            sort -u
         )
         test -n "$configure_git_push"
+        test "$(printf '%s\n' "$configure_git_push" | wc -l)" -eq 1
         for suffix in "" ".git"; do
           checkout="$TMPDIR/fedimint''${suffix//./-}"
           ${pkgs.git}/bin/git init -q "$checkout"
@@ -399,6 +405,20 @@ let
             https://github.com/fedimint/fedimint \
             git@github.com:fedimint/fedimint.git
         done
+        sdk_checkout="$TMPDIR/fedimint-sdk"
+        ${pkgs.git}/bin/git init -q "$sdk_checkout"
+        ${pkgs.git}/bin/git -C "$sdk_checkout" remote add origin \
+          https://github.com/fedimint/fedimint-sdk.git
+        "$configure_git_push" \
+          "$sdk_checkout" \
+          https://github.com/fedimint/fedimint-sdk \
+          git@github.com:fedimint/fedimint-sdk.git
+        test "$(${pkgs.git}/bin/git -C "$sdk_checkout" remote get-url origin)" = \
+          "https://github.com/fedimint/fedimint-sdk.git"
+        test "$(${pkgs.git}/bin/git -C "$sdk_checkout" remote get-url --push origin)" = \
+          "git@github.com:fedimint/fedimint-sdk.git"
+        grep -Fxq '  /home/tau-fedimint/fedimint/fedimint \' ${disabledStart}
+        grep -Fxq '  /home/tau-fedimint/fedimint/fedimint-sdk \' ${disabledStart}
         unexpected="$TMPDIR/unexpected"
         ${pkgs.git}/bin/git init -q "$unexpected"
         ${pkgs.git}/bin/git -C "$unexpected" remote add origin \
@@ -767,6 +787,48 @@ let
           )
 
       machine.succeed(
+          "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
+          "/home/tau-fedimint/fedimint/fedimint "
+          "/home/tau-fedimint/fedimint/fedimint-sdk\n"
+          "runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint init -q\n"
+          "runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint remote add origin "
+          "https://github.com/fedimint/fedimint.git\n"
+          "runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-sdk init -q\n"
+          "runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-sdk remote add origin "
+          "https://github.com/fedimint/fedimint-sdk.git"
+      )
+      # Exercise the actual startup script against the production container plus
+      # nested repository topology. The dummy isolate exits after startup setup.
+      for _ in range(2):
+          status, _ = machine.execute(
+              "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+              "${disabledStart}"
+          )
+          assert status == 42
+      machine.succeed(
+          "test \"$(runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint "
+          "remote get-url origin)\" = "
+          "https://github.com/fedimint/fedimint.git\n"
+          "test \"$(runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint "
+          "remote get-url --push origin)\" = "
+          "git@github.com:fedimint/fedimint.git\n"
+          "test \"$(runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-sdk "
+          "remote get-url origin)\" = "
+          "https://github.com/fedimint/fedimint-sdk.git\n"
+          "test \"$(runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-sdk "
+          "remote get-url --push origin)\" = "
+          "git@github.com:fedimint/fedimint-sdk.git"
+      )
+
+      machine.succeed(
           "cat >/home/tau-fedimint/.config/isolate/isolate.yaml <<'EOF'\n"
           '{"version":1,"profiles":{"tool-test":{"pid":{"mode":"private"},'
           '"bind_repo_root":true,"setenv":{"HOME":"/home/tau-fedimint",'
@@ -779,7 +841,7 @@ let
           "/home/tau-fedimint/.runtime\n"
           "chown tau-fedimint:tau-fedimint "
           "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
-          "cat >/home/tau-fedimint/fedimint/flake.nix <<'EOF'\n"
+          "cat >/home/tau-fedimint/fedimint/fedimint/flake.nix <<'EOF'\n"
           "{\n"
           "  inputs.nixpkgs.url = \"path:${nixpkgs}\";\n"
           "  outputs = { self, nixpkgs }:\n"
@@ -791,21 +853,20 @@ let
           "    };\n"
           "}\n"
           "EOF\n"
-          "cat >/home/tau-fedimint/fedimint/flake.lock <<'EOF'\n"
+          "cat >/home/tau-fedimint/fedimint/fedimint/flake.lock <<'EOF'\n"
           '{"nodes":{"nixpkgs":{"locked":{"narHash":"${nixpkgs.narHash}",'
           '"path":"${nixpkgs}","type":"path"},"original":{"path":"${nixpkgs}",'
           '"type":"path"}},"root":{"inputs":{"nixpkgs":"nixpkgs"}}},'
           '"root":"root","version":7}\n'
           "EOF\n"
           "chown tau-fedimint:tau-fedimint "
-          "/home/tau-fedimint/fedimint/flake.nix "
-          "/home/tau-fedimint/fedimint/flake.lock\n"
-          "runuser -u tau-fedimint -- git -C /home/tau-fedimint/fedimint init -q\n"
-          "runuser -u tau-fedimint -- git -C /home/tau-fedimint/fedimint add "
+          "/home/tau-fedimint/fedimint/fedimint/flake.nix "
+          "/home/tau-fedimint/fedimint/fedimint/flake.lock\n"
+          "runuser -u tau-fedimint -- git -C /home/tau-fedimint/fedimint/fedimint add "
           "flake.nix flake.lock\n"
           "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
           "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
-          "isolate -c /home/tau-fedimint/fedimint "
+          "isolate -c /home/tau-fedimint/fedimint/fedimint "
           "exec --profile tool-test -- bash -euc '"
           "test -S /nix/var/nix/daemon-socket/socket; "
           "test \"$(nix store info --store daemon --json | jq -r .trusted)\" = false; "
