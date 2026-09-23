@@ -21,7 +21,7 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=24def4156c132074912e86ad94f53b82ce871933";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?ref=namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/tags/compat-protocol-8.1-gpt6-81c114fa&rev=81c114fa60a4f08177a4f51cc76457bcdb21c21e";
     };
 
     tau-ext-github = {
