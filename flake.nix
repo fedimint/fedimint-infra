@@ -32,7 +32,7 @@
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=d1bb459b921775fe1baab9e916c3d6fa55709a8a";
 
-    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=5dc791c815f1ab50992698e7403daa642e2b0b89";
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=ed953207289cc1c7efc28e0d8bb097af9a1c9a19";
 
     clank = {
       url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=56a03fecf62ca8090c3e5f5a089b6d9c62483c8d";
@@ -325,6 +325,7 @@
               module = ./modules/tau-fedimint-bot.nix;
               tauPackage = inputs.tau.packages.${system}.tau;
               isolatePackage = inputs.isolate.packages.${system}.default;
+              ghBrokerPackage = inputs.gh-isolate.packages.${system}.default;
               githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
             };
             runner-01-root-ssh-authorization = import ./tests/runner-01-root-ssh-authorization.nix {

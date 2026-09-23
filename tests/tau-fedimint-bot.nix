@@ -5,6 +5,7 @@
   module,
   tauPackage,
   isolatePackage,
+  ghBrokerPackage,
   githubNotificationsPackage,
 }:
 
@@ -28,7 +29,7 @@ let
     enable = true;
     inherit tauPackage;
     isolatePackage = dummyPackage "isolate";
-    ghBrokerPackage = dummyPackage "gh-broker";
+    inherit ghBrokerPackage;
     clankPackage = dummyPackage "clank";
     githubTokenAgeFile = actionToken;
     sshPrivateKeyAgeFile = sshKey;
@@ -268,10 +269,29 @@ let
         grep -q 'comment-only review' "$TMPDIR/coordinator-prompt"
         grep -q 'Never turn a failing or unsafe review' "$TMPDIR/coordinator-prompt"
         grep -q 'report it as pending' "$TMPDIR/coordinator-prompt"
+        grep -Fq \
+          'gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh pr review NUMBER -R OWNER/REPO --approve' \
+          "$TMPDIR/coordinator-prompt"
+        grep -q 'never use inline review' "$TMPDIR/coordinator-prompt"
         jq -e '
           (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
           and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)
         ' "$disabled_isolate" >/dev/null
+        jq -er '
+          .profiles["fedimint-bot"].exec_priv.allow[]
+          | select(.name == "gh-host")
+          | .handler.script
+        ' "$disabled_isolate" >"$TMPDIR/gh-handler"
+        grep -Fq -- '--credential fedimint=/run/agenix/tau-fedimint-github-token' \
+          "$TMPDIR/gh-handler"
+        grep -Fq -- '--default-credential fedimint' "$TMPDIR/gh-handler"
+        grep -Fq -- '--pr-head-prefix tau/' "$TMPDIR/gh-handler"
+        test "$(grep -Fc -- '--pr-head-prefix tau/' "$TMPDIR/gh-handler")" -eq 1
+        prefix_line=$(grep -Fn -- '--pr-head-prefix tau/' "$TMPDIR/gh-handler" | cut -d: -f1)
+        caller_line=$(grep -Fn -- '"$@"' "$TMPDIR/gh-handler" | cut -d: -f1)
+        test "$prefix_line" -lt "$caller_line"
         ! grep -q '${githubNotificationsPackage}' "$disabled_harness"
         bot_unit=${
           disabled.config.systemd.user.units."tau-fedimint-bot.service".unit
@@ -563,6 +583,81 @@ let
         expect_status 0 check admin-user maintainer
         touch "$out"
       '';
+  ghBrokerPolicyCheck = pkgs.runCommand "tau-fedimint-gh-broker-policy-check" { } ''
+    set -euo pipefail
+    broker=${ghBrokerPackage}/bin/gh-broker
+    work="$TMPDIR/work"
+    runtime="$TMPDIR/runtime"
+    mkdir -m 0700 "$work" "$runtime"
+    cd "$work"
+
+    expect_status() {
+      expected=$1
+      name=$2
+      shift 2
+      set +e
+          XDG_RUNTIME_DIR="$runtime" GH_BROKER_RUNTIME_ROOT="$runtime" "$broker" \
+        --credential fedimint="$TMPDIR/missing-token" \
+        --default-credential fedimint \
+        "$@" >"$TMPDIR/$name.out" 2>"$TMPDIR/$name.err"
+      actual=$?
+      set -e
+      [ "$actual" -eq "$expected" ] || {
+        echo "expected status $expected, got $actual for $name" >&2
+        cat "$TMPDIR/$name.err" >&2
+        exit 1
+      }
+    }
+
+    # The upstream omitted default remains dpc/, while this deployment's
+    # trusted option accepts tau/ and rejects the old namespace.
+    expect_status 125 default-dpc \
+      gh pr create -R fedimint/fedimint --base master \
+      --head dpc/topic --title title --body body
+        grep -Fq 'open GitHub token secret: No such file or directory' \
+          "$TMPDIR/default-dpc.err"
+    expect_status 125 configured-tau \
+      --pr-head-prefix tau/ \
+      gh pr create -R fedimint/fedimint --base master \
+      --head tau/topic --title title --body body
+        grep -Fq 'open GitHub token secret: No such file or directory' \
+          "$TMPDIR/configured-tau.err"
+    expect_status 126 configured-rejects-dpc \
+      --pr-head-prefix tau/ \
+      gh pr create -R fedimint/fedimint --base master \
+      --head dpc/topic --title title --body body
+    grep -Fq 'gh invocation denied by isolate policy:' \
+      "$TMPDIR/configured-rejects-dpc.err"
+
+    # Broker-looking caller arguments remain after intercepted `gh` and
+    # cannot replace the trusted prefix.
+    expect_status 126 post-gh-cannot-override \
+      --pr-head-prefix tau/ \
+      gh --pr-head-prefix dpc/ pr create -R fedimint/fedimint \
+      --base master --head dpc/topic --title title --body body
+    grep -Fq 'gh invocation denied by isolate policy:' \
+      "$TMPDIR/post-gh-cannot-override.err"
+
+    # A regular repository-local COMMENT body passes secure import and only
+    # then reaches the deliberately missing credential. A symlink is denied
+    # before credential access.
+    printf '%s\n' 'review feedback' >review.md
+    expect_status 125 comment-regular \
+      --pr-head-prefix tau/ \
+      gh pr review 1 -R fedimint/fedimint \
+      --comment --body-file review.md
+        grep -Fq 'open GitHub token secret: No such file or directory' \
+          "$TMPDIR/comment-regular.err"
+    ln -s review.md linked-review.md
+    expect_status 126 comment-symlink \
+      --pr-head-prefix tau/ \
+      gh pr review 1 -R fedimint/fedimint \
+      --comment --body-file linked-review.md
+    grep -Fq 'could not securely import text file' \
+      "$TMPDIR/comment-symlink.err"
+
+    touch "$out"
+  '';
   tmpfilesCheck = pkgs.testers.runNixOSTest {
     name = "tau-fedimint-bot-tmpfiles";
     nodes.machine = {
@@ -717,5 +812,9 @@ pkgs.linkFarm "tau-fedimint-bot-checks" [
   {
     name = "github-requester";
     path = githubRequesterCheck;
+  }
+  {
+    name = "gh-broker-policy";
+    path = ghBrokerPolicyCheck;
   }
 ]

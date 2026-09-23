@@ -314,6 +314,32 @@ substantive feedback. Passing reviews may approve only when those rules permit;
 all other completed reviews use comment-only feedback. A blocked publication
 remains pending and must not be reported as posted.
 
+The broker accepts review feedback only from a repository-local regular file,
+using this exact command form:
+
+```console
+gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
+```
+
+`NUMBER` is a positive numeric pull-request number, `OWNER/REPO` is the explicit
+GitHub repository, and `FILE` is a repository-local path. Inline bodies, stdin,
+alternate flag ordering, request-changes reviews, and raw review API writes
+remain denied. The broker imports the file with bounded, no-follow,
+repository-relative handling before credential access.
+
+Permitted approvals retain their separate exact form and do not accept a body:
+
+```console
+gh pr review NUMBER -R OWNER/REPO --approve
+```
+
+Pull requests opened by the bot must use a head in the exact `tau/` namespace,
+for example `tau/topic`. The trusted wrapper selects that namespace before the
+intercepted `gh` argument, so sandbox callers cannot replace it with a
+post-`gh` broker option. The upstream broker's omitted default remains `dpc/`,
+but this deployment explicitly configures `tau/`. This constrains pull-request
+creation only; the dedicated SSH agent remains the authority path for pushes.
+
 The separate `fedimint-github-requester` helper deliberately also supports
 historical contributors when the broader `either` policy is used elsewhere;
 the coordinator's GitHub work policy specifically requires `maintainer`.

@@ -494,6 +494,21 @@ let
                   into an approval merely to publish feedback. Avoid duplicate
                   reviews. If publication is blocked, preserve the feedback,
                   report it as pending, and do not claim that it was posted.
+                  Write feedback to a repository-local file, then publish it
+                  with the exact broker-supported comment form when approval is
+                  not permitted:
+
+                      gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
+
+                  When approval is permitted, use exactly:
+
+                      gh pr review NUMBER -R OWNER/REPO --approve
+
+                  Use `fedimint/fedimint` or `fedimint/fedimint-sdk` as
+                  `OWNER/REPO`, as appropriate. `NUMBER` must be the positive
+                  numeric pull-request number. For comment reviews, `FILE` must
+                  be a repository-local regular file; never use inline review
+                  bodies, stdin, alternate flag order, or raw review API calls.
 
                   Use `clank` for major project tasks that must survive the
                   session. Reuse and update the task's existing ticket when one
@@ -635,6 +650,7 @@ let
                 exec ${cfg.ghBrokerPackage}/bin/gh-broker \
                   --credential fedimint=${githubToken} \
                   --default-credential fedimint \
+                  --pr-head-prefix tau/ \
                   "$@"
               '';
             };
