@@ -91,6 +91,9 @@ let
       )
     ) systemConfig.config.assertions;
   disabledStart = disabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  githubRequesterPackage = lib.findFirst (
+    package: lib.getName package == "fedimint-github-requester"
+  ) (throw "fedimint-github-requester package missing") disabled.config.environment.systemPackages;
   alternateProviderStart =
     alternateProvider.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   enabledStart = enabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
@@ -226,6 +229,17 @@ let
         grep -q 'source and history read-only' "$TMPDIR/bot-prompts"
         grep -q 'Do not modify project source or history' "$TMPDIR/bot-prompts"
         ! grep -Eiq 'jujutsu|(^|[^[:alnum:]_])jj([^[:alnum:]_]|$)' "$TMPDIR/bot-prompts"
+        jq -er '
+          .agents.prompt_fragments[]
+          | select(.name == "fedimint-bot.scope")
+          | .text
+        ' "$disabled_harness" >"$TMPDIR/scope-prompt"
+        grep -q 'approved read-only GitHub inspection' "$TMPDIR/scope-prompt"
+        grep -Fq '`gh issue view` or `gh pr view`' "$TMPDIR/scope-prompt"
+        grep -q 'public issue or pull request' "$TMPDIR/scope-prompt"
+        grep -q 'access non-public data with credentials' "$TMPDIR/scope-prompt"
+        grep -q 'Public read-only issue or pull-request inspection does not' \
+          "$TMPDIR/scope-prompt"
         jq -er '
           .agents.role_groups.coordinator.prompt_fragments[]
           | select(.name == "coordinator.instructions")
@@ -369,6 +383,103 @@ let
 
         touch "$out"
       '';
+  githubRequesterCheck =
+    pkgs.runCommand "tau-fedimint-github-requester-check"
+      {
+        nativeBuildInputs = [ pkgs.coreutils ];
+      }
+      ''
+        set -euo pipefail
+        mkdir -p "$TMPDIR/bin"
+        cat >"$TMPDIR/bin/gh" <<'EOF'
+        #!${pkgs.runtimeShell}
+        set -eu
+        [ "$1" = api ] || exit 97
+        case "$2" in
+          repos/fedimint/fedimint/collaborators/admin-user/permission)
+            printf '%s\n' '{"permission":"admin","user":{"login":"ADMIN-USER"}}'
+            ;;
+          repos/fedimint/fedimint/collaborators/write-user/permission)
+            printf '%s\n' '{"permission":"write","role_name":"maintain","user":{"login":"write-user"}}'
+            ;;
+          repos/fedimint/fedimint/collaborators/read-user/permission)
+            printf '%s\n' '{"permission":"read","user":{"login":"read-user"}}'
+            ;;
+          repos/fedimint/fedimint/collaborators/triage-user/permission)
+            printf '%s\n' '{"permission":"triage","user":{"login":"triage-user"}}'
+            ;;
+          repos/fedimint/fedimint/collaborators/none-user/permission)
+            printf '%s\n' '{"permission":"none","user":{"login":"none-user"}}'
+            ;;
+          repos/fedimint/fedimint/collaborators/mismatch/permission)
+            printf '%s\n' '{"permission":"admin","user":{"login":"someone-else"}}'
+            ;;
+          repos/fedimint/fedimint/collaborators/malformed/permission)
+            printf '%s\n' '{"permission":"admin","user":{}}'
+            ;;
+          repos/fedimint/fedimint/collaborators/invalid-json/permission)
+            printf '%s\n' '{"permission":'
+            ;;
+          repos/fedimint/fedimint/collaborators/multiple-json/permission)
+            printf '%s\n' '{}' '{"permission":"admin","user":{"login":"multiple-json"}}'
+            ;;
+          repos/fedimint/fedimint/collaborators/unknown-permission/permission)
+            printf '%s\n' '{"permission":"maintain","user":{"login":"unknown-permission"}}'
+            ;;
+          repos/fedimint/fedimint/collaborators/api-error/permission)
+            exit 1
+            ;;
+          repos/fedimint/fedimint/collaborators)
+            [ "$3" = --paginate ] && [ "$4" = --slurp ] || exit 96
+            printf '%s\n' '[[{"login":"visible-user","permissions":{"push":true}}]]'
+            ;;
+          repos/fedimint/fedimint/contributors)
+            [ "$3" = --paginate ] && [ "$4" = --slurp ] || exit 96
+            printf '%s\n' '[[{"login":"read-user"},{"login":"api-error"}]]'
+            ;;
+          *)
+            exit 95
+            ;;
+        esac
+        EOF
+        chmod +x "$TMPDIR/bin/gh"
+        export PATH="$TMPDIR/bin:$PATH"
+        requester=${githubRequesterPackage}/bin/fedimint-github-requester
+
+        expect_status() {
+          expected=$1
+          shift
+          set +e
+          "$requester" "$@"
+          actual=$?
+          set -e
+          [ "$actual" -eq "$expected" ] || {
+            echo "expected status $expected, got $actual: $*" >&2
+            exit 1
+          }
+        }
+
+        expect_status 0 check admin-user maintainer
+        expect_status 0 check write-user maintainer
+        expect_status 1 check read-user maintainer
+        expect_status 1 check triage-user maintainer
+        expect_status 1 check none-user maintainer
+        expect_status 2 check mismatch maintainer
+        expect_status 2 check malformed maintainer
+        expect_status 2 check invalid-json maintainer
+        expect_status 2 check multiple-json maintainer
+        expect_status 2 check unknown-permission maintainer
+        expect_status 2 check api-error maintainer
+
+        # A denied, valid maintainer lookup may fall back to contributors.
+        expect_status 0 check read-user either
+        # An operational maintainer lookup failure must not use that fallback.
+        expect_status 2 check api-error either
+
+        ! "$requester" list maintainers | grep -Fqx admin-user
+        expect_status 0 check admin-user maintainer
+        touch "$out"
+      '';
   tmpfilesCheck = pkgs.testers.runNixOSTest {
     name = "tau-fedimint-bot-tmpfiles";
     nodes.machine = {
@@ -452,5 +563,9 @@ pkgs.linkFarm "tau-fedimint-bot-checks" [
   {
     name = "tmpfiles";
     path = tmpfilesCheck;
+  }
+  {
+    name = "github-requester";
+    path = githubRequesterCheck;
   }
 ]
