@@ -190,6 +190,45 @@ let
         grep -q '^UnsetEnvironment=TAU_MODEL_ALIASES$' "$bot_unit"
         grep -q '^UnsetEnvironment=TAU_PROFILE$' "$bot_unit"
         grep -q '^UnsetEnvironment=TAU_PROVIDER_ALIASES$' "$bot_unit"
+        grep -q -- '--create$' ${disabledStart}
+        ! grep -q -- '--create-or-existing' ${disabledStart}
+
+        clear_session=$(
+          grep -Eo '/nix/store/[^ ]+-tau-fedimint-clear-session' ${disabledStart}
+        )
+        test -n "$clear_session"
+        grep -Fq 'sessions="$tau_state/sessions"' "$clear_session"
+        grep -Fq 'session="$sessions/tau-fedimint-bot"' "$clear_session"
+        grep -Fq 'if [ -L "$tau_state" ] || [ -L "$sessions" ]; then' "$clear_session"
+        grep -Fq 'rm -rf --one-file-system -- "$session"' "$clear_session"
+
+        cleanup_home="$TMPDIR/cleanup-home"
+        mkdir -p \
+          "$cleanup_home/.local/state/tau/sessions/tau-fedimint-bot" \
+          "$cleanup_home/.local/state/tau/sessions/sibling-session" \
+          "$cleanup_home/.local/state/tau/providers/provider-state" \
+          "$cleanup_home/.local/state/clank"
+        touch \
+          "$cleanup_home/.local/state/tau/sessions/tau-fedimint-bot/old-session" \
+          "$cleanup_home/.local/state/tau/sessions/sibling-session/keep" \
+          "$cleanup_home/.local/state/tau/providers/provider-state/keep" \
+          "$cleanup_home/.local/state/clank/keep"
+        HOME="$cleanup_home" "$clear_session"
+        test ! -e "$cleanup_home/.local/state/tau/sessions/tau-fedimint-bot"
+        test -e "$cleanup_home/.local/state/tau/sessions/sibling-session/keep"
+        test -e "$cleanup_home/.local/state/tau/providers/provider-state/keep"
+        test -e "$cleanup_home/.local/state/clank/keep"
+
+        external_sessions="$TMPDIR/external-sessions"
+        mkdir -p "$external_sessions/tau-fedimint-bot"
+        touch "$external_sessions/tau-fedimint-bot/keep"
+        rm -rf "$cleanup_home/.local/state/tau/sessions"
+        ln -s "$external_sessions" "$cleanup_home/.local/state/tau/sessions"
+        if HOME="$cleanup_home" "$clear_session"; then
+          echo "session cleanup followed a symlinked sessions directory" >&2
+          exit 1
+        fi
+        test -e "$external_sessions/tau-fedimint-bot/keep"
 
         test_home="$TMPDIR/tau-home"
         test_workspace="$TMPDIR/workspace"

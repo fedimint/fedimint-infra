@@ -519,6 +519,23 @@ let
     }
   );
 
+  clearSession = pkgs.writeShellScript "tau-fedimint-clear-session" ''
+    set -euo pipefail
+    tau_state="$HOME/.local/state/tau"
+    sessions="$tau_state/sessions"
+    session="$sessions/tau-fedimint-bot"
+
+    # The agent can write below Tau's state directory while it is running.
+    # Refuse to follow a replaced parent when clearing the fixed session.
+    if [ -L "$tau_state" ] || [ -L "$sessions" ]; then
+      echo "refusing to clear Tau session through a symlinked state directory" >&2
+      exit 1
+    fi
+
+    install -d -m 0700 "$sessions"
+    rm -rf --one-file-system -- "$session"
+  '';
+
   startBot = pkgs.writeShellScript "tau-fedimint-start" ''
     set -euo pipefail
     install -d -m 0700 \
@@ -526,6 +543,7 @@ let
       "$HOME/.config/tau" \
       "$HOME/.local/state/tau" \
       "$HOME/.cache/tau"
+    ${clearSession}
     install -m 0600 ${harnessConfig} "$HOME/.config/tau/harness.yaml"
     install -m 0600 ${isolateConfig} "$HOME/.config/isolate/isolate.yaml"
     cd ${lib.escapeShellArg projectRoot}
@@ -534,7 +552,7 @@ let
       -- \
       ${cfg.tauPackage}/bin/tau serve \
         --session tau-fedimint-bot \
-        --create-or-existing
+        --create
   '';
 in
 {
