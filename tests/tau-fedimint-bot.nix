@@ -301,10 +301,34 @@ let
           "$TMPDIR/coordinator-prompt"
         grep -Fq 'gh pr review NUMBER -R OWNER/REPO --approve' \
           "$TMPDIR/coordinator-prompt"
-        grep -q 'never use inline review' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'For comment reviews, relative' "$TMPDIR/coordinator-prompt"
+        grep -Fq "\`FILE\` paths resolve from the caller's invocation directory" \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'not a repository root. Absolute `FILE` paths may select either' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Use an absolute path' "$TMPDIR/coordinator-prompt"
+        grep -q 'never use' "$TMPDIR/coordinator-prompt"
+        grep -q 'inline review bodies' "$TMPDIR/coordinator-prompt"
         jq -e '
           (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
           and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)
+        ' "$disabled_isolate" >/dev/null
+        jq -e '
+          (.profiles["fedimint-bot"].pid == {mode: "private"})
+          and (.profiles["fedimint-bot"].exec_priv.allow | length == 1)
+          and (
+            .profiles["fedimint-bot"].exec_priv.allow[0] as $rule
+            | ($rule.name == "gh-host")
+            and ($rule.program == "gh")
+            and ($rule.allow_extra_args == true)
+            and ($rule.cwd == "repo-root")
+            and ($rule.import_roots == [
+              "/home/tau-fedimint/fedimint",
+              "/tmp/public"
+            ])
+            and ($rule.timeout_seconds == 600)
+            and ($rule.intercept == true)
+          )
         ' "$disabled_isolate" >/dev/null
         jq -e '
           [.profiles["fedimint-bot"].bind[]
@@ -336,10 +360,13 @@ let
           "$TMPDIR/gh-handler"
         grep -Fq -- '--default-credential fedimint' "$TMPDIR/gh-handler"
         grep -Fq -- '--pr-head-prefix tau/' "$TMPDIR/gh-handler"
+        grep -Fq -- '--import-context-fd 3' "$TMPDIR/gh-handler"
         test "$(grep -Fc -- '--pr-head-prefix tau/' "$TMPDIR/gh-handler")" -eq 1
         prefix_line=$(grep -Fn -- '--pr-head-prefix tau/' "$TMPDIR/gh-handler" | cut -d: -f1)
+        import_line=$(grep -Fn -- '--import-context-fd 3' "$TMPDIR/gh-handler" | cut -d: -f1)
         caller_line=$(grep -Fn -- '"$@"' "$TMPDIR/gh-handler" | cut -d: -f1)
         test "$prefix_line" -lt "$caller_line"
+        test "$import_line" -lt "$caller_line"
         ! grep -q '${githubNotificationsPackage}' "$disabled_harness"
         bot_unit=${
           disabled.config.systemd.user.units."tau-fedimint-bot.service".unit
@@ -863,6 +890,67 @@ let
           "remote get-url --push origin)\" = "
           "git@github.com:fedimint/fedimint-sdk.git"
       )
+
+      # Exercise the published isolate/broker import-context protocol with the
+      # generated production handler. Remove unrelated required binds so this
+      # source-only VM can run without the live SSH agent.
+      machine.succeed(
+          "jq '"
+          ".profiles[\"fedimint-bot\"].bind |= "
+          "map(select(.path == \"/home/tau-fedimint/fedimint\" "
+          "or .path == \"/tmp/public\"))"
+          "' /home/tau-fedimint/.config/isolate/isolate.yaml "
+          ">/home/tau-fedimint/.config/isolate/isolate.yaml.new\n"
+          "mv /home/tau-fedimint/.config/isolate/isolate.yaml.new "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "chown tau-fedimint:tau-fedimint "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
+          "/home/tau-fedimint/.runtime "
+          "/home/tau-fedimint/fedimint/fedimint/reviews/deep\n"
+          "runuser -u tau-fedimint -- sh -euc '"
+          "printf nested >"
+          "/home/tau-fedimint/fedimint/fedimint/reviews/deep/review.md; "
+          "printf shared >\"$(mktemp /tmp/public/review-import-XXXXXX)\"; "
+          "printf outside >/home/tau-fedimint/outside.md; "
+          "ln -s review.md "
+          "/home/tau-fedimint/fedimint/fedimint/reviews/deep/linked.md; "
+          "printf hardlink >"
+          "/home/tau-fedimint/fedimint/fedimint/reviews/deep/hard-source.md; "
+          "ln /home/tau-fedimint/fedimint/fedimint/reviews/deep/hard-source.md "
+          "/home/tau-fedimint/fedimint/fedimint/reviews/deep/hardlink.md; "
+          "mkfifo /home/tau-fedimint/fedimint/fedimint/reviews/deep/fifo.md'"
+      )
+      shared_body = machine.succeed(
+          "find /tmp/public -maxdepth 1 -name 'review-import-*' -print -quit"
+      ).strip()
+      import_base = (
+          "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+          "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
+          "isolate -c /home/tau-fedimint/fedimint "
+          "exec --profile fedimint-bot -- ${pkgs.runtimeShell} -c '"
+          "cd /home/tau-fedimint/fedimint/fedimint/reviews/deep && "
+          "gh pr review 1 -R fedimint/fedimint --comment --body-file \"$1\""
+          "' sh "
+      )
+      for name, body in [
+          ("nested-relative", "review.md"),
+          ("shared-absolute", shared_body),
+      ]:
+          status, output = machine.execute(import_base + body + " 2>&1")
+          assert status == 125, (name, status, output)
+          assert "open GitHub token secret: No such file or directory" in output
+      for name, body in [
+          ("outside-absolute", "/home/tau-fedimint/outside.md"),
+          ("symlink", "linked.md"),
+          ("hardlink", "hardlink.md"),
+          ("fifo", "fifo.md"),
+          ("cross-root-parent", "../../../../../../tmp/public/" + shared_body.rsplit("/", 1)[1]),
+      ]:
+          status, output = machine.execute(import_base + body + " 2>&1")
+          assert status == 126, (name, status, output)
+          assert "could not securely import text file" in output
+          assert "open GitHub token secret" not in output
 
       machine.succeed(
           "cat >/home/tau-fedimint/.config/isolate/isolate.yaml <<'EOF'\n"

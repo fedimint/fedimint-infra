@@ -41,7 +41,9 @@ target.
   `nobody:nogroup` mode-1733 dropbox for artifacts passed between agent sessions.
   Agents cannot list it, so they use `mktemp` names and pass exact paths.
 - Private PID namespace and intercepted `gh` routed through `gh-broker`.
-  The GitHub token never enters the sandbox.
+  The GitHub token never enters the sandbox. Review-body imports use pinned
+  capabilities for the project root and `/tmp/public`; they do not depend on
+  the handler's repository-root cwd.
 - A dedicated SSH agent loaded from an agenix private key. The sandbox sees only
   its socket, not the key or dpc's personal agent.
 - Read-only access to systemd-resolved's stub resolver file. The sandbox shares
@@ -102,10 +104,10 @@ removing files they do not own, while the missing read bit prevents directory
 listing. Artifact names are still capabilities: use unpredictable `mktemp`
 names, do not store secrets there, and send collaborators the exact path.
 
-This dropbox does not broaden any privileged host command or file-import
-policy. In particular, placing a review body in `/tmp/public` does not make it
-acceptable to the GitHub broker, which continues to accept only its documented
-safe repository-root-relative inputs.
+The GitHub broker explicitly authorizes this dropbox and the project root as
+separate review-body import roots. That authority applies only to the exact
+body-file command form documented below; it does not broaden other privileged
+host commands.
 
 ## Project development shell
 
@@ -387,18 +389,28 @@ substantive feedback. Passing reviews may approve only when those rules permit;
 all other completed reviews use comment-only feedback. A blocked publication
 remains pending and must not be reported as posted.
 
-The broker accepts review feedback only from a repository-local regular file,
+The broker accepts review feedback only from a securely imported regular file,
 using this exact command form:
 
 ```console
 gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
 ```
 
-`NUMBER` is a positive numeric pull-request number, `OWNER/REPO` is the explicit
-GitHub repository, and `FILE` is a repository-local path. Inline bodies, stdin,
-alternate flag ordering, request-changes reviews, and raw review API writes
-remain denied. The broker imports the file with bounded, no-follow,
-repository-relative handling before credential access.
+`NUMBER` is a positive numeric pull-request number and `OWNER/REPO` is the
+explicit GitHub repository. A relative `FILE` starts at the sandbox caller's
+invocation directory, including a nested checkout or worktree. An absolute
+`FILE` may select `/home/tau-fedimint/fedimint` or `/tmp/public`. The invocation
+directory must itself be under one of those roots, even when `FILE` is absolute.
+Use an absolute path to select the other root; `..` cannot traverse out of one
+root and into another.
+
+The isolate server pins the invocation ancestry and both root directory objects
+before the host broker resolves the file. Resolution rejects symlinks, magic
+links, mount crossings, hardlinks, special files, paths over 4096 bytes or 128
+components, and files over 1 MiB. Import finishes before credential access.
+The handler keeps its repository-root cwd, so nested GitHub repository context
+and artifact export behavior remain unchanged. Inline bodies, stdin, alternate
+flag ordering, request-changes reviews, and raw review API writes remain denied.
 
 Permitted approvals retain their separate exact form and do not accept a body:
 
@@ -416,6 +428,36 @@ creation only; the dedicated SSH agent remains the authority path for pushes.
 The separate `fedimint-github-requester` helper deliberately also supports
 historical contributors when the broader `either` policy is used elsewhere;
 the coordinator's GitHub work policy specifically requires `maintainer`.
+
+### Body-import rollout gate
+
+Do not enable the import authority merely because this source configuration
+evaluates. First activate the preceding mount-only `/tmp/public` generation,
+without this change's new package pins or import settings. Build this candidate
+generation but do not switch the live service to it. Then inspect a fresh,
+credential-free candidate sandbox:
+
+1. On the host, confirm no mount exists strictly below either
+   `/home/tau-fedimint/fedimint` or `/tmp/public`.
+2. In the fresh sandbox mountinfo, confirm exact binds at both roots and no
+   mount strictly below either one. The private ancestor `/tmp` followed by the
+   exact `/tmp/public` bind is expected.
+3. Confirm the effective isolate plan has no raw bubblewrap arguments, nested
+   mount/overlay operation, or generated symlink destination below either root.
+4. Confirm typed `pid: { mode: private }` is effective, the sandbox has its own
+   procfs, and a sandbox process cannot see the host exec-priv sidecar or broker
+   `/proc/PID/fd` entries.
+5. In a temporary candidate configuration, enable both `import_roots` and the
+   literal `--import-context-fd 3` together while keeping credentials
+   unavailable and the live service disabled. Exercise a nested-cwd relative
+   project file and an absolute `/tmp/public` file; both must reach the missing-
+   credential failure. Confirm outside-root, symlink, hardlink, special-file,
+   and root-escaping inputs fail at import before credential access.
+
+Only after these checks pass should a later deployment activate `import_roots`
+and the broker's literal `--import-context-fd 3` option atomically. If either
+side is absent or any root contains a child mount/overlay, leave import
+authority disabled and investigate rather than falling back.
 
 ## GitHub requester policy
 

@@ -30,9 +30,9 @@
       inputs.flake-utils.follows = "flake-utils";
     };
 
-    isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=d1bb459b921775fe1baab9e916c3d6fa55709a8a";
+    isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f";
 
-    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=ed953207289cc1c7efc28e0d8bb097af9a1c9a19";
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=4cc87b89c9a7d4b29aaddc99e6dda3acdaee012b";
 
     clank = {
       url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=56a03fecf62ca8090c3e5f5a089b6d9c62483c8d";

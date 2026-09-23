@@ -563,9 +563,9 @@ let
                   into an approval merely to publish feedback. Avoid duplicate
                   reviews. If publication is blocked, preserve the feedback,
                   report it as pending, and do not claim that it was posted.
-                  Write feedback to a repository-local file, then publish it
-                  with the exact broker-supported comment form when approval is
-                  not permitted:
+                  Write feedback below `${projectRoot}` or to an unpredictable
+                  `/tmp/public` artifact, then publish it with the exact
+                  broker-supported comment form when approval is not permitted:
 
                       gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
 
@@ -575,9 +575,16 @@ let
 
                   Use `fedimint/fedimint` or `fedimint/fedimint-sdk` as
                   `OWNER/REPO`, as appropriate. `NUMBER` must be the positive
-                  numeric pull-request number. For comment reviews, `FILE` must
-                  be a repository-local regular file; never use inline review
-                  bodies, stdin, alternate flag order, or raw review API calls.
+                  numeric pull-request number. For comment reviews, relative
+                  `FILE` paths resolve from the caller's invocation directory,
+                  not a repository root. Absolute `FILE` paths may select either
+                  `${projectRoot}` or `/tmp/public`. The caller directory must
+                  itself remain below one of those roots. Use an absolute path
+                  to cross between roots; `..` cannot escape one root and enter
+                  the other. Files must be regular, single-link, no larger than
+                  1 MiB, and reached without symlinks or nested mounts; never use
+                  inline review bodies, stdin, alternate flag order, or raw
+                  review API calls.
 
                   Use `clank` for major project tasks that must survive the
                   session. Reuse and update the task's existing ticket when one
@@ -716,6 +723,10 @@ let
             program = "gh";
             allow_extra_args = true;
             cwd = "repo-root";
+            import_roots = [
+              projectRoot
+              "/tmp/public"
+            ];
             timeout_seconds = 600;
             intercept = true;
             handler = {
@@ -731,6 +742,7 @@ let
                   --credential fedimint=${githubToken} \
                   --default-credential fedimint \
                   --pr-head-prefix tau/ \
+                  --import-context-fd 3 \
                   "$@"
               '';
             };

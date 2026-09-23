@@ -4594,16 +4594,16 @@
         "nixpkgs": "nixpkgs_6"
       },
       "locked": {
-        "lastModified": 1790148407,
-        "narHash": "sha256-mEH8BKgqUvORLR3lr/qmxQxKsYzhNcCMgY2M6pwz+ik=",
+        "lastModified": 1790192108,
+        "narHash": "sha256-icHqAltylCNzp7q9A9ayGBPmKaB8Egae03tcNsHaPa8=",
         "ref": "refs/heads/master",
-        "rev": "ed953207289cc1c7efc28e0d8bb097af9a1c9a19",
-        "revCount": 31,
+        "rev": "4cc87b89c9a7d4b29aaddc99e6dda3acdaee012b",
+        "revCount": 32,
         "type": "git",
         "url": "https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git"
       },
       "original": {
-        "rev": "ed953207289cc1c7efc28e0d8bb097af9a1c9a19",
+        "rev": "4cc87b89c9a7d4b29aaddc99e6dda3acdaee012b",
         "type": "git",
         "url": "https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git"
       }
@@ -4636,16 +4636,16 @@
         "nixpkgs": "nixpkgs_7"
       },
       "locked": {
-        "lastModified": 1789768317,
-        "narHash": "sha256-26/LYHGloC1csSTzDIh4ZhXbCFUfAA7Pn/LGt4MNOns=",
+        "lastModified": 1790191704,
+        "narHash": "sha256-DaaTwGveU+OHIPdLnHxWha7WUcKZo8NYJDx9beI421s=",
         "ref": "refs/heads/master",
-        "rev": "d1bb459b921775fe1baab9e916c3d6fa55709a8a",
-        "revCount": 96,
+        "rev": "0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f",
+        "revCount": 97,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git"
       },
       "original": {
-        "rev": "d1bb459b921775fe1baab9e916c3d6fa55709a8a",
+        "rev": "0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git"
       }
