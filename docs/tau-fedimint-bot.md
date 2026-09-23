@@ -12,13 +12,13 @@ target.
 
 | Role | Model | Effort |
 | --- | --- | ---: |
-| coordinator | `codex/gpt-6-astra` | 0.35 |
-| engineer-junior | `codex/gpt-5.6-terra` | 0.75 |
-| engineer | `codex/gpt-5.6-sol` | 0.5 |
-| engineer-senior | `codex/gpt-6-astra` | 0.25 |
-| researcher | `codex/gpt-5.6-terra` | 0.75 |
-| researcher-senior | `codex/gpt-6-astra` | 0.25 |
-| reviewer | `codex/gpt-5.6-sol` | 0.5 |
+| coordinator | `codex/gpt-6-sol` | 0.5 |
+| engineer-junior | `codex/gpt-6-sol` | 0.25 |
+| engineer | `codex/gpt-6-sol` | 0.5 |
+| engineer-senior | `codex/gpt-6-sol` | 0.5 |
+| researcher | `codex/gpt-6-sol` | 0.25 |
+| researcher-senior | `codex/gpt-6-sol` | 0.5 |
+| reviewer | `codex/gpt-6-sol` | 0.5 |
 
 ## Implemented shape
 

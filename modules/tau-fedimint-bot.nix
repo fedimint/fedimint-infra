@@ -293,17 +293,17 @@ let
             ];
             roles = {
               researcher = {
-                model = "codex/gpt-5.6-terra";
-                effort = 0.75;
+                model = "codex/gpt-6-sol";
+                effort = 0.25;
                 description = "Default researcher for separate research.";
               };
               researcher-senior = {
-                model = "codex/gpt-6-astra";
-                effort = 0.25;
+                model = "codex/gpt-6-sol";
+                effort = 0.5;
                 description = "Deep-thinking researcher for complex work.";
               };
               reviewer = {
-                model = "codex/gpt-5.6-sol";
+                model = "codex/gpt-6-sol";
                 effort = 0.5;
                 description = "Independent code reviewer; review without editing.";
                 prompt_fragments = [
@@ -351,20 +351,20 @@ let
             roles = {
               engineer-junior = {
                 order = 10;
-                model = "codex/gpt-5.6-terra";
-                effort = 0.75;
+                model = "codex/gpt-6-sol";
+                effort = 0.25;
                 description = "Fast contributor for straightforward tasks.";
               };
               engineer = {
                 order = 20;
-                model = "codex/gpt-5.6-sol";
+                model = "codex/gpt-6-sol";
                 effort = 0.5;
                 description = "Default software engineer.";
               };
               engineer-senior = {
                 order = 30;
-                model = "codex/gpt-6-astra";
-                effort = 0.25;
+                model = "codex/gpt-6-sol";
+                effort = 0.5;
                 description = "Senior engineer for the hardest tasks.";
               };
             };
@@ -408,8 +408,8 @@ let
             ];
             roles.coordinator = {
               order = 0;
-              model = "codex/gpt-6-astra";
-              effort = 0.35;
+              model = "codex/gpt-6-sol";
+              effort = 0.5;
               description = "Coordinates work and delivers the integrated result.";
               enable_tools = lib.optionals cfg.githubNotifications.enable [ "github_register" ];
             };
@@ -609,7 +609,7 @@ in
     };
     model = lib.mkOption {
       type = lib.types.str;
-      default = "codex/gpt-5.6-sol";
+      default = "codex/gpt-6-sol";
       description = "Provider-neutral default model inherited by roles without an override.";
     };
     providerProfile = lib.mkOption {
