@@ -312,7 +312,10 @@ let
           and ($extension.command[0] | endswith("/bin/tau-ext-github"))
           and ($extension.secrets | keys == ["github_identity_key", "github_token"])
           and ($extension.config == {
-            "actors": {"mode": "repository_maintainers"},
+            "actors": {
+              "mode": "repository_maintainers",
+              "user_ids": [49699333]
+            },
             "identity_key_secret": "github_identity_key",
             "poll_seconds": 60,
             "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk"],

@@ -224,7 +224,10 @@ let
               "fedimint/fedimint"
               "fedimint/fedimint-sdk"
             ];
-            actors.mode = "repository_maintainers";
+            actors = {
+              mode = "repository_maintainers";
+              user_ids = [ 49699333 ];
+            };
             poll_seconds = 60;
           };
         };

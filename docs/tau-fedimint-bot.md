@@ -66,8 +66,9 @@ target.
   without receiving write access to the rest of its home or state hierarchy.
 - One enabled inbound GitHub notification extension. It watches
   `fedimint/fedimint` and `fedimint/fedimint-sdk`, dynamically admits actors with
-  effective push access in the relevant repository, and polls every 60 seconds.
-  It does not add action tools or provide a complete GitHub activity feed.
+  effective push access in the relevant repository plus the verified numeric
+  user ID for `dependabot[bot]`, and polls every 60 seconds. It does not add
+  action tools or provide a complete GitHub activity feed.
 
 This profile targets accidental-agent containment, not hostile-code isolation.
 `isolate` is a defense-in-depth guardrail and its own security documentation
@@ -154,11 +155,17 @@ Nix-generated startup configuration is deterministic.
 4. **Known users and services:** the inbound configuration watches
    `fedimint/fedimint` and `fedimint/fedimint-sdk`. For each repository, it
    admits actors from GitHub's complete collaborator roster when their effective
-   `permissions.push` is true. This filters received activity; it does not
-   authorize the bot to act. The coordinator prompt still requires
-   `fedimint-github-requester check USERNAME either` before acting on a GitHub
-   request. Any failed, denied, malformed, rate-limited, or unavailable check
-   must remain denied.
+   `permissions.push` is true, plus the explicitly configured GitHub numeric user
+   ID `49699333` for `dependabot[bot]`. The explicit allowlist applies only to
+   otherwise supported events in configured repositories; it does not require a
+   runtime account lookup. Roster lookup failures remain fail-closed for the
+   entire repository batch, including explicitly allowlisted actors. This
+   filters received activity; it does not authorize the bot to act. In
+   particular, trusted Dependabot admission does not bypass pull-request safety,
+   backward compatibility, or consensus-approval restrictions. The coordinator
+   prompt still requires `fedimint-github-requester check USERNAME either`
+   before acting on a GitHub request. Any failed, denied, malformed,
+   rate-limited, or unavailable check must remain denied.
 5. **Models:** confirm that `chatgpt-dpc` publishes the role models in the table
    above. Keep model references in provider-neutral `codex/...` form.
 6. **Runtime validation:** inspect
