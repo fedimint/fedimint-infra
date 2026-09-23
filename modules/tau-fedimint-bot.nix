@@ -222,18 +222,6 @@ let
               backend = "filesystem";
               enforce_ro_bind = false;
             };
-            shell.allowlist = [
-              {
-                workdir = projectRoot;
-                command_regex = "[\\s\\S]*";
-                description = "Commands must run from the Fedimint workspace.";
-              }
-              {
-                workdir = "${projectRoot}/**";
-                command_regex = "[\\s\\S]*";
-                description = "Commands must run below the Fedimint workspace.";
-              }
-            ];
           };
         };
         std-websearch.enable = false;

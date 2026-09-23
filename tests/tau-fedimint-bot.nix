@@ -208,6 +208,7 @@ let
           and (.agents.role_groups.support.roles.reviewer.model == "codex/gpt-6-sol")
           and (.agents.role_groups.support.roles.reviewer.effort == 0.5)
           and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == [])
+          and (.extensions["core-shell"].config | has("shell") | not)
         ' "$disabled_harness" >/dev/null
         jq -e '
           (.aliases.providers.codex == "future-provider")
@@ -323,8 +324,6 @@ let
         mkdir -p "$test_home/.config/tau" "$test_workspace"
         jq --arg workspace "$test_workspace" '
           .extensions["core-shell"].config.working_directory = $workspace
-          | .extensions["core-shell"].config.shell.allowlist[0].workdir = $workspace
-          | .extensions["core-shell"].config.shell.allowlist[1].workdir = ($workspace + "/**")
           | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
         ' "$disabled_harness" >"$test_home/.config/tau/harness.yaml"
         env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
