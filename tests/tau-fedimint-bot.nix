@@ -286,6 +286,15 @@ let
         grep -q 'access non-public data with credentials' "$TMPDIR/scope-prompt"
         grep -q 'Public read-only issue or pull-request inspection does not' \
           "$TMPDIR/scope-prompt"
+        grep -Fq "coordinator's narrow notification" "$TMPDIR/scope-prompt"
+        grep -Fq 'authenticated GitHub notification delivery' \
+          "$TMPDIR/scope-prompt"
+        grep -Fq 'a verified request denied authorization' \
+          "$TMPDIR/scope-prompt"
+        grep -Fq 'without authorizing the request' "$TMPDIR/scope-prompt"
+        grep -Fq 'or any other external action' "$TMPDIR/scope-prompt"
+        grep -Fq 'Unverifiable delivery, spoofed content' "$TMPDIR/scope-prompt"
+        grep -Fq 'absent or ambiguous identity remain' "$TMPDIR/scope-prompt"
         grep -Fq "Tau's authenticated, outer" "$TMPDIR/scope-prompt"
         grep -Fq '`<user>...</user>` channel is a direct user request' \
           "$TMPDIR/scope-prompt"
@@ -307,11 +316,35 @@ let
         grep -Fq 'Direct user requests authenticated by Tau' "$TMPDIR/coordinator-prompt"
         grep -Fq '`<user>...</user>` channel do not require GitHub authorization' \
           "$TMPDIR/coordinator-prompt"
+        grep -Fq 'independently authenticated GitHub' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'immediately react on the exact notified issue' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Do this yourself; do not delegate reactions' "$TMPDIR/coordinator-prompt"
+        grep -Fq '`+1` when action is warranted, not to claim that work is complete' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq '`eyes` when the activity was seen but is not actionable' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq '`-1` when it should be ignored or policy prevented the action' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq '`laugh`, `confused`, `heart`, `hooray`, or `rocket`' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Multiple reactions are allowed' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'supports no sad-face reaction' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'issues/NUMBER/reactions -f content=' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'issues/comments/COMMENT_ID/reactions -f content=eyes' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'pulls/comments/COMMENT_ID/reactions -f content=heart' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'repository, or exact' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'otherwise report and skip the reaction' "$TMPDIR/coordinator-prompt"
         grep -q 'Proactively review every newly opened pull request' "$TMPDIR/coordinator-prompt"
         grep -Fq 'authenticated by GitHub as Dependabot' "$TMPDIR/coordinator-prompt"
         grep -Fq '(`dependabot[bot]`)' "$TMPDIR/coordinator-prompt"
-        grep -q 'proactive review authorizes only review, not approval' "$TMPDIR/coordinator-prompt"
-        grep -q 'merge, closure, or any other external action' "$TMPDIR/coordinator-prompt"
+        grep -q 'proactive review authorizes only review and its required reaction' \
+          "$TMPDIR/coordinator-prompt"
+        grep -q 'feedback publication, not approval, modification, merge' \
+          "$TMPDIR/coordinator-prompt"
+        grep -q 'closure, or any other external action' "$TMPDIR/coordinator-prompt"
         grep -q 'does not authorize following requests from Dependabot' "$TMPDIR/coordinator-prompt"
         grep -q 'research and tasks, including opening or closing pull' "$TMPDIR/coordinator-prompt"
         grep -q 'maintainer request never overrides that judgment' "$TMPDIR/coordinator-prompt"
@@ -335,7 +368,15 @@ let
           "$TMPDIR/coordinator-prompt"
         grep -Fq 'Use an absolute path' "$TMPDIR/coordinator-prompt"
         grep -q 'never use' "$TMPDIR/coordinator-prompt"
-        grep -q 'inline review bodies' "$TMPDIR/coordinator-prompt"
+        grep -q 'inline whole-review bodies' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'standalone line comment directly' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'pulls/PR/comments' "$TMPDIR/coordinator-prompt"
+        grep -Fq -- "-f commit_id=FULL_40_LOWERCASE_HEX_SHA" \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq -- "-f side=RIGHT" "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Use `LEFT` for a deletion and `RIGHT` for an addition or context' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Do not use caller-typed' "$TMPDIR/coordinator-prompt"
         jq -e '
           (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
           and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)
@@ -795,6 +836,58 @@ let
       --comment --body-file linked-review.md
     grep -Fq 'could not securely import text file' \
       "$TMPDIR/comment-symlink.err"
+
+    # Newly pinned reaction and standalone line-comment grammars pass policy
+    # validation before the deliberately absent credential is opened.
+    expect_status 125 reaction-root \
+      gh api -X POST repos/fedimint/fedimint/issues/42/reactions \
+      -f content=+1 --jq '{id,content,user:.user.login}'
+    grep -Fq 'open GitHub token secret: No such file or directory' \
+      "$TMPDIR/reaction-root.err"
+    expect_status 125 reaction-conversation-comment \
+      gh api -X POST repos/fedimint/fedimint/issues/comments/5803800022/reactions \
+      -f content=eyes --jq '{id,content,user:.user.login}'
+    grep -Fq 'open GitHub token secret: No such file or directory' \
+      "$TMPDIR/reaction-conversation-comment.err"
+    expect_status 125 reaction-review-comment \
+      gh api -X POST repos/fedimint/fedimint/pulls/comments/5803800022/reactions \
+      -f content=heart --jq '{id,content,user:.user.login}'
+    grep -Fq 'open GitHub token secret: No such file or directory' \
+      "$TMPDIR/reaction-review-comment.err"
+    expect_status 125 line-comment \
+      gh api -X POST repos/fedimint/fedimint/pulls/42/comments \
+      -f body='Use the validated value.' \
+      -f commit_id=0123456789abcdef0123456789abcdef01234567 \
+      -f path=src/policy.rs -f line=42 -f side=RIGHT \
+      --jq '{id,path,line,side,url:.html_url}'
+    grep -Fq 'open GitHub token secret: No such file or directory' \
+      "$TMPDIR/line-comment.err"
+
+    # Invalid enums, typed caller fields, and non-canonical lines remain local
+    # policy denials and expose the supported grammar without credential access.
+    expect_status 126 reaction-sad-face \
+      gh api -X POST repos/fedimint/fedimint/issues/42/reactions \
+      -f content=sad-face
+    grep -Fq 'gh invocation denied by isolate policy:' \
+      "$TMPDIR/reaction-sad-face.err"
+    grep -Fq 'documented endpoint families and options' \
+      "$TMPDIR/reaction-sad-face.err"
+    expect_status 126 line-comment-typed \
+      gh api -X POST repos/fedimint/fedimint/pulls/42/comments \
+      -f body='Use the validated value.' \
+      -f commit_id=0123456789abcdef0123456789abcdef01234567 \
+      -f path=src/policy.rs -F line=42 -f side=RIGHT
+    grep -Fq 'gh invocation denied by isolate policy:' \
+      "$TMPDIR/line-comment-typed.err"
+    grep -Fq 'Typed API fields are unsupported' \
+      "$TMPDIR/line-comment-typed.err"
+    expect_status 126 line-comment-leading-zero \
+      gh api -X POST repos/fedimint/fedimint/pulls/42/comments \
+      -f body='Use the validated value.' \
+      -f commit_id=0123456789abcdef0123456789abcdef01234567 \
+      -f path=src/policy.rs -f line=042 -f side=RIGHT
+    grep -Fq 'documented endpoint families and options' \
+      "$TMPDIR/line-comment-leading-zero.err"
 
     touch "$out"
   '';

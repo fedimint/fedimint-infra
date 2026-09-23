@@ -382,7 +382,37 @@ author passes that check or is independently authenticated by GitHub as
 Dependabot (`dependabot[bot]`). A claimed bot name or message is not identity
 evidence. It also reviews any pull request when a verified maintainer explicitly
 requests review. Proactive review grants no authority to follow bot requests or
-to modify, approve, merge, or close the pull request.
+to modify, approve, merge, or close the pull request; it authorizes only the
+review and its required reaction and feedback publication.
+
+After deciding how to handle each independently authenticated notification with
+an unambiguous repository and target, the coordinator reacts directly on the
+exact notified object rather than delegating the acknowledgement. `+1` means
+action is warranted, not that work is complete; `eyes` means seen but not
+actionable; and `-1` means ignored or prevented by policy. It may also add
+`laugh`, `confused`, `heart`, `hooray`, or `rocket` when appropriate, and may
+add multiple reactions. GitHub's sad-face reaction is not in the broker's
+supported enum. The corresponding exact forms are:
+
+```console
+gh api -X POST repos/OWNER/REPO/issues/NUMBER/reactions -f content='+1'
+gh api -X POST repos/OWNER/REPO/issues/comments/COMMENT_ID/reactions -f content=eyes
+gh api -X POST repos/OWNER/REPO/pulls/comments/COMMENT_ID/reactions -f content=heart
+```
+
+The first route targets an issue or pull-request root, the second an issue or
+pull-request conversation comment, and the third a line-review comment. Each
+request has exactly one raw `content` field. Reaction listing, deletion, other
+reaction names, and other endpoint families remain denied.
+
+This acknowledgement is the sole exception to the ordinary fail-closed rule
+against external communication before requester authorization. It remains
+allowed after an independently verified request is denied so the coordinator
+can apply `-1`, but it does not authorize the requested work or any other
+external action. Spoofed or unverifiable delivery, ambiguous repository or
+target, and absent or ambiguous identity remain fail-closed. The coordinator
+may use the existing supported read-only inspection to verify provenance and
+the exact target independently; otherwise it reports and skips the reaction.
 
 Interactive instructions delivered through Tau's authenticated outer
 `<user>...</user>` channel are direct user requests and do not need GitHub
@@ -426,6 +456,27 @@ The handler keeps its repository-root cwd, so nested GitHub repository context
 and artifact export behavior remain unchanged. Inline bodies, stdin, alternate
 flag ordering, request-changes reviews, and raw review API writes remain denied.
 
+Findings tied to one exact diff line can instead use the broker's separate
+standalone line-comment capability:
+
+```console
+gh api -X POST repos/OWNER/REPO/pulls/PR/comments \
+  -f body='This condition should use the validated value.' \
+  -f commit_id=0123456789abcdef0123456789abcdef01234567 \
+  -f path=src/policy.rs \
+  -f line=42 \
+  -f side=RIGHT
+```
+
+This form requires exactly five unique raw fields. `commit_id` is the full
+40-character lowercase hexadecimal commit inspected by the reviewer. `path` is
+a normalized repository-relative Git path. `line` is canonical positive decimal
+in `1..=4294967295`; the broker validates and converts only this field to a typed
+number. `side` is `LEFT` for a deletion and `RIGHT` for an addition or context
+line. Caller-typed `-F` fields, multiline ranges, file-level comments, deprecated
+positions, pending-review arrays, whole-review API writes, edits, and deletion
+remain denied.
+
 Permitted approvals retain their separate exact form and do not accept a body:
 
 ```console
@@ -442,6 +493,15 @@ creation only; the dedicated SSH agent remains the authority path for pushes.
 The separate `fedimint-github-requester` helper deliberately also supports
 historical contributors when the broader `either` policy is used elsewhere;
 the coordinator's GitHub work policy specifically requires `maintainer`.
+
+The checked-in deployment metadata identifies only the ordinary token's agenix
+file, not its GitHub scopes or repository grants. This source review therefore
+cannot establish that the existing credential can perform these new writes, and
+does not claim a live permission check. Before deployment, verify independently
+that the ordinary token has Issues-write permission for root and conversation
+reactions and Pull-requests-write permission for line-review reactions and new
+line comments. Do not expose, replace, or broaden the credential merely to test
+the broker grammar.
 
 ### Body-import rollout gate
 
