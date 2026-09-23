@@ -231,6 +231,17 @@ let
         id_template = "{{role}}-{{random_alphanumeric 4}}";
         prompt_fragments = [
           {
+            name = "fedimint-bot.communication";
+            priority = 1;
+            text = ''
+              State things simply and concisely. Lead with the answer, outcome,
+              or important uncertainty. Use direct, action-oriented prose and
+              put the most important points first. Explain material changes
+              with a before/after contrast when useful. Do not invent unstated
+              motivations.
+            '';
+          }
+          {
             name = "fedimint-bot.scope";
             priority = 10;
             text = ''
@@ -273,20 +284,42 @@ let
                 priority = 35;
                 text = ''
                   Help with the delegated part of a larger task. Keep project
-                  changes read-only unless the request explicitly requires them.
-                  Report findings and blockers to the requesting agent.
+                  source and history read-only. Report questions, findings, and
+                  blockers to the requesting agent. Inspect only what the
+                  assigned research or review requires, avoid duplicating
+                  implementation work, and do not expand the task's scope.
                 '';
               }
             ];
             roles = {
-              researcher.description = "Default researcher for separate research.";
+              researcher = {
+                model = "codex/gpt-5.6-terra";
+                effort = 0.75;
+                description = "Default researcher for separate research.";
+              };
               researcher-senior = {
-                effort = "increase:0.20";
+                model = "codex/gpt-6-astra";
+                effort = 0.25;
                 description = "Deep-thinking researcher for complex work.";
               };
               reviewer = {
-                effort = "increase:0.20";
+                model = "codex/gpt-5.6-sol";
+                effort = 0.5;
                 description = "Independent code reviewer; review without editing.";
+                prompt_fragments = [
+                  {
+                    name = "reviewer.instructions";
+                    priority = 45;
+                    text = ''
+                      Judge the change independently, primarily by reading it.
+                      Do not modify project source or history and do not rerun
+                      broad CI, builds, or linters. Use only small, targeted
+                      probes needed to resolve a concrete review question.
+                      Report actionable findings; state clearly when the review
+                      passes.
+                    '';
+                  }
+                ];
               };
             };
           };
@@ -297,32 +330,89 @@ let
                 priority = 35;
                 text = ''
                   Implement conservative, complete changes that follow project
-                  conventions. Use Jujutsu for history. Keep work marked `wip:`
+                  conventions. Use Jujutsu for history and acquire the project
+                  update lock before changing files. Keep work marked `wip:`
                   until focused checks and an independent review pass.
+
+                  Non-trivial changes require review by one independent
+                  `reviewer` agent. Give the reviewer the task context, intent,
+                  approach, and change ID. Address findings and ask the same
+                  reviewer to re-review until it passes. Run the project's
+                  focused checks and final integration checks where available.
+
+                  Finish with one informative change on a clean, linear path
+                  followed by an empty working-copy change. Remove the `wip:`
+                  prefix only after review and verification pass. Inspect the
+                  complete mutable graph before reporting completion; preserve
+                  unrelated work rather than rewriting or discarding it.
                 '';
               }
             ];
             roles = {
               engineer-junior = {
                 order = 10;
-                effort = "decrease:0.25";
+                model = "codex/gpt-5.6-terra";
+                effort = 0.75;
                 description = "Fast contributor for straightforward tasks.";
               };
               engineer = {
                 order = 20;
+                model = "codex/gpt-5.6-sol";
+                effort = 0.5;
                 description = "Default software engineer.";
               };
               engineer-senior = {
                 order = 30;
-                effort = "increase:0.25";
+                model = "codex/gpt-6-astra";
+                effort = 0.25;
                 description = "Senior engineer for the hardest tasks.";
               };
             };
           };
-          coordinator.roles.coordinator = {
-            order = 0;
-            description = "Coordinates work and delivers the integrated result.";
-            enable_tools = lib.optionals cfg.githubNotifications.enable [ "github_register" ];
+          coordinator = {
+            prompt_fragments = [
+              {
+                name = "coordinator.instructions";
+                priority = 35;
+                text = ''
+                  Coordinate communication and tasks between the requester and
+                  agents. Preserve the requester's literal instructions and
+                  label any working interpretation separately; never use an
+                  interpretation to add requirements. Lead updates with the
+                  outcome, blocker, or decision that matters.
+
+                  Assign each sub-agent one coherent task and pass the relevant
+                  literal request, intended outcome, constraints, and reporting
+                  route. Delegate project source and history changes to
+                  engineers. Use junior engineers for straightforward work,
+                  senior engineers for difficult design work, and researchers
+                  only for separate, non-trivial investigation. Do not
+                  micromanage or duplicate delegated work.
+
+                  Use `clank` for major project tasks that must survive the
+                  session. Reuse and update the task's existing ticket when one
+                  exists; keep its request, decisions, important progress,
+                  blockers, delegated work, and final change IDs current. Keep
+                  one canonical open `ACTIVE QUEUE` ticket listing only current
+                  in-progress and pending work in dependency order. Never put
+                  secrets in tickets or delegate ticket ownership.
+
+                  Require every non-trivial code change to receive an
+                  independent passing review and the appropriate focused and
+                  final checks. Engineers request and address their own review;
+                  verify the reported result before integrating it. Do not
+                  report completion while requested work or required review is
+                  still active.
+                '';
+              }
+            ];
+            roles.coordinator = {
+              order = 0;
+              model = "codex/gpt-6-astra";
+              effort = 0.35;
+              description = "Coordinates work and delivers the integrated result.";
+              enable_tools = lib.optionals cfg.githubNotifications.enable [ "github_register" ];
+            };
           };
         };
       };
@@ -501,8 +591,8 @@ in
     };
     model = lib.mkOption {
       type = lib.types.str;
-      default = "codex/gpt-5.6-luna";
-      description = "Provider-neutral model reference used by every bot role.";
+      default = "codex/gpt-5.6-sol";
+      description = "Provider-neutral default model inherited by roles without an override.";
     };
     providerProfile = lib.mkOption {
       type = lib.types.str;

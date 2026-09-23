@@ -142,13 +142,43 @@ let
         jq -e '
           (.extensions["github-notifications"] == null)
           and (.aliases.providers.codex == "chatgpt-dpc")
-          and (.agents.model == "codex/gpt-5.6-luna")
+          and (.agents.model == "codex/gpt-5.6-sol")
+          and (.agents.effort == 0.5)
+          and (.agents.role_groups.coordinator.roles.coordinator.model == "codex/gpt-6-astra")
+          and (.agents.role_groups.coordinator.roles.coordinator.effort == 0.35)
+          and (.agents.role_groups.engineer.roles["engineer-junior"].model == "codex/gpt-5.6-terra")
+          and (.agents.role_groups.engineer.roles["engineer-junior"].effort == 0.75)
+          and (.agents.role_groups.engineer.roles.engineer.model == "codex/gpt-5.6-sol")
+          and (.agents.role_groups.engineer.roles.engineer.effort == 0.5)
+          and (.agents.role_groups.engineer.roles["engineer-senior"].model == "codex/gpt-6-astra")
+          and (.agents.role_groups.engineer.roles["engineer-senior"].effort == 0.25)
+          and (.agents.role_groups.support.roles.researcher.model == "codex/gpt-5.6-terra")
+          and (.agents.role_groups.support.roles.researcher.effort == 0.75)
+          and (.agents.role_groups.support.roles["researcher-senior"].model == "codex/gpt-6-astra")
+          and (.agents.role_groups.support.roles["researcher-senior"].effort == 0.25)
+          and (.agents.role_groups.support.roles.reviewer.model == "codex/gpt-5.6-sol")
+          and (.agents.role_groups.support.roles.reviewer.effort == 0.5)
           and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == [])
         ' "$disabled_harness" >/dev/null
         jq -e '
           (.aliases.providers.codex == "future-provider")
-          and (.agents.model == "codex/gpt-5.6-luna")
+          and (.agents.model == "codex/gpt-5.6-sol")
         ' "$alternate_provider_harness" >/dev/null
+        jq -r '
+          [
+            .agents.prompt_fragments[].text,
+            .agents.role_groups.coordinator.prompt_fragments[].text,
+            .agents.role_groups.engineer.prompt_fragments[].text,
+            .agents.role_groups.support.prompt_fragments[].text,
+            .agents.role_groups.support.roles.reviewer.prompt_fragments[].text
+          ] | join("\n")
+        ' "$disabled_harness" >"$TMPDIR/bot-prompts"
+        grep -q 'Lead with the answer, outcome' "$TMPDIR/bot-prompts"
+        grep -q 'one canonical open `ACTIVE QUEUE` ticket' "$TMPDIR/bot-prompts"
+        grep -q 'independent passing review' "$TMPDIR/bot-prompts"
+        grep -q 'complete mutable graph' "$TMPDIR/bot-prompts"
+        grep -q 'source and history read-only' "$TMPDIR/bot-prompts"
+        grep -q 'Do not modify project source or history' "$TMPDIR/bot-prompts"
         jq -e '
           (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
           and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)

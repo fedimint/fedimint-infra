@@ -3,11 +3,22 @@
 `runner-01` enables one isolated Tau session under the dedicated
 `tau-fedimint` account. Its agenix credentials belong to the dedicated
 `fedimint-tau` GitHub account: one action token, one notification-reader token,
-one outbound SSH identity, and one stable notification identity key. Bot roles use the stable
-`codex/gpt-5.6-luna` model reference, while Nix maps the `codex` provider name
-to the existing `chatgpt-dpc` provider profile. The profile keeps its actual
-name and credentials, so changing the backing account later requires only a
-new alias target.
+one outbound SSH identity, and one stable notification identity key. Bot roles
+use the same role-specific model defaults as the active local Tau
+`codex-default` profile, while Nix maps the `codex` provider name to the
+existing `chatgpt-dpc` provider profile. The profile keeps its actual name and
+credentials, so changing the backing account later requires only a new alias
+target.
+
+| Role | Model | Effort |
+| --- | --- | ---: |
+| coordinator | `codex/gpt-6-astra` | 0.35 |
+| engineer-junior | `codex/gpt-5.6-terra` | 0.75 |
+| engineer | `codex/gpt-5.6-sol` | 0.5 |
+| engineer-senior | `codex/gpt-6-astra` | 0.25 |
+| researcher | `codex/gpt-5.6-terra` | 0.75 |
+| researcher-senior | `codex/gpt-6-astra` | 0.25 |
+| reviewer | `codex/gpt-5.6-sol` | 0.5 |
 
 ## Implemented shape
 
@@ -30,8 +41,11 @@ new alias target.
 - Read-only access to systemd-resolved's stub resolver file. The sandbox shares
   the host network namespace, but its private `/run` would otherwise leave
   NixOS's `/etc/resolv.conf` symlink dangling and prevent provider DNS lookups.
-- Basic coordinator, reviewer, researcher, and engineer roles adapted from the
-  local Tau setup.
+- Coordinator, reviewer, researcher, and engineer workflows adapted from the
+  active local Tau harness: concise communication, durable task and active-queue
+  tracking, coherent delegation, read-only support roles, independent review,
+  verification, and clean Jujutsu history. Personal messaging, cross-sandbox
+  routing, provider identities, and unrelated tools are not copied.
 - A startup-only provider alias from `codex` to `chatgpt-dpc`. This rewrites
   configured role model references; it does not rename, copy, authenticate, or
   otherwise modify the provider profile.
@@ -139,9 +153,8 @@ Nix-generated startup configuration is deterministic.
    `fedimint-github-requester check USERNAME either` before acting on a GitHub
    request. Any failed, denied, malformed, rate-limited, or unavailable check
    must remain denied.
-5. **Model:** confirm that `chatgpt-dpc` publishes the model selected by
-   `codex/gpt-5.6-luna`, or change `model` while retaining the provider-neutral
-   `codex/...` form.
+5. **Models:** confirm that `chatgpt-dpc` publishes the role models in the table
+   above. Keep model references in provider-neutral `codex/...` form.
 6. **Runtime validation:** inspect
     `isolate plan --profile fedimint-bot --command -- gh --version`, verify the
     sandbox cannot read either agenix secret or another home directory, verify
