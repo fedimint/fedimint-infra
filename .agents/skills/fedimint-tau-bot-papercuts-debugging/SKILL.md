@@ -20,14 +20,10 @@ incarnation rather than refreshing the one under investigation.
 
 ## Discover the live runtime
 
-Run local inspection from a neutral directory such as `/tmp`. Entering this
-infrastructure checkout can trigger direnv/Nix evaluation. Use the authenticated
-operator path:
-
-```sh
-export SSH_AUTH_SOCK=/run/fedimint-ssh-agent/agent.sock
-ssh -o BatchMode=yes -o ConnectTimeout=15 root@runner-01.dev.fedimint.org
-```
+Use an existing authorized operator connection to
+`root@runner-01.dev.fedimint.org`. Discover the appropriate SSH invocation and
+authentication from the current environment; do not prescribe a caller-local
+socket, identity path, or setup workaround.
 
 On the runner, invoke the installed Tau binary as the service account with its
 effective runtime environment:
@@ -103,17 +99,17 @@ The source-verified supported route is the interactive attached UI. This is a
 real mutating user input, not a read-only health check, and therefore requires
 explicit authorization. It has not yet been round-trip tested against this bot.
 
-First discover the current root coordinator ID as above. Then attach with a PTY:
+First discover the current root coordinator ID as above. Use a PTY-capable
+connection from the current authorized environment, then run this command on
+the runner:
 
 ```sh
-export SSH_AUTH_SOCK=/run/fedimint-ssh-agent/agent.sock
-ssh -t root@runner-01.dev.fedimint.org \
-  'runuser -u tau-fedimint -- env \
-    HOME=/home/tau-fedimint \
-    XDG_CONFIG_HOME=/home/tau-fedimint/.config \
-    XDG_STATE_HOME=/home/tau-fedimint/.local/state \
-    XDG_RUNTIME_DIR=/run/user/$(id -u tau-fedimint) \
-    /run/current-system/sw/bin/tau attach tau-fedimint-bot'
+runuser -u tau-fedimint -- env \
+  HOME=/home/tau-fedimint \
+  XDG_CONFIG_HOME=/home/tau-fedimint/.config \
+  XDG_STATE_HOME=/home/tau-fedimint/.local/state \
+  XDG_RUNTIME_DIR=/run/user/$(id -u tau-fedimint) \
+  /run/current-system/sw/bin/tau attach tau-fedimint-bot
 ```
 
 Inside the UI, explicitly select the freshly discovered root:
