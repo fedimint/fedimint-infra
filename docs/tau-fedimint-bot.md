@@ -4,20 +4,19 @@
 `tau-fedimint` account. Its agenix credentials belong to the dedicated
 `fedimint-tau` GitHub account: one action token, one notification-reader token,
 one outbound SSH identity, and one stable notification identity key. Bot roles
-use the same role-specific model defaults as the active local Tau
-`codex-default` profile, while Nix maps the `codex` provider name to the
-existing `chatgpt-dpc` provider profile. The profile keeps its actual name and
-credentials, so changing the backing account later requires only a new alias
-target.
+use explicit role-specific model and effort settings, while Nix maps the
+`codex` provider name to the existing `chatgpt-dpc` provider profile. The
+profile keeps its actual name and credentials, so changing the backing account
+later requires only a new alias target.
 
 | Role | Model | Effort |
 | --- | --- | ---: |
-| coordinator | `codex/gpt-6-sol` | 0.5 |
+| coordinator | `codex/gpt-6-sol` | 0.35 |
 | engineer-junior | `codex/gpt-6-sol` | 0.25 |
 | engineer | `codex/gpt-6-sol` | 0.5 |
-| engineer-senior | `codex/gpt-6-sol` | 0.5 |
-| researcher | `codex/gpt-6-sol` | 0.25 |
-| researcher-senior | `codex/gpt-6-sol` | 0.5 |
+| engineer-senior | `codex/gpt-6-astra` | 0.25 |
+| researcher | `codex/gpt-6-sol` | 0.5 |
+| researcher-senior | `codex/gpt-6-astra` | 0.5 |
 | reviewer | `codex/gpt-6-sol` | 0.5 |
 
 ## Implemented shape

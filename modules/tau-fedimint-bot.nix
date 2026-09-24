@@ -514,11 +514,11 @@ let
             roles = {
               researcher = {
                 model = "codex/gpt-6-sol";
-                effort = 0.25;
+                effort = 0.5;
                 description = "Default researcher for separate research.";
               };
               researcher-senior = {
-                model = "codex/gpt-6-sol";
+                model = "codex/gpt-6-astra";
                 effort = 0.5;
                 description = "Deep-thinking researcher for complex work.";
               };
@@ -591,8 +591,8 @@ let
               };
               engineer-senior = {
                 order = 30;
-                model = "codex/gpt-6-sol";
-                effort = 0.5;
+                model = "codex/gpt-6-astra";
+                effort = 0.25;
                 description = "Senior engineer for the hardest tasks.";
               };
             };
@@ -796,7 +796,7 @@ let
             roles.coordinator = {
               order = 0;
               model = "codex/gpt-6-sol";
-              effort = 0.5;
+              effort = 0.35;
               description = "Coordinates work and delivers the integrated result.";
               compactions = {
                 compact-after-done = {
