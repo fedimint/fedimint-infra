@@ -762,6 +762,10 @@ let
           and ($extension.command[0] | endswith("/bin/tau-ext-github"))
           and ($extension.secrets | keys == ["github_identity_key", "github_token"])
           and ($extension.config == {
+            "activity_filters": {
+              "direct_review_requests_only": true,
+              "require_comment_mention": true
+            },
             "actors": {
               "mode": "repository_maintainers",
               "user_ids": [49699333]
