@@ -379,9 +379,19 @@ let
           "$TMPDIR/coordinator-prompt"
         grep -Fq 'repository, or exact' "$TMPDIR/coordinator-prompt"
         grep -Fq 'otherwise report and skip the reaction' "$TMPDIR/coordinator-prompt"
-        grep -q 'Proactively review every newly opened pull request' "$TMPDIR/coordinator-prompt"
+        grep -q 'Proactively review every newly opened non-draft pull request' \
+          "$TMPDIR/coordinator-prompt"
         grep -Fq 'authenticated by GitHub as Dependabot' "$TMPDIR/coordinator-prompt"
         grep -Fq '(`dependabot[bot]`)' "$TMPDIR/coordinator-prompt"
+        grep -Fq "review must first inspect the pull request's current state" \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'do not review a draft pull request' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'proactive review only when an admitted `ready_for_review`' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'still open, non-draft, and has not already received the' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'substantive review or acknowledgement comment' \
+          "$TMPDIR/coordinator-prompt"
         grep -q 'proactive review authorizes only review and its required reaction' \
           "$TMPDIR/coordinator-prompt"
         grep -q 'feedback publication, not approval, modification, merge' \
