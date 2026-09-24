@@ -342,6 +342,10 @@ let
               mode = "repository_maintainers";
               user_ids = [ 49699333 ];
             };
+            activity_filters = {
+              require_comment_mention = true;
+              direct_review_requests_only = true;
+            };
             register_on_start = true;
             role = "coordinator";
           };

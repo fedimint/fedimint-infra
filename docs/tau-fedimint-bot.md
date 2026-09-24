@@ -307,6 +307,10 @@ policy:
   coordinator role
 - manual self-designation: `github_register {}` (`{"enabled":true}` remains a
   compatibility spelling)
+- conversation and inline comments: delivered only when their original body
+  contains an exact, case-insensitive `@fedimint-tau` mention
+- review requests: delivered only when they directly target the `fedimint-tau`
+  user; team, missing, and other-user targets are ignored
 
 The extension is notification-triggered and hydrates supported issue and pull
 request activity. It is not a complete GitHub activity feed. GitHub coalesces
@@ -318,6 +322,24 @@ it from the canonical URL if needed. Genuine fetch, count, transport,
 malformed-activity, and other documented hard-limit failures remain
 fail-closed, while unsupported activity follows the extension's documented
 discard behavior.
+
+The two activity filters are independent opt-in extension settings. They do not
+change creation, `ready_for_review`, or submitted-review activity;
+submitted reviews need no mention. Actor admission still applies before these
+filters. For comments, the extension examines the original body before deciding
+whether omitted oversized content qualifies. Its conservative mention parser
+recognizes a bounded subset of backtick, escape, and token boundaries rather
+than rendering all Markdown, and deliberately does not match team mentions or
+longer `[bot]`-style tokens.
+
+The review-request filter resolves the bot account through GitHub's `/user`
+endpoint once, lazily before the first nonempty notification batch. Comment
+mentions use the returned login for exact case-insensitive matching, while
+individual review targets must match its numeric user ID. The identity is cached
+until restart, so an account rename requires a service restart. Malformed
+individual targets fail closed. The configured dedicated classic PAT supports
+this lookup in addition to its existing notification, repository, and
+collaborator reads.
 
 Within one repository poll, the extension completes the batch and delivers
 admitted activities oldest-to-newest by their actual activity timestamp.
