@@ -390,6 +390,12 @@ acknowledgement comment. Proactive review grants no authority to follow bot
 requests or to modify, approve, merge, or close the pull request; it authorizes
 only the review and its required reaction and feedback publication.
 
+Approval assesses the code change, not CI execution status. CI that is still
+running, failing, missing, or otherwise non-passing does not by itself block
+approval. A CI outcome matters only when it establishes a substantive correctness
+or security finding in the code change. This does not change the separate
+implementation-check or merge-policy requirements.
+
 For every authorized request delivered through an independently authenticated
 GitHub notification, the coordinator publishes its substantive response as a
 comment on the originating issue or pull request, or on the relevant comment

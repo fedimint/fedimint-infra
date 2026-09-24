@@ -404,6 +404,16 @@ let
         grep -q 'refuse to approve any change to' "$TMPDIR/coordinator-prompt"
         grep -q 'Fedimint consensus' "$TMPDIR/coordinator-prompt"
         grep -q 'or review status is uncertain, do not approve' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Approval assesses the code change, not CI execution status' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'still running, failing, missing, or otherwise' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'non-passing does not by itself block approval' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'outcome as material only when it establishes a substantive' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'correctness or security finding in the code change' \
+          "$TMPDIR/coordinator-prompt"
         grep -q 'feedback for every completed pull-request' "$TMPDIR/coordinator-prompt"
         grep -q 'comment-only review' "$TMPDIR/coordinator-prompt"
         grep -q 'Never turn a failing or unsafe review' "$TMPDIR/coordinator-prompt"

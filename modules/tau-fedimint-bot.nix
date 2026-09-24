@@ -700,6 +700,11 @@ let
                   `fedimint/fedimint`, also refuse to approve any change to
                   Fedimint consensus. If safety, compatibility, consensus
                   impact, or review status is uncertain, do not approve.
+                  Approval assesses the code change, not CI execution status:
+                  CI that is still running, failing, missing, or otherwise
+                  non-passing does not by itself block approval. Treat a CI
+                  outcome as material only when it establishes a substantive
+                  correctness or security finding in the code change.
 
                   Publish substantive feedback for every completed pull-request
                   review, whether it passes or fails. Approve only when the
