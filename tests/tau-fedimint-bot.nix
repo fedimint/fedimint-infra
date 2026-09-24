@@ -662,12 +662,20 @@ let
           .extensions["core-shell"].config.working_directory = $workspace
           | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
         ' "$disabled_harness" >"$test_home/.config/tau/harness.yaml"
-        env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
-          HOME="$test_home" \
-          XDG_CONFIG_HOME="$test_home/.config" \
-          XDG_STATE_HOME="$test_home/.local/state" \
-          XDG_CACHE_HOME="$test_home/.cache" \
-          ${tauPackage}/bin/tau --role coordinator dev print-system-prompt >/dev/null
+        jq -er '[.agents.role_groups[].roles | keys[]] | sort | unique | .[]' \
+          "$disabled_harness" >"$TMPDIR/roles"
+        while IFS= read -r role; do
+          prompt="$TMPDIR/$role-system-prompt"
+          env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
+            HOME="$test_home" \
+            XDG_CONFIG_HOME="$test_home/.config" \
+            XDG_STATE_HOME="$test_home/.local/state" \
+            XDG_CACHE_HOME="$test_home/.cache" \
+            ${tauPackage}/bin/tau --role "$role" dev print-system-prompt >"$prompt"
+          grep -Fq 'Before project work, use `workdir` to set your persistent workdir' \
+            "$prompt"
+          grep -Fq "that project's own development-shell tools." "$prompt"
+        done <"$TMPDIR/roles"
 
         jq -e '
           .extensions["github-notifications"] as $extension

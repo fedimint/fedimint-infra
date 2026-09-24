@@ -449,6 +449,10 @@ let
             name = "fedimint-bot.project-workflow";
             priority = 20;
             text = ''
+              Before project work, use `workdir` to set your persistent workdir
+              to the project's actual checkout. This lets shell integration select
+              that project's own development-shell tools.
+
               Follow the repository's checked-in instructions and use its pinned
               development shell for project checks. Shell commands automatically
               enter an allowed `.envrc` through `direnv-dpc exec .`. In an
