@@ -108,6 +108,10 @@ let
   direnvDpcPackage = lib.findFirst (
     package: lib.getName package == "direnv-dpc"
   ) (throw "direnv-dpc package missing") disabled.config.environment.systemPackages;
+  fzfPackage =
+    lib.findFirst (package: lib.getName package == "fzf")
+      (throw "fzf package missing from the Tau bot user profile")
+      disabled.config.users.users.tau-fedimint.packages;
   alternateProviderStart =
     alternateProvider.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   enabledStart = enabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
@@ -220,8 +224,19 @@ let
               }
             }
           })
+          and ((.agents.role_groups.coordinator.roles | keys) == ["coordinator"])
+          and ((.agents.role_groups.engineer.roles | keys) == [
+            "engineer",
+            "engineer-junior",
+            "engineer-senior"
+          ])
+          and ((.agents.role_groups.support.roles | keys) == [
+            "researcher",
+            "researcher-senior",
+            "reviewer"
+          ])
           and (.agents.role_groups.coordinator.roles.coordinator.model == "codex/gpt-6-sol")
-          and (.agents.role_groups.coordinator.roles.coordinator.effort == 0.5)
+          and (.agents.role_groups.coordinator.roles.coordinator.effort == 0.35)
           and (.agents.role_groups.coordinator.roles.coordinator.compactions == {
             "compact-after-done": {
               threshold: 100000,
@@ -241,11 +256,11 @@ let
           and (.agents.role_groups.engineer.roles["engineer-junior"].effort == 0.25)
           and (.agents.role_groups.engineer.roles.engineer.model == "codex/gpt-6-sol")
           and (.agents.role_groups.engineer.roles.engineer.effort == 0.5)
-          and (.agents.role_groups.engineer.roles["engineer-senior"].model == "codex/gpt-6-sol")
-          and (.agents.role_groups.engineer.roles["engineer-senior"].effort == 0.5)
+          and (.agents.role_groups.engineer.roles["engineer-senior"].model == "codex/gpt-6-astra")
+          and (.agents.role_groups.engineer.roles["engineer-senior"].effort == 0.25)
           and (.agents.role_groups.support.roles.researcher.model == "codex/gpt-6-sol")
-          and (.agents.role_groups.support.roles.researcher.effort == 0.25)
-          and (.agents.role_groups.support.roles["researcher-senior"].model == "codex/gpt-6-sol")
+          and (.agents.role_groups.support.roles.researcher.effort == 0.5)
+          and (.agents.role_groups.support.roles["researcher-senior"].model == "codex/gpt-6-astra")
           and (.agents.role_groups.support.roles["researcher-senior"].effort == 0.5)
           and (.agents.role_groups.support.roles.reviewer.model == "codex/gpt-6-sol")
           and (.agents.role_groups.support.roles.reviewer.effort == 0.5)
@@ -1091,6 +1106,7 @@ let
         group = "tau-fedimint";
         home = "/home/tau-fedimint";
         createHome = true;
+        packages = disabled.config.users.users.tau-fedimint.packages;
       };
       systemd.tmpfiles.rules = disabled.config.systemd.tmpfiles.rules;
       environment.systemPackages = [
@@ -1160,6 +1176,11 @@ let
           "test \"$(stat -c '%u:%g:%a' /tmp/public)\" = 65534:65534:1733"
       )
       machine.fail("runuser -u tau-fedimint -- ls /tmp/public")
+      machine.succeed(
+          "runuser -l tau-fedimint -c '"
+          "test \"$(readlink -f \"$(command -v fzf)\")\" = \"${fzfPackage}/bin/fzf\" && "
+          "fzf --version >/dev/null'"
+      )
       machine.succeed(
           "runuser -u tau-fedimint -- sh -euc '"
           "artifact=$(mktemp /tmp/public/host-artifact-XXXXXX); "
