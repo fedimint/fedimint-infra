@@ -413,6 +413,19 @@ acknowledgement comment. Proactive review grants no authority to follow bot
 requests or to modify, approve, merge, or close the pull request; it authorizes
 only the review and its required reaction and feedback publication.
 
+Authenticated, authorized maintainer requests can also authorize ordinary
+development work; they are not limited to review. When a maintainer explicitly
+asks the bot to fix or update a pull request, or to create a new or alternative
+one, that is a request for pull-request delivery unless the maintainer explicitly
+asks for local-only output. The coordinator delegates the exact repository,
+requested outcome, and publication scope to an engineer. The normal checks and
+independent review still apply. After they pass, the engineer publishes any needed
+new non-conflicting `tau/` branch through the configured Git SSH remote and creates
+the requested pull request through the broker. If the existing branch belongs to
+another author, the bot uses an alternative branch and pull request rather than
+overwriting it. A local commit, patch, artifact, or comment containing a diff does
+not satisfy a request for pull-request delivery.
+
 Approval assesses the code change, not CI execution status. CI that is still
 running, failing, missing, or otherwise non-passing does not by itself block
 approval. A CI outcome matters only when it establishes a substantive correctness
@@ -439,6 +452,8 @@ gh issue edit NUMBER -R OWNER/REPO --title TITLE
 gh issue edit NUMBER -R OWNER/REPO --body BODY
 gh pr edit NUMBER -R OWNER/REPO --title TITLE
 gh pr edit NUMBER -R OWNER/REPO --body-file FILE
+gh pr create -R OWNER/REPO --base BASE --head '[OWNER:]tau/BRANCH' --title TITLE --body BODY [--draft]
+gh pr create -R OWNER/REPO --base BASE --head '[OWNER:]tau/BRANCH' --title TITLE --body-file FILE [--draft]
 gh issue close NUMBER -R OWNER/REPO
 gh issue close NUMBER -R OWNER/REPO --reason 'not planned'
 gh issue reopen NUMBER -R OWNER/REPO
@@ -475,10 +490,22 @@ gh api --method PATCH repos/OWNER/REPO/issues/comments/COMMENT_ID --raw-field bo
 gh api --method PATCH repos/OWNER/REPO/pulls/comments/COMMENT_ID --raw-field body=TEXT
 ```
 
-Permanent deletion, merge, branch/base/head changes, moderation,
-administration, review dismissal, auth/config access, and arbitrary API calls
-remain denied. The broker's upstream `docs/collaboration.md` is the complete
-executable capability contract.
+Permanent deletion, merge, force-push, overwriting another author's branch,
+changes to an existing pull request's base or head, moderation, administration,
+review dismissal, auth/config access, and arbitrary API calls remain denied.
+Publishing a new non-conflicting `tau/` head through the configured Git SSH remote
+for an authorized requested pull request is separate from those existing-PR
+edits. The broker's upstream `docs/collaboration.md` is the complete executable
+capability contract.
+
+The coordinator posts the delivered pull request URL on the originating
+discussion. It reports publication as blocked only after an observed broker,
+Git SSH, permission, or configuration failure, or when installed documentation
+and configuration establish that the operation is unsupported. It does not infer
+a blocker without evidence, probe with denied mutation help, bypass policy, or
+repeat failed mutations in a loop. After an ambiguous result it inspects current
+remote and pull-request state before deciding whether a retry is safe, preventing
+duplicate branches or pull requests.
 
 After deciding how to handle each independently authenticated notification with
 an unambiguous repository and target, the coordinator reacts directly on the

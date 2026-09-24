@@ -363,6 +363,26 @@ let
           | select(.name == "coordinator.instructions")
           | .text
         ' "$disabled_harness" >"$TMPDIR/coordinator-prompt"
+        jq -er '
+          .agents.role_groups.engineer.prompt_fragments[]
+          | select(.name == "engineer.instructions")
+          | .text
+        ' "$disabled_harness" >"$TMPDIR/engineer-prompt"
+        grep -Fq "delegation may carry an authenticated request's" \
+          "$TMPDIR/engineer-prompt"
+        grep -Fq 'explicitly delegated fix, update, new-PR, or alternative-PR task' \
+          "$TMPDIR/engineer-prompt"
+        grep -Fq 'new non-conflicting `tau/` branch through' \
+          "$TMPDIR/engineer-prompt"
+        grep -Fq 'a local commit, patch, or artifact is not publication' \
+          "$TMPDIR/engineer-prompt"
+        grep -Fq 'does not authorize unrelated work, merge,' \
+          "$TMPDIR/engineer-prompt"
+        grep -Fq 'Report a publication blocker' "$TMPDIR/engineer-prompt"
+        grep -Fq 'only from an observed command failure' \
+          "$TMPDIR/engineer-prompt"
+        grep -Fq 'inspect current remote state before any' \
+          "$TMPDIR/engineer-prompt"
         grep -q 'maintainer activity as a request' "$TMPDIR/coordinator-prompt"
         grep -q 'GitHub or another external service' "$TMPDIR/coordinator-prompt"
         grep -q 'check USERNAME maintainer' "$TMPDIR/coordinator-prompt"
@@ -380,6 +400,33 @@ let
           "$TMPDIR/coordinator-prompt"
         grep -Fq 'broker-supported comment forms' "$TMPDIR/coordinator-prompt"
         grep -Fq 'report that honestly and never claim delivery' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'they are not review-only authority' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'version, as pull-request delivery unless the requester explicitly' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'asks for local-only output. Delegate implementation and any needed' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Git branch publication to an engineer' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'commit, patch, artifact, or comment containing a diff is not a' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'substitute for the requested pull request' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq \
+          "gh pr create -R OWNER/REPO --base BASE --head '[OWNER:]tau/BRANCH' --title TITLE --body BODY [--draft]" \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq \
+          "gh pr create -R OWNER/REPO --base BASE --head '[OWNER:]tau/BRANCH' --title TITLE --body-file FILE [--draft]" \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq "to an existing pull request's base or head" \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'configured Git SSH remote for an authorized' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Post the delivered pull request URL on the originating discussion' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Base a blocker on an observed broker, Git SSH, permission, or' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'inspect current remote and pull-request' \
           "$TMPDIR/coordinator-prompt"
         grep -Fq 'gh issue close NUMBER -R OWNER/REPO' "$TMPDIR/coordinator-prompt"
         grep -Fq 'gh issue reopen NUMBER -R OWNER/REPO' "$TMPDIR/coordinator-prompt"
