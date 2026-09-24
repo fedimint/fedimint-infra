@@ -108,6 +108,10 @@ let
   direnvDpcPackage = lib.findFirst (
     package: lib.getName package == "direnv-dpc"
   ) (throw "direnv-dpc package missing") disabled.config.environment.systemPackages;
+  fzfPackage =
+    lib.findFirst (package: lib.getName package == "fzf")
+      (throw "fzf package missing from the Tau bot user profile")
+      disabled.config.users.users.tau-fedimint.packages;
   alternateProviderStart =
     alternateProvider.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   enabledStart = enabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
@@ -1102,6 +1106,7 @@ let
         group = "tau-fedimint";
         home = "/home/tau-fedimint";
         createHome = true;
+        packages = disabled.config.users.users.tau-fedimint.packages;
       };
       systemd.tmpfiles.rules = disabled.config.systemd.tmpfiles.rules;
       environment.systemPackages = [
@@ -1171,6 +1176,11 @@ let
           "test \"$(stat -c '%u:%g:%a' /tmp/public)\" = 65534:65534:1733"
       )
       machine.fail("runuser -u tau-fedimint -- ls /tmp/public")
+      machine.succeed(
+          "runuser -l tau-fedimint -c '"
+          "test \"$(readlink -f \"$(command -v fzf)\")\" = \"${fzfPackage}/bin/fzf\" && "
+          "fzf --version >/dev/null'"
+      )
       machine.succeed(
           "runuser -u tau-fedimint -- sh -euc '"
           "artifact=$(mktemp /tmp/public/host-artifact-XXXXXX); "

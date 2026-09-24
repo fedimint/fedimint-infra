@@ -1227,6 +1227,7 @@ in
       createHome = true;
       linger = true;
       openssh.authorizedKeys.keys = cfg.sshAuthorizedKeys;
+      packages = [ pkgs.fzf ];
     };
 
     programs.ssh.knownHosts.github-ed25519 = {

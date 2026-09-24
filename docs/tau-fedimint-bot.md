@@ -22,8 +22,10 @@ later requires only a new alias target.
 ## Implemented shape
 
 - One normal Linux account, `tau-fedimint`, with all infrastructure
-  administrators' existing SSH authorized keys and a persistent user systemd
-  manager.
+  administrators' existing SSH authorized keys, a persistent user systemd
+  manager, and `fzf` in its per-user profile. This keeps `fzf` on `PATH` for
+  an attached host UI, including `bot-picker`, without adding it to the bot
+  service's isolated command path.
 - One fixed Tau session name, `tau-fedimint-bot`. Every service start removes
   that session's previous durable state and uses `tau serve --create`, so a
   restart begins with a fresh session instead of resuming conversation history.
