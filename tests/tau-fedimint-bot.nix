@@ -343,6 +343,21 @@ let
         grep -Fq 'broker-supported comment forms' "$TMPDIR/coordinator-prompt"
         grep -Fq 'report that honestly and never claim delivery' \
           "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh issue close NUMBER -R OWNER/REPO' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh issue reopen NUMBER -R OWNER/REPO' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh pr close NUMBER -R OWNER/REPO' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh pr reopen NUMBER -R OWNER/REPO' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh pr ready NUMBER -R OWNER/REPO --undo' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh issue comment NUMBER -R OWNER/REPO --body BODY' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq -- '--add-label`/`--remove-label' "$TMPDIR/coordinator-prompt"
+        grep -Fq -- '--add-reviewer`/' "$TMPDIR/coordinator-prompt"
+        grep -Fq \
+          'gh pr review NUMBER -R OWNER/REPO --request-changes --body-file FILE' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Permanent deletion,' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'arbitrary API calls' "$TMPDIR/coordinator-prompt"
         grep -Fq 'independently authenticated GitHub' "$TMPDIR/coordinator-prompt"
         grep -Fq 'immediately react on the exact notified issue' \
           "$TMPDIR/coordinator-prompt"
@@ -817,6 +832,22 @@ let
       }
     }
 
+    expect_supported() {
+      name=$1
+      shift
+      expect_status 125 "$name" "$@"
+      grep -Fq 'open GitHub token secret: No such file or directory' \
+        "$TMPDIR/$name.err"
+    }
+
+    expect_denied() {
+      name=$1
+      shift
+      expect_status 126 "$name" "$@"
+      grep -Fq 'gh invocation denied by isolate policy:' "$TMPDIR/$name.err"
+      ! grep -Fq 'open GitHub token secret' "$TMPDIR/$name.err"
+    }
+
     # The upstream omitted default remains dpc/, while this deployment's
     # trusted option accepts tau/ and rejects the old namespace.
     expect_status 125 default-dpc \
@@ -915,6 +946,51 @@ let
       -f path=src/policy.rs -f line=042 -f side=RIGHT
     grep -Fq 'documented endpoint families and options' \
       "$TMPDIR/line-comment-leading-zero.err"
+
+    # Exercise the pinned collaboration policy against a missing-token fixture.
+    # Accepted operations reach credential opening; denied neighbors stay local.
+    expect_supported pr-close \
+      gh pr close 9195 -R fedimint/fedimint
+    expect_supported pr-reopen \
+      gh pr reopen 9195 -R fedimint/fedimint
+    expect_supported issue-close \
+      gh issue close 42 -R fedimint/fedimint --reason 'not planned'
+    expect_supported issue-reopen \
+      gh issue reopen 42 -R fedimint/fedimint
+    expect_supported pr-ready \
+      gh pr ready 42 -R fedimint/fedimint
+    expect_supported pr-draft \
+      gh pr ready 42 -R fedimint/fedimint --undo
+    expect_supported issue-inline-comment \
+      gh issue comment 42 -R fedimint/fedimint --body reply
+    expect_supported issue-inline-edit \
+      gh issue edit 42 -R fedimint/fedimint --body updated
+    expect_supported pr-label \
+      gh pr edit 42 -R fedimint/fedimint --add-label bug
+    expect_supported pr-assignee \
+      gh pr edit 42 -R fedimint/fedimint --add-assignee octocat
+    expect_supported pr-reviewer \
+      gh pr edit 42 -R fedimint/fedimint --add-reviewer octocat
+    expect_supported comment-read \
+      gh api repos/fedimint/fedimint/issues/comments/5803800022
+    expect_supported files-read \
+      gh api repos/fedimint/fedimint/pulls/42/files --paginate
+    printf '%s\n' 'request changes' >request-changes.md
+    expect_supported request-changes \
+      gh pr review 42 -R fedimint/fedimint \
+      --request-changes --body-file request-changes.md
+    expect_supported own-comment-edit \
+      gh api --method PATCH \
+      repos/fedimint/fedimint/issues/comments/5803800022 \
+      --raw-field body=corrected
+
+    expect_denied comment-delete \
+      gh pr comment 42 -R fedimint/fedimint --delete-last --yes
+    expect_denied pr-merge \
+      gh pr merge 42 -R fedimint/fedimint
+    expect_denied arbitrary-api \
+      gh api --method DELETE \
+      repos/fedimint/fedimint/issues/comments/5803800022
 
     touch "$out"
   '';

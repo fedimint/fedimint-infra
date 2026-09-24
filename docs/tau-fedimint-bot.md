@@ -394,6 +394,58 @@ bot reply to avoid duplicates, uses only broker-supported comment forms, and
 reports a failed or unsafe-to-target publication honestly rather than claiming
 delivery.
 
+The pinned broker supports bounded ordinary issue and pull-request collaboration.
+Each mutation is a separate command whose result must be checked before the next
+step:
+
+```console
+gh issue create -R OWNER/REPO --title TITLE --body BODY
+gh issue create -R OWNER/REPO --title TITLE --body-file FILE
+gh issue edit NUMBER -R OWNER/REPO --title TITLE
+gh issue edit NUMBER -R OWNER/REPO --body BODY
+gh pr edit NUMBER -R OWNER/REPO --title TITLE
+gh pr edit NUMBER -R OWNER/REPO --body-file FILE
+gh issue close NUMBER -R OWNER/REPO
+gh issue close NUMBER -R OWNER/REPO --reason 'not planned'
+gh issue reopen NUMBER -R OWNER/REPO
+gh pr close NUMBER -R OWNER/REPO
+gh pr reopen NUMBER -R OWNER/REPO
+gh pr ready NUMBER -R OWNER/REPO
+gh pr ready NUMBER -R OWNER/REPO --undo
+gh issue comment NUMBER -R OWNER/REPO --body BODY
+gh pr comment NUMBER -R OWNER/REPO --body-file FILE
+```
+
+Issue and pull-request edits also accept one existing-label or concrete-assignee
+delta with `--add-label`, `--remove-label`, `--add-assignee`, or
+`--remove-assignee`. Pull-request edits accept one concrete user or same-owner
+team reviewer delta with `--add-reviewer` or `--remove-reviewer`. Metadata
+changes cannot be combined with title or body changes. Inline `--body` is
+supported for issue creation, issue/PR edits, and issue/PR conversation comments.
+Secure `--body-file` forms are available for those content operations. Formal
+comment and request-changes reviews remain file-backed:
+
+```console
+gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
+gh pr review NUMBER -R OWNER/REPO --request-changes --body-file FILE
+```
+
+The broker also supports named label discovery, exact paginated reads for
+labels, assignees, milestones, PR reviews/files/commits/requested reviewers and
+issue labels/events/timeline, and a singleton conversation-comment read. It can
+edit the bot's own conversation or line-review comment only through the
+author-checked explicit-ID forms:
+
+```console
+gh api --method PATCH repos/OWNER/REPO/issues/comments/COMMENT_ID --raw-field body=TEXT
+gh api --method PATCH repos/OWNER/REPO/pulls/comments/COMMENT_ID --raw-field body=TEXT
+```
+
+Permanent deletion, merge, branch/base/head changes, moderation,
+administration, review dismissal, auth/config access, and arbitrary API calls
+remain denied. The broker's upstream `docs/collaboration.md` is the complete
+executable capability contract.
+
 After deciding how to handle each independently authenticated notification with
 an unambiguous repository and target, the coordinator reacts directly on the
 exact notified object rather than delegating the acknowledgement. `+1` means
@@ -462,8 +514,10 @@ before the host broker resolves the file. Resolution rejects symlinks, magic
 links, mount crossings, hardlinks, special files, paths over 4096 bytes or 128
 components, and files over 1 MiB. Import finishes before credential access.
 The handler keeps its repository-root cwd, so nested GitHub repository context
-and artifact export behavior remain unchanged. Inline bodies, stdin, alternate
-flag ordering, request-changes reviews, and raw review API writes remain denied.
+and artifact export behavior remain unchanged. Inline review bodies, stdin,
+alternate flag ordering, and raw review API writes remain denied.
+Request-changes reviews use the same secure file-import contract with
+`--request-changes --body-file FILE`.
 
 Findings tied to one exact diff line can instead use the broker's separate
 standalone line-comment capability:

@@ -608,6 +608,44 @@ let
                   broker-supported comment forms. If posting fails or cannot safely
                   target the request, report that honestly and never claim delivery.
 
+                  For authorized ordinary issue and pull-request collaboration, use
+                  the broker's exact bounded forms. Keep each mutation separate and
+                  check its result before continuing:
+
+                      gh issue create -R OWNER/REPO --title TITLE --body BODY
+                      gh issue create -R OWNER/REPO --title TITLE --body-file FILE
+                      gh issue edit NUMBER -R OWNER/REPO --title TITLE
+                      gh issue edit NUMBER -R OWNER/REPO --body BODY
+                      gh pr edit NUMBER -R OWNER/REPO --title TITLE
+                      gh pr edit NUMBER -R OWNER/REPO --body-file FILE
+                      gh issue close NUMBER -R OWNER/REPO
+                      gh issue close NUMBER -R OWNER/REPO --reason 'not planned'
+                      gh issue reopen NUMBER -R OWNER/REPO
+                      gh pr close NUMBER -R OWNER/REPO
+                      gh pr reopen NUMBER -R OWNER/REPO
+                      gh pr ready NUMBER -R OWNER/REPO
+                      gh pr ready NUMBER -R OWNER/REPO --undo
+                      gh issue comment NUMBER -R OWNER/REPO --body BODY
+                      gh pr comment NUMBER -R OWNER/REPO --body-file FILE
+
+                  Issue and pull-request edits accept exactly one title, body, label,
+                  or assignee delta. Pull-request edits also accept one reviewer delta.
+                  Use `--add-label`/`--remove-label`, `--add-assignee`/
+                  `--remove-assignee`, or for pull requests `--add-reviewer`/
+                  `--remove-reviewer`, followed by one concrete existing value. Do
+                  not combine metadata with title/body edits. Formal request-changes
+                  feedback uses exactly:
+
+                      gh pr review NUMBER -R OWNER/REPO --request-changes --body-file FILE
+
+                  Inline `--body` is supported for issue creation, issue/PR edits,
+                  and issue/PR conversation comments. Formal comment and
+                  request-changes reviews remain file-backed. Permanent deletion,
+                  merge, branch/base/head changes, moderation, administration,
+                  review dismissal, auth/config access, and arbitrary API calls
+                  remain denied. Never broaden these examples or work around a
+                  denial.
+
                   As part of handling each independently authenticated GitHub
                   notification with an unambiguous repository and target, decide its
                   disposition and then immediately react on the exact notified issue,

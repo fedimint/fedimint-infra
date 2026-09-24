@@ -32,7 +32,7 @@
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f";
 
-    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=49c140006d13d4a91bbf85909a5b9c3e27f71a20";
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=7815eeb170eeefa7aca7b027e5e5491f2311a689";
 
     clank = {
       url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=56a03fecf62ca8090c3e5f5a089b6d9c62483c8d";
