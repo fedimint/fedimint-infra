@@ -19,6 +19,20 @@ let
   sshPrivateKey = "/run/agenix/tau-fedimint-ssh-private-key";
   clankState = "${home}/.local/state/clank";
   direnvData = "${home}/.local/share/direnv";
+  userSkillsDir = "${home}/.config/agents/skills";
+  installedSkillNames = [
+    "linked-specs"
+    "linked-specs-updating"
+    "linked-specs-review"
+    "multipart-review"
+    "multipart-review-architecture"
+    "multipart-review-coordination"
+    "multipart-review-judgment"
+    "multipart-review-maintainability"
+    "multipart-review-reliability"
+    "multipart-review-rust-style"
+    "multipart-review-skills"
+  ];
   direnvDpc = pkgs.direnv.overrideAttrs (old: {
     pname = "direnv-dpc";
     patches = (old.patches or [ ]) ++ [ ./direnv-dpc-run-blocked-command.patch ];
@@ -512,11 +526,19 @@ let
                 model = "codex/gpt-6-sol";
                 effort = 0.5;
                 description = "Independent code reviewer; review without editing.";
+                required_skills = [ "multipart-review" ];
                 prompt_fragments = [
                   {
-                    name = "reviewer.instructions";
+                    name = "reviewer.default-multipart-review";
                     priority = 45;
                     text = ''
+                      ## Multipart review
+
+                      Unless explicitly asked otherwise, default to the review
+                      system described in the `multipart-review` skill.
+
+                      ## Review only
+
                       Judge the change independently, primarily by reading it.
                       Do not modify project source or history and do not rerun
                       broad CI, builds, or linters. Use only small, targeted
@@ -823,6 +845,11 @@ let
             kind = "dir";
           }
           {
+            path = "${home}/.config/agents";
+            required = true;
+            kind = "dir";
+          }
+          {
             path = "${home}/.gitconfig";
             required = true;
             kind = "file";
@@ -1050,6 +1077,11 @@ in
       default = null;
       description = "Clank ticket tracker supplied by a pinned flake input.";
     };
+    skillsSource = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Linked Specs and multipart review skill source supplied by a pinned flake input.";
+    };
     githubTokenAgeFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
@@ -1117,6 +1149,10 @@ in
       {
         assertion = cfg.clankPackage != null;
         message = "tau-fedimint-bot requires clank from a flake input";
+      }
+      {
+        assertion = cfg.skillsSource != null;
+        message = "tau-fedimint-bot requires review skills from a pinned flake input";
       }
       {
         assertion = cfg.githubTokenAgeFile != null;
@@ -1202,6 +1238,8 @@ in
       "d /tmp/public 1733 nobody nogroup -"
       "d ${projectRoot} 0700 ${user} ${user} -"
       "d ${home}/.config 0700 ${user} ${user} -"
+      "d ${home}/.config/agents 0700 ${user} ${user} -"
+      "d ${userSkillsDir} 0700 ${user} ${user} -"
       "d ${home}/.config/isolate 0700 ${user} ${user} -"
       "d ${home}/.config/tau 0700 ${user} ${user} -"
       "d ${home}/.ssh 0700 ${user} ${user} -"
@@ -1213,7 +1251,10 @@ in
       "d ${clankState} 0700 ${user} ${user} -"
       "d ${home}/.cache 0700 ${user} ${user} -"
       "d ${home}/.cache/tau 0700 ${user} ${user} -"
-    ];
+    ]
+    ++ map (
+      name: "L+ ${userSkillsDir}/${name} - - - - ${cfg.skillsSource}/skills/${name}"
+    ) installedSkillNames;
 
     environment.systemPackages = [
       cfg.tauPackage

@@ -6,6 +6,7 @@
   tauPackage,
   isolatePackage,
   ghBrokerPackage,
+  skillsSource,
   githubNotificationsPackage,
 }:
 
@@ -35,6 +36,7 @@ let
     isolatePackage = dummyIsolatePackage;
     inherit ghBrokerPackage;
     clankPackage = dummyPackage "clank";
+    inherit skillsSource;
     githubTokenAgeFile = actionToken;
     sshPrivateKeyAgeFile = sshKey;
     sshAuthorizedKeys = [ "ssh-ed25519 test-only" ];
@@ -112,6 +114,8 @@ let
   privateDirectoryRules = map (path: "d ${path} 0700 tau-fedimint tau-fedimint -") [
     "/home/tau-fedimint/fedimint"
     "/home/tau-fedimint/.config"
+    "/home/tau-fedimint/.config/agents"
+    "/home/tau-fedimint/.config/agents/skills"
     "/home/tau-fedimint/.config/isolate"
     "/home/tau-fedimint/.config/tau"
     "/home/tau-fedimint/.ssh"
@@ -123,6 +127,19 @@ let
     "/home/tau-fedimint/.local/state/clank"
     "/home/tau-fedimint/.cache"
     "/home/tau-fedimint/.cache/tau"
+  ];
+  installedSkillNames = [
+    "linked-specs"
+    "linked-specs-updating"
+    "linked-specs-review"
+    "multipart-review"
+    "multipart-review-architecture"
+    "multipart-review-coordination"
+    "multipart-review-judgment"
+    "multipart-review-maintainability"
+    "multipart-review-reliability"
+    "multipart-review-rust-style"
+    "multipart-review-skills"
   ];
   configCheck =
     pkgs.runCommand "tau-fedimint-bot-config-check"
@@ -263,6 +280,12 @@ let
         grep -q 'relevant history' "$TMPDIR/bot-prompts"
         grep -q 'source and history read-only' "$TMPDIR/bot-prompts"
         grep -q 'Do not modify project source or history' "$TMPDIR/bot-prompts"
+        grep -Fq 'default to the review' "$TMPDIR/bot-prompts"
+        grep -Fq '`multipart-review` skill' "$TMPDIR/bot-prompts"
+        jq -e '
+          .agents.role_groups.support.roles.reviewer.required_skills
+          == ["multipart-review"]
+        ' "$disabled_harness" >/dev/null
         grep -Fq '/tmp/public' "$TMPDIR/bot-prompts"
         grep -Fq 'shared mode-1733' "$TMPDIR/bot-prompts"
         grep -Fq 'non-listable dropbox' "$TMPDIR/bot-prompts"
@@ -479,6 +502,15 @@ let
             create: "dir"
           }]
         ' "$disabled_isolate" >/dev/null
+        jq -e '
+          [.profiles["fedimint-bot"].bind[]
+            | select(.path == "/home/tau-fedimint/.config/agents")]
+          == [{
+            path: "/home/tau-fedimint/.config/agents",
+            required: true,
+            kind: "dir"
+          }]
+        ' "$disabled_isolate" >/dev/null
         test -x ${direnvDpcPackage}/bin/direnv-dpc
         test ! -e ${direnvDpcPackage}/bin/direnv
         jq -er '
@@ -667,7 +699,14 @@ let
 
         test_home="$TMPDIR/tau-home"
         test_workspace="$TMPDIR/workspace"
-        mkdir -p "$test_home/.config/tau" "$test_workspace"
+        mkdir -p \
+          "$test_home/.config/tau" \
+          "$test_home/.config/agents/skills" \
+          "$test_workspace"
+        for name in ${lib.escapeShellArgs installedSkillNames}; do
+          ln -s "${skillsSource}/skills/$name" \
+            "$test_home/.config/agents/skills/$name"
+        done
         jq --arg workspace "$test_workspace" '
           .extensions["core-shell"].config.working_directory = $workspace
           | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
@@ -685,6 +724,20 @@ let
           grep -Fq 'Before project work, use `workdir` to set your persistent workdir' \
             "$prompt"
           grep -Fq "that project's own development-shell tools." "$prompt"
+          skills="$TMPDIR/$role-skills"
+          env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
+            HOME="$test_home" \
+            XDG_CONFIG_HOME="$test_home/.config" \
+            XDG_STATE_HOME="$test_home/.local/state" \
+            XDG_CACHE_HOME="$test_home/.cache" \
+            ${tauPackage}/bin/tau --role "$role" \
+              dev print-skills --format json >"$skills"
+          jq -e --argjson expected '${builtins.toJSON installedSkillNames}' '
+            ([.[].name] | sort) as $actual
+            | ($expected | sort) as $expected
+            | (($expected - $actual) | length == 0)
+            and ($actual | index("linked-specs-grooming") == null)
+          ' "$skills" >/dev/null
         done <"$TMPDIR/roles"
 
         jq -e '
@@ -1057,6 +1110,7 @@ let
           "/tmp/public "
           "/tmp/public-target "
           "/home/tau-fedimint/.config/isolate "
+          "/home/tau-fedimint/.config/agents "
           "/home/tau-fedimint/.config/tau "
           "/home/tau-fedimint/.ssh "
           "/home/tau-fedimint/.local/state/tau "
@@ -1089,6 +1143,14 @@ let
           "ln -s /tmp/public-target /tmp/public"
       )
       machine.succeed("systemd-tmpfiles --create")
+      machine.succeed(
+          "set -e; "
+          "for name in ${lib.escapeShellArgs installedSkillNames}; do "
+          "test -L \"/home/tau-fedimint/.config/agents/skills/$name\"; "
+          "test -f \"/home/tau-fedimint/.config/agents/skills/$name/SKILL.md\"; "
+          "done; "
+          "test ! -e /home/tau-fedimint/.config/agents/skills/linked-specs-grooming"
+      )
       machine.succeed(
           "test -L /tmp/public && "
           "test \"$(stat -Lc '%u:%g:%a' /tmp/public-target)\" = 0:0:700"
@@ -1177,6 +1239,32 @@ let
           "/home/tau-fedimint/fedimint/fedimint-sdk "
           "config --local --get core.sshCommand)\" = "
           "'${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config'"
+      )
+      machine.succeed(
+          "set -e\n"
+          "cp /home/tau-fedimint/.config/isolate/isolate.yaml "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml.saved\n"
+          "jq '.profiles[\"fedimint-bot\"].bind |= map(select("
+          ".path == \"/home/tau-fedimint/fedimint\" or "
+          ".path == \"/tmp/public\" or "
+          ".path == \"/home/tau-fedimint/.config/agents\"))' "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml "
+          ">/home/tau-fedimint/.config/isolate/isolate.yaml.new\n"
+          "mv /home/tau-fedimint/.config/isolate/isolate.yaml.new "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "chown tau-fedimint:tau-fedimint "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
+          "/home/tau-fedimint/.runtime\n"
+          "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+          "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
+          "isolate -c /home/tau-fedimint/fedimint "
+          "exec --profile fedimint-bot -- bash -euc '"
+          "for name in ${lib.escapeShellArgs installedSkillNames}; do "
+          "test -f \"/home/tau-fedimint/.config/agents/skills/$name/SKILL.md\"; "
+          "done'\n"
+          "mv /home/tau-fedimint/.config/isolate/isolate.yaml.saved "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml"
       )
 
       # Reproduce the overflow-owner failure, then run Git's real configured
@@ -1358,6 +1446,12 @@ assert failedBotAssertions disabled == [ ];
 assert failedBotAssertions enabled == [ ];
 assert builtins.length (failedBotAssertions reusedToken) == 1;
 assert lib.all (rule: lib.elem rule disabled.config.systemd.tmpfiles.rules) privateDirectoryRules;
+assert lib.all (
+  name:
+  lib.elem
+    "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ${skillsSource}/skills/${name}"
+    disabled.config.systemd.tmpfiles.rules
+) installedSkillNames;
 assert !(defaultDisabled.config.age.secrets ? "tau-fedimint-github-notifications-token");
 assert !(defaultDisabled.config.age.secrets ? "tau-fedimint-github-notifications-identity-key");
 assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-token");

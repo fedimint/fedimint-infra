@@ -39,6 +39,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+
+    linked-specs-skills = {
+      url = "git+https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git?rev=4e7ee93f8874aa7198a1be41368e44d10ef4fad5";
+      flake = false;
+    };
   };
 
   outputs =
@@ -252,6 +257,7 @@
                 isolatePackage = inputs.isolate.packages.x86_64-linux.default;
                 ghBrokerPackage = inputs.gh-isolate.packages.x86_64-linux.default;
                 clankPackage = inputs.clank.packages.x86_64-linux.default;
+                skillsSource = inputs.linked-specs-skills;
                 githubTokenAgeFile = ./secrets/tau-fedimint-github-token.age;
                 sshPrivateKeyAgeFile = ./secrets/tau-fedimint-ssh-private-key.age;
                 # The automation key is root-only. This unprivileged bot account
@@ -326,6 +332,7 @@
               tauPackage = inputs.tau.packages.${system}.tau;
               isolatePackage = inputs.isolate.packages.${system}.default;
               ghBrokerPackage = inputs.gh-isolate.packages.${system}.default;
+              skillsSource = inputs.linked-specs-skills;
               githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
             };
             runner-01-root-ssh-authorization = import ./tests/runner-01-root-ssh-authorization.nix {
