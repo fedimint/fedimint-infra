@@ -47,14 +47,10 @@ details can change.
 
 ## Inspect safely
 
-Use the host's authenticated operator path. Run read-only discovery from a
-neutral local directory such as `/tmp`, because entering this infrastructure
-checkout can trigger direnv/Nix evaluation.
-
-```sh
-export SSH_AUTH_SOCK=/run/fedimint-ssh-agent/agent.sock
-ssh -o BatchMode=yes -o ConnectTimeout=15 root@runner-01.dev.fedimint.org
-```
+Use an existing authorized operator connection to
+`root@runner-01.dev.fedimint.org`. Discover the appropriate SSH invocation and
+authentication from the current environment; do not prescribe a caller-local
+socket, identity path, or setup workaround.
 
 On the runner, invoke the deployed binary as the service account with its
 effective environment:
@@ -99,8 +95,8 @@ sha256sum "$private_dir/snapshot.md" >"$private_dir/snapshot.sha256"
 chown tau-fedimint:tau-fedimint "$private_dir"/snapshot.*
 ```
 
-Do not use `/tmp/public` for this snapshot. Stop without clearing if listing,
-validation, private capture, or attribution fails.
+Do not use a shared or public temporary location for this snapshot. Stop
+without clearing if listing, validation, private capture, or attribution fails.
 
 ## Account for and disposition every report
 

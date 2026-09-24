@@ -6,6 +6,7 @@
   tauPackage,
   isolatePackage,
   ghBrokerPackage,
+  skillsSource,
   githubNotificationsPackage,
 }:
 
@@ -35,6 +36,7 @@ let
     isolatePackage = dummyIsolatePackage;
     inherit ghBrokerPackage;
     clankPackage = dummyPackage "clank";
+    inherit skillsSource;
     githubTokenAgeFile = actionToken;
     sshPrivateKeyAgeFile = sshKey;
     sshAuthorizedKeys = [ "ssh-ed25519 test-only" ];
@@ -112,6 +114,8 @@ let
   privateDirectoryRules = map (path: "d ${path} 0700 tau-fedimint tau-fedimint -") [
     "/home/tau-fedimint/fedimint"
     "/home/tau-fedimint/.config"
+    "/home/tau-fedimint/.config/agents"
+    "/home/tau-fedimint/.config/agents/skills"
     "/home/tau-fedimint/.config/isolate"
     "/home/tau-fedimint/.config/tau"
     "/home/tau-fedimint/.ssh"
@@ -123,6 +127,19 @@ let
     "/home/tau-fedimint/.local/state/clank"
     "/home/tau-fedimint/.cache"
     "/home/tau-fedimint/.cache/tau"
+  ];
+  installedSkillNames = [
+    "linked-specs"
+    "linked-specs-updating"
+    "linked-specs-review"
+    "multipart-review"
+    "multipart-review-architecture"
+    "multipart-review-coordination"
+    "multipart-review-judgment"
+    "multipart-review-maintainability"
+    "multipart-review-reliability"
+    "multipart-review-rust-style"
+    "multipart-review-skills"
   ];
   configCheck =
     pkgs.runCommand "tau-fedimint-bot-config-check"
@@ -263,6 +280,12 @@ let
         grep -q 'relevant history' "$TMPDIR/bot-prompts"
         grep -q 'source and history read-only' "$TMPDIR/bot-prompts"
         grep -q 'Do not modify project source or history' "$TMPDIR/bot-prompts"
+        grep -Fq 'default to the review' "$TMPDIR/bot-prompts"
+        grep -Fq '`multipart-review` skill' "$TMPDIR/bot-prompts"
+        jq -e '
+          .agents.role_groups.support.roles.reviewer.required_skills
+          == ["multipart-review"]
+        ' "$disabled_harness" >/dev/null
         grep -Fq '/tmp/public' "$TMPDIR/bot-prompts"
         grep -Fq 'shared mode-1733' "$TMPDIR/bot-prompts"
         grep -Fq 'non-listable dropbox' "$TMPDIR/bot-prompts"
@@ -331,6 +354,33 @@ let
         grep -Fq 'Direct user requests authenticated by Tau' "$TMPDIR/coordinator-prompt"
         grep -Fq '`<user>...</user>` channel do not require GitHub authorization' \
           "$TMPDIR/coordinator-prompt"
+        grep -Fq 'authorized request delivered through an independently' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'publish the substantive response' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'comment on the originating issue or pull request' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'A reaction, internal report, or artifact alone is not a reply' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Inspect existing bot comments first to avoid duplicates' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'broker-supported comment forms' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'report that honestly and never claim delivery' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh issue close NUMBER -R OWNER/REPO' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh issue reopen NUMBER -R OWNER/REPO' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh pr close NUMBER -R OWNER/REPO' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh pr reopen NUMBER -R OWNER/REPO' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh pr ready NUMBER -R OWNER/REPO --undo' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'gh issue comment NUMBER -R OWNER/REPO --body BODY' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq -- '--add-label`/`--remove-label' "$TMPDIR/coordinator-prompt"
+        grep -Fq -- '--add-reviewer`/' "$TMPDIR/coordinator-prompt"
+        grep -Fq \
+          'gh pr review NUMBER -R OWNER/REPO --request-changes --body-file FILE' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Permanent deletion,' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'arbitrary API calls' "$TMPDIR/coordinator-prompt"
         grep -Fq 'independently authenticated GitHub' "$TMPDIR/coordinator-prompt"
         grep -Fq 'immediately react on the exact notified issue' \
           "$TMPDIR/coordinator-prompt"
@@ -352,9 +402,19 @@ let
           "$TMPDIR/coordinator-prompt"
         grep -Fq 'repository, or exact' "$TMPDIR/coordinator-prompt"
         grep -Fq 'otherwise report and skip the reaction' "$TMPDIR/coordinator-prompt"
-        grep -q 'Proactively review every newly opened pull request' "$TMPDIR/coordinator-prompt"
+        grep -q 'Proactively review every newly opened non-draft pull request' \
+          "$TMPDIR/coordinator-prompt"
         grep -Fq 'authenticated by GitHub as Dependabot' "$TMPDIR/coordinator-prompt"
         grep -Fq '(`dependabot[bot]`)' "$TMPDIR/coordinator-prompt"
+        grep -Fq "review must first inspect the pull request's current state" \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'do not review a draft pull request' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'proactive review only when an admitted `ready_for_review`' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'still open, non-draft, and has not already received the' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'substantive review or acknowledgement comment' \
+          "$TMPDIR/coordinator-prompt"
         grep -q 'proactive review authorizes only review and its required reaction' \
           "$TMPDIR/coordinator-prompt"
         grep -q 'feedback publication, not approval, modification, merge' \
@@ -367,6 +427,16 @@ let
         grep -q 'refuse to approve any change to' "$TMPDIR/coordinator-prompt"
         grep -q 'Fedimint consensus' "$TMPDIR/coordinator-prompt"
         grep -q 'or review status is uncertain, do not approve' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Approval assesses the code change, not CI execution status' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'still running, failing, missing, or otherwise' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'non-passing does not by itself block approval' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'outcome as material only when it establishes a substantive' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'correctness or security finding in the code change' \
+          "$TMPDIR/coordinator-prompt"
         grep -q 'feedback for every completed pull-request' "$TMPDIR/coordinator-prompt"
         grep -q 'comment-only review' "$TMPDIR/coordinator-prompt"
         grep -q 'Never turn a failing or unsafe review' "$TMPDIR/coordinator-prompt"
@@ -430,6 +500,15 @@ let
             path: "/home/tau-fedimint/.local/share/direnv",
             rw: true,
             create: "dir"
+          }]
+        ' "$disabled_isolate" >/dev/null
+        jq -e '
+          [.profiles["fedimint-bot"].bind[]
+            | select(.path == "/home/tau-fedimint/.config/agents")]
+          == [{
+            path: "/home/tau-fedimint/.config/agents",
+            required: true,
+            kind: "dir"
           }]
         ' "$disabled_isolate" >/dev/null
         test -x ${direnvDpcPackage}/bin/direnv-dpc
@@ -620,17 +699,46 @@ let
 
         test_home="$TMPDIR/tau-home"
         test_workspace="$TMPDIR/workspace"
-        mkdir -p "$test_home/.config/tau" "$test_workspace"
+        mkdir -p \
+          "$test_home/.config/tau" \
+          "$test_home/.config/agents/skills" \
+          "$test_workspace"
+        for name in ${lib.escapeShellArgs installedSkillNames}; do
+          ln -s "${skillsSource}/skills/$name" \
+            "$test_home/.config/agents/skills/$name"
+        done
         jq --arg workspace "$test_workspace" '
           .extensions["core-shell"].config.working_directory = $workspace
           | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
         ' "$disabled_harness" >"$test_home/.config/tau/harness.yaml"
-        env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
-          HOME="$test_home" \
-          XDG_CONFIG_HOME="$test_home/.config" \
-          XDG_STATE_HOME="$test_home/.local/state" \
-          XDG_CACHE_HOME="$test_home/.cache" \
-          ${tauPackage}/bin/tau --role coordinator dev print-system-prompt >/dev/null
+        jq -er '[.agents.role_groups[].roles | keys[]] | sort | unique | .[]' \
+          "$disabled_harness" >"$TMPDIR/roles"
+        while IFS= read -r role; do
+          prompt="$TMPDIR/$role-system-prompt"
+          env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
+            HOME="$test_home" \
+            XDG_CONFIG_HOME="$test_home/.config" \
+            XDG_STATE_HOME="$test_home/.local/state" \
+            XDG_CACHE_HOME="$test_home/.cache" \
+            ${tauPackage}/bin/tau --role "$role" dev print-system-prompt >"$prompt"
+          grep -Fq 'Before project work, use `workdir` to set your persistent workdir' \
+            "$prompt"
+          grep -Fq "that project's own development-shell tools." "$prompt"
+          skills="$TMPDIR/$role-skills"
+          env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
+            HOME="$test_home" \
+            XDG_CONFIG_HOME="$test_home/.config" \
+            XDG_STATE_HOME="$test_home/.local/state" \
+            XDG_CACHE_HOME="$test_home/.cache" \
+            ${tauPackage}/bin/tau --role "$role" \
+              dev print-skills --format json >"$skills"
+          jq -e --argjson expected '${builtins.toJSON installedSkillNames}' '
+            ([.[].name] | sort) as $actual
+            | ($expected | sort) as $expected
+            | (($expected - $actual) | length == 0)
+            and ($actual | index("linked-specs-grooming") == null)
+          ' "$skills" >/dev/null
+        done <"$TMPDIR/roles"
 
         jq -e '
           .extensions["github-notifications"] as $extension
@@ -805,6 +913,22 @@ let
       }
     }
 
+    expect_supported() {
+      name=$1
+      shift
+      expect_status 125 "$name" "$@"
+      grep -Fq 'open GitHub token secret: No such file or directory' \
+        "$TMPDIR/$name.err"
+    }
+
+    expect_denied() {
+      name=$1
+      shift
+      expect_status 126 "$name" "$@"
+      grep -Fq 'gh invocation denied by isolate policy:' "$TMPDIR/$name.err"
+      ! grep -Fq 'open GitHub token secret' "$TMPDIR/$name.err"
+    }
+
     # The upstream omitted default remains dpc/, while this deployment's
     # trusted option accepts tau/ and rejects the old namespace.
     expect_status 125 default-dpc \
@@ -904,6 +1028,51 @@ let
     grep -Fq 'documented endpoint families and options' \
       "$TMPDIR/line-comment-leading-zero.err"
 
+    # Exercise the pinned collaboration policy against a missing-token fixture.
+    # Accepted operations reach credential opening; denied neighbors stay local.
+    expect_supported pr-close \
+      gh pr close 9195 -R fedimint/fedimint
+    expect_supported pr-reopen \
+      gh pr reopen 9195 -R fedimint/fedimint
+    expect_supported issue-close \
+      gh issue close 42 -R fedimint/fedimint --reason 'not planned'
+    expect_supported issue-reopen \
+      gh issue reopen 42 -R fedimint/fedimint
+    expect_supported pr-ready \
+      gh pr ready 42 -R fedimint/fedimint
+    expect_supported pr-draft \
+      gh pr ready 42 -R fedimint/fedimint --undo
+    expect_supported issue-inline-comment \
+      gh issue comment 42 -R fedimint/fedimint --body reply
+    expect_supported issue-inline-edit \
+      gh issue edit 42 -R fedimint/fedimint --body updated
+    expect_supported pr-label \
+      gh pr edit 42 -R fedimint/fedimint --add-label bug
+    expect_supported pr-assignee \
+      gh pr edit 42 -R fedimint/fedimint --add-assignee octocat
+    expect_supported pr-reviewer \
+      gh pr edit 42 -R fedimint/fedimint --add-reviewer octocat
+    expect_supported comment-read \
+      gh api repos/fedimint/fedimint/issues/comments/5803800022
+    expect_supported files-read \
+      gh api repos/fedimint/fedimint/pulls/42/files --paginate
+    printf '%s\n' 'request changes' >request-changes.md
+    expect_supported request-changes \
+      gh pr review 42 -R fedimint/fedimint \
+      --request-changes --body-file request-changes.md
+    expect_supported own-comment-edit \
+      gh api --method PATCH \
+      repos/fedimint/fedimint/issues/comments/5803800022 \
+      --raw-field body=corrected
+
+    expect_denied comment-delete \
+      gh pr comment 42 -R fedimint/fedimint --delete-last --yes
+    expect_denied pr-merge \
+      gh pr merge 42 -R fedimint/fedimint
+    expect_denied arbitrary-api \
+      gh api --method DELETE \
+      repos/fedimint/fedimint/issues/comments/5803800022
+
     touch "$out"
   '';
   tmpfilesCheck = pkgs.testers.runNixOSTest {
@@ -941,6 +1110,7 @@ let
           "/tmp/public "
           "/tmp/public-target "
           "/home/tau-fedimint/.config/isolate "
+          "/home/tau-fedimint/.config/agents "
           "/home/tau-fedimint/.config/tau "
           "/home/tau-fedimint/.ssh "
           "/home/tau-fedimint/.local/state/tau "
@@ -973,6 +1143,14 @@ let
           "ln -s /tmp/public-target /tmp/public"
       )
       machine.succeed("systemd-tmpfiles --create")
+      machine.succeed(
+          "set -e; "
+          "for name in ${lib.escapeShellArgs installedSkillNames}; do "
+          "test -L \"/home/tau-fedimint/.config/agents/skills/$name\"; "
+          "test -f \"/home/tau-fedimint/.config/agents/skills/$name/SKILL.md\"; "
+          "done; "
+          "test ! -e /home/tau-fedimint/.config/agents/skills/linked-specs-grooming"
+      )
       machine.succeed(
           "test -L /tmp/public && "
           "test \"$(stat -Lc '%u:%g:%a' /tmp/public-target)\" = 0:0:700"
@@ -1061,6 +1239,32 @@ let
           "/home/tau-fedimint/fedimint/fedimint-sdk "
           "config --local --get core.sshCommand)\" = "
           "'${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config'"
+      )
+      machine.succeed(
+          "set -e\n"
+          "cp /home/tau-fedimint/.config/isolate/isolate.yaml "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml.saved\n"
+          "jq '.profiles[\"fedimint-bot\"].bind |= map(select("
+          ".path == \"/home/tau-fedimint/fedimint\" or "
+          ".path == \"/tmp/public\" or "
+          ".path == \"/home/tau-fedimint/.config/agents\"))' "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml "
+          ">/home/tau-fedimint/.config/isolate/isolate.yaml.new\n"
+          "mv /home/tau-fedimint/.config/isolate/isolate.yaml.new "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "chown tau-fedimint:tau-fedimint "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
+          "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
+          "/home/tau-fedimint/.runtime\n"
+          "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+          "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
+          "isolate -c /home/tau-fedimint/fedimint "
+          "exec --profile fedimint-bot -- bash -euc '"
+          "for name in ${lib.escapeShellArgs installedSkillNames}; do "
+          "test -f \"/home/tau-fedimint/.config/agents/skills/$name/SKILL.md\"; "
+          "done'\n"
+          "mv /home/tau-fedimint/.config/isolate/isolate.yaml.saved "
+          "/home/tau-fedimint/.config/isolate/isolate.yaml"
       )
 
       # Reproduce the overflow-owner failure, then run Git's real configured
@@ -1242,6 +1446,12 @@ assert failedBotAssertions disabled == [ ];
 assert failedBotAssertions enabled == [ ];
 assert builtins.length (failedBotAssertions reusedToken) == 1;
 assert lib.all (rule: lib.elem rule disabled.config.systemd.tmpfiles.rules) privateDirectoryRules;
+assert lib.all (
+  name:
+  lib.elem
+    "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ${skillsSource}/skills/${name}"
+    disabled.config.systemd.tmpfiles.rules
+) installedSkillNames;
 assert !(defaultDisabled.config.age.secrets ? "tau-fedimint-github-notifications-token");
 assert !(defaultDisabled.config.age.secrets ? "tau-fedimint-github-notifications-identity-key");
 assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-token");
