@@ -432,10 +432,6 @@ let
         grep -Fq 'Fedimint consensus' "$TMPDIR/coordinator-prompt"
         grep -Fq 'CI status alone neither grants nor blocks approval' \
           "$TMPDIR/coordinator-prompt"
-        grep -Fq "pull-request review skill's durable ticket and single" \
-          "$TMPDIR/coordinator-prompt"
-        grep -Fq 'recurring reminder workflow for every deferred draft review' \
-          "$TMPDIR/coordinator-prompt"
         ! grep -Fq 'gh issue create' "$TMPDIR/coordinator-prompt"
         ! grep -Fq 'gh pr review NUMBER' "$TMPDIR/coordinator-prompt"
         test "$(wc -c <"$TMPDIR/coordinator-prompt")" -lt 5000
@@ -483,24 +479,8 @@ let
           "$maintainer_skill"
         grep -Fq 'Do not review a draft' "$review_skill"
         grep -Fq 'ready_for_review' "$review_skill"
-        grep -Fq 'create a durable Clank ticket' "$review_skill"
-        grep -Fq 'title beginning `DEFERRED DRAFT REVIEW:`' "$review_skill"
-        grep -Fq 'exact repository and pull request' "$review_skill"
-        grep -Fq 'link the ticket ID from the canonical `ACTIVE QUEUE`' "$review_skill"
-        grep -Fq 'at most one recurring `deferred-draft-recheck` reminder' \
-          "$review_skill"
-        grep -Fq 'scheduled every 30 minutes' "$review_skill"
-        grep -Fq 'rather than waiting for a draft, and cancel the reminder' "$review_skill"
-        grep -Fq 'fabricate an `external_message` or attribute a poll result' "$review_skill"
-        grep -Fq 'read the exact pull request through the authorized GitHub tools' \
-          "$review_skill"
-        grep -Fq 'Revalidate the recorded author or requester authority' "$review_skill"
-        grep -Fq 'reviews and comments before any review or write' "$review_skill"
-        grep -Fq 'closed, merged, no longer' "$review_skill"
-        grep -Fq 'open and ready, delegate the normal independent review' "$review_skill"
-        grep -Fq 'only after the work is handled or durably tracked elsewhere' \
-          "$review_skill"
-        grep -Fq 'recover deferred-draft tickets with the other active Clank' \
+        grep -Fq 'new explicit request from a verified maintainer' "$review_skill"
+        grep -Fq 'Do not create durable work, schedule reminders, or periodically poll' \
           "$review_skill"
         grep -Fq 'independent `reviewer` role' "$review_skill"
         grep -Fq 'required `multipart-review` skill' "$review_skill"
@@ -602,10 +582,6 @@ let
         grep -Fq 'Lost session context alone is' "$bootstrap_prompt"
         grep -Fq 'not as a new request or new' "$bootstrap_prompt"
         grep -Fq 'authentication, authorization, review, and external actions' \
-          "$bootstrap_prompt"
-        grep -Fq 'For deferred draft pull' "$bootstrap_prompt"
-        grep -Fq 'check due tickets against' "$bootstrap_prompt"
-        grep -Fq 're-arm its single recurring reminder while any remain' \
           "$bootstrap_prompt"
         ! grep -Fq 'github_register' "$bootstrap_prompt"
 

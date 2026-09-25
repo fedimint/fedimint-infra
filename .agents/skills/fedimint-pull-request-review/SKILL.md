@@ -15,32 +15,12 @@ explicitly requests it. For Dependabot pull requests, also load and follow the
 ## Admission and deferral
 
 Inspect current pull-request state before reviewing. Do not review a draft.
-Before declaring a review deferred, create a durable Clank ticket from the
-coordinator's umbrella project root with a title beginning `DEFERRED DRAFT REVIEW:`.
-Identify the exact repository and pull request, record why review is authorized and
-the next check time, and link the ticket ID from the canonical `ACTIVE QUEUE`.
-Draft deferral needs no substantive review or comment.
-
-The coordinator owns periodic recovery of these tickets; notification delivery is
-only a fast path. Keep at most one recurring `deferred-draft-recheck` reminder,
-scheduled every 30 minutes while any deferred drafts remain. Continue other work
-rather than waiting for a draft, and cancel the reminder when none remain. A
-reminder is only a wakeup: use the ticket as the durable source of work, and never
-fabricate an `external_message` or attribute a poll result to a GitHub actor.
-
-On each due check, read the exact pull request through the authorized GitHub tools.
-Revalidate the recorded author or requester authority and inspect current bot
-reviews and comments before any review or write. If the pull request remains open
-and draft, update the ticket's next check time. If it is closed, merged, no longer
-authorized, or already reviewed by the bot, close the ticket with the reason. If it
-is open and ready, delegate the normal independent review, then close the ticket
-only after the work is handled or durably tracked elsewhere. Avoid duplicate
-reviews and writes.
-
-At coordinator startup, recover deferred-draft tickets with the other active Clank
-work by their title marker and `ACTIVE QUEUE` links, check tasks that are due, and
-re-arm the single reminder if any remain. A delivered `ready_for_review` event may
-trigger the same reconciliation immediately, but is not required.
+Reconsider a proactively deferred draft only after delivered `ready_for_review`
+activity or a new explicit request from a verified maintainer, then confirm that it
+remains open, is no longer draft, and has not already received the bot's review.
+Do not create durable work, schedule reminders, or periodically poll solely to
+reconsider a draft. Draft deferral needs no substantive review or comment. Avoid
+duplicate reviews.
 
 Proactive review authority covers only review, its notification reaction, and
 feedback publication. It does not authorize modification, merge, closure, or
