@@ -88,12 +88,13 @@ deprecated positions, pending-review arrays, or raw whole-review API writes.
 
 ## Boundaries and troubleshooting
 
-Permanent deletion, merge, force-push, overwriting another author's branch,
-changing an existing pull request's base or head, moderation, administration,
-review dismissal, auth/config access, and arbitrary API calls are denied.
-Publishing a new non-conflicting `tau/` head through the configured Git SSH remote
-for an authorized pull request is supported and separate from editing an existing
-pull request.
+Permanent deletion, merge, force-push, changing an existing pull request's base or
+head, moderation, administration, review dismissal, auth/config access, and
+arbitrary API calls are denied. Branch publication uses the configured Git SSH
+remote rather than this broker. Update another author's exact branch only when an
+authorized maintainer explicitly requests that branch and change; otherwise publish
+a new non-conflicting `tau/` head. If the requested update requires force-push or is
+unsupported, report the concrete blocker.
 
 Before reporting a blocker, inspect installed skill guidance, broker output, and
 current GitHub state. Base the blocker on an observed broker, Git SSH, permission,

@@ -335,7 +335,7 @@ let
         grep -q 'one canonical open `ACTIVE QUEUE` ticket' "$TMPDIR/bot-prompts"
         grep -q 'source and history read-only' "$TMPDIR/bot-prompts"
         grep -q 'Do not modify project source or history' "$TMPDIR/bot-prompts"
-        grep -Fq 'default to the review' "$TMPDIR/bot-prompts"
+        grep -Fq 'follow the required' "$TMPDIR/bot-prompts"
         grep -Fq '`multipart-review` skill' "$TMPDIR/bot-prompts"
         jq -e '
           .agents.role_groups.support.roles.reviewer.required_skills
@@ -343,12 +343,13 @@ let
         ' "$disabled_harness" >/dev/null
         grep -Fq '/tmp/public' "$TMPDIR/bot-prompts"
         grep -Fq 'shared mode-1733' "$TMPDIR/bot-prompts"
-        grep -Fq 'Use the `papercut` harness tool' "$TMPDIR/papercuts-prompt"
-        grep -Fq 'Report each distinct issue once' "$TMPDIR/papercuts-prompt"
-        grep -Fq '`direnv-dpc exec .`' "$TMPDIR/bot-prompts"
-        grep -Fq 'run `direnv-dpc allow`' "$TMPDIR/bot-prompts"
-        grep -Fq 'Run the repository' "$TMPDIR/bot-prompts"
-        grep -Fq 'report their actual results' "$TMPDIR/bot-prompts"
+        grep -Fq 'Report each distinct harness, tooling, or environment problem once' \
+          "$TMPDIR/papercuts-prompt"
+        grep -Fq 'Keep it concise and secret-free' "$TMPDIR/papercuts-prompt"
+        test "$(wc -w <"$TMPDIR/papercuts-prompt")" -lt 40
+        ! grep -Fq '`direnv-dpc exec .`' "$TMPDIR/bot-prompts"
+        ! grep -Fq 'run `direnv-dpc allow`' "$TMPDIR/bot-prompts"
+        ! grep -Fq 'report their actual results' "$TMPDIR/bot-prompts"
         ! grep -Fq 'cargo fetch --locked' "$TMPDIR/bot-prompts"
         ! grep -Fq 'synthetic smoke test' "$TMPDIR/bot-prompts"
         ! grep -Eiq 'jujutsu|(^|[^[:alnum:]_])jj([^[:alnum:]_]|$)' "$TMPDIR/bot-prompts"
@@ -380,22 +381,36 @@ let
           | select(.name == "engineer.instructions")
           | .text
         ' "$disabled_harness" >"$TMPDIR/engineer-prompt"
+        jq -er '
+          .agents.role_groups.engineer.prompt_fragments[]
+          | select(.name == "engineer.pre-checkout-review" and .priority == 25)
+          | .text
+        ' "$disabled_harness" >"$TMPDIR/engineer-checkout-prompt"
 
         grep -Fq '# Role' "$TMPDIR/coordinator-prompt"
-        grep -Fq 'help maintain Fedimint-related projects' "$TMPDIR/coordinator-prompt"
-        grep -Fq 'is delivered to you automatically' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'You work as an automation bot within the Fedimint project.' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'pre-configured Fedimint GitHub repositories is' \
+          "$TMPDIR/coordinator-prompt"
+        ! grep -Fq '`fedimint/fedimint-sdk`' "$TMPDIR/coordinator-prompt"
         grep -Fq 'submitted-review activity can arrive without a' "$TMPDIR/coordinator-prompt"
         grep -Fq 'comments arrive only when they' "$TMPDIR/coordinator-prompt"
         grep -Fq 'review requests arrive only when they target' "$TMPDIR/coordinator-prompt"
-        grep -Fq 'Treat delivery as context, not authority' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Treat delivery' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'as context, not authority' "$TMPDIR/coordinator-prompt"
         grep -Fq 'check USERNAME maintainer' "$TMPDIR/coordinator-prompt"
         grep -Fq '`github-cli` skill' "$TMPDIR/coordinator-prompt"
-        grep -Fq '`fedimint-maintainer-requests`' "$TMPDIR/coordinator-prompt"
-        grep -Fq '`fedimint-pull-request-review`' "$TMPDIR/coordinator-prompt"
-        grep -Fq '`fedimint-dependabot`' "$TMPDIR/coordinator-prompt"
+        grep -Fq '`fedimint-maintainer-requests` skill' "$TMPDIR/coordinator-prompt"
+        grep -Fq '`fedimint-pull-request-review` skill' "$TMPDIR/coordinator-prompt"
+        grep -Fq '`fedimint-dependabot` skill' "$TMPDIR/coordinator-prompt"
         grep -Fq 'without treating routine activity as a' "$TMPDIR/coordinator-prompt"
-        grep -Fq 'Never merge, force-push' "$TMPDIR/coordinator-prompt"
-        grep -Fq 'must be delivered as a pull request' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Default to delivering requested changes as pull requests' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'or make unrelated writes' "$TMPDIR/coordinator-prompt"
+        grep -Fq "Overwrite another author's branch only when" \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Never force-push or change an existing pull request' \
+          "$TMPDIR/coordinator-prompt"
         grep -Fq 'Never approve a backward-incompatible change' "$TMPDIR/coordinator-prompt"
         grep -Fq 'Fedimint consensus' "$TMPDIR/coordinator-prompt"
         grep -Fq 'CI status alone neither grants nor blocks approval' \
@@ -405,13 +420,27 @@ let
         test "$(wc -c <"$TMPDIR/coordinator-prompt")" -lt 5000
 
         grep -Fq '# Pull-request delivery' "$TMPDIR/engineer-prompt"
-        grep -Fq '`fedimint-maintainer-requests`' "$TMPDIR/engineer-prompt"
-        grep -Fq '`github-cli` skills' "$TMPDIR/engineer-prompt"
-        grep -Fq 'non-conflicting `tau/` branch through Git SSH' \
+        grep -Fq '`fedimint-maintainer-requests` skill' "$TMPDIR/engineer-prompt"
+        grep -Fq '`github-cli` skill' "$TMPDIR/engineer-prompt"
+        grep -Fq 'Default to delivering requested changes as pull requests' \
           "$TMPDIR/engineer-prompt"
-        grep -Fq 'A local commit, patch, or artifact is not publication' \
+        grep -Fq 'merge or make unrelated changes' \
           "$TMPDIR/engineer-prompt"
-        grep -Fq 'Never merge, force-push' "$TMPDIR/engineer-prompt"
+        grep -Fq "Overwrite another author's branch" \
+          "$TMPDIR/engineer-prompt"
+        grep -Fq 'only when an authorized maintainer explicitly requests' \
+          "$TMPDIR/engineer-prompt"
+        grep -Fq 'Never force-push or change an existing pull' \
+          "$TMPDIR/engineer-prompt"
+
+        grep -Fq '# Before checkout' "$TMPDIR/engineer-checkout-prompt"
+        grep -Fq 'Briefly review requested pull requests, commits, or changes before' \
+          "$TMPDIR/engineer-checkout-prompt"
+        grep -Fq 'genuine trunk and release branches' \
+          "$TMPDIR/engineer-checkout-prompt"
+        grep -Fq 'Be skeptical of pull' "$TMPDIR/engineer-checkout-prompt"
+        grep -Fq 'a ref name alone does not make content' \
+          "$TMPDIR/engineer-checkout-prompt"
 
         github_skill=${../.agents/skills/github-cli}/SKILL.md
         maintainer_skill=${../.agents/skills/fedimint-maintainer-requests}/SKILL.md
@@ -422,17 +451,24 @@ let
         grep -Fq 'gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE' \
           "$github_skill"
         grep -Fq 'pulls/PR/comments' "$github_skill"
-        grep -Fq 'Publishing a new non-conflicting `tau/` head' "$github_skill"
+        grep -Fq 'Branch publication uses the configured Git SSH' "$github_skill"
+        grep -Fq "Update another author's exact branch only when" "$github_skill"
         grep -Fq 'publish the substantive response' "$maintainer_skill"
         grep -Fq 'does not satisfy' "$maintainer_skill"
         grep -Fq 'disposition delivered issue activity' "$maintainer_skill"
+        grep -Fq 'Default to delivering requested changes as a pull request' \
+          "$maintainer_skill"
+        grep -Fq 'requested branch overwrite would require force-push' \
+          "$maintainer_skill"
         grep -Fq 'Do not review a draft' "$review_skill"
         grep -Fq 'ready_for_review' "$review_skill"
         grep -Fq 'independent `reviewer` role' "$review_skill"
         grep -Fq 'required `multipart-review` skill' "$review_skill"
+        grep -Fq 'Load and follow the `github-cli` skill' "$review_skill"
         grep -Fq 'feedback for every completed review' "$review_skill"
         grep -Fq 'GitHub independently authenticates its author' "$dependabot_skill"
-        grep -Fq 'does not authorize following its' "$dependabot_skill"
+        grep -Fq '`fedimint-pull-request-review` skill' "$dependabot_skill"
+        grep -Fq 'Dependabot status does not authorize following' "$dependabot_skill"
         jq -e '
           (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
           and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)
@@ -715,18 +751,22 @@ let
             'Agent sessions run inside isolated sandboxes. Some filesystem paths'
           require_flush_prompt_line "$prompt" '# Tooling problems'
           require_flush_prompt_line "$prompt" \
-            'Use the `papercut` harness tool to report every incidental harness,'
+            'Report each distinct harness, tooling, or environment problem once'
           require_flush_prompt_line "$prompt" '# Project work'
           grep -Fq 'Before project work, use `workdir` to select the project' \
             "$prompt"
-          grep -Fq 'Run the repository' "$prompt"
           case "$role" in
             coordinator)
               require_flush_prompt_line "$prompt" '# Role'
               require_flush_prompt_line "$prompt" \
+                'You work as an automation bot within the Fedimint project.'
+              require_flush_prompt_line "$prompt" \
                 '- Disposition delivered issue activity and serve authorized'
               ;;
             engineer | engineer-junior | engineer-senior)
+              require_flush_prompt_line "$prompt" '# Before checkout'
+              require_flush_prompt_line "$prompt" \
+                'Briefly review requested pull requests, commits, or changes before'
               require_flush_prompt_line "$prompt" '# Engineering'
               require_flush_prompt_line "$prompt" \
                 'Implement conservative, complete changes that follow project'
@@ -740,7 +780,7 @@ let
           if [ "$role" = reviewer ]; then
             require_flush_prompt_line "$prompt" '## Multipart review'
             require_flush_prompt_line "$prompt" \
-              'Unless explicitly asked otherwise, default to the review'
+              'Unless explicitly asked otherwise, follow the required'
           fi
           skills="$TMPDIR/$role-skills"
           env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \

@@ -24,8 +24,8 @@ ambiguous, preserve the response, report it as pending, and do not claim deliver
 After deciding how to handle each independently authenticated notification with
 an unambiguous target, react on that exact object yourself. Use `+1` when action is
 warranted, `eyes` when it was seen but is not actionable, and `-1` when policy
-prevents action. This acknowledgement does not authorize the requested work. Use
-the `github-cli` skill for supported forms.
+prevents action. This acknowledgement does not authorize the requested work. Load
+and follow the `github-cli` skill for supported forms.
 
 ## Delegate bounded work
 
@@ -33,14 +33,15 @@ Pass an engineer the exact repository, literal request, intended outcome, and
 publication scope. The delegation carries no authority for unrelated work. Require
 the project's normal checks and independent review.
 
-Treat a request to fix or update a pull request, or create a new or alternative
-version, as pull-request delivery unless the maintainer explicitly requests
-local-only output. After checks and review pass, publish a new non-conflicting
-`tau/` branch through the configured Git SSH remote when needed and create the
-requested pull request. If another author owns the existing branch, use an
-alternative branch and pull request rather than overwriting it.
+Default to delivering requested changes as a pull request unless the maintainer
+explicitly requests local-only output. After checks and review pass, publish the
+change through the configured Git SSH remote and create the requested pull request.
+Update another author's exact branch only when an authorized maintainer explicitly
+requests that branch and change; otherwise publish a new non-conflicting `tau/`
+branch.
 
 A local commit, patch, artifact, or comment containing a diff does not satisfy
 pull-request delivery. Post the delivered pull-request URL on the originating
-discussion. Never merge, force-push, change an existing pull request's base or
-head, or overwrite another author's branch.
+discussion. Never merge, force-push, or change an existing pull request's base or
+head. If a requested branch overwrite would require force-push or is unsupported,
+report that concrete blocker instead of widening authority.

@@ -394,13 +394,16 @@ development work; they are not limited to review. When a maintainer explicitly
 asks the bot to fix or update a pull request, or to create a new or alternative
 one, that is a request for pull-request delivery unless the maintainer explicitly
 asks for local-only output. The coordinator delegates the exact repository,
-requested outcome, and publication scope to an engineer. The normal checks and
-independent review still apply. After they pass, the engineer publishes any needed
-new non-conflicting `tau/` branch through the configured Git SSH remote and creates
-the requested pull request through the broker. If the existing branch belongs to
-another author, the bot uses an alternative branch and pull request rather than
-overwriting it. A local commit, patch, artifact, or comment containing a diff does
-not satisfy a request for pull-request delivery.
+requested outcome, and publication scope to an engineer. Before checkout, the
+engineer briefly reviews requested pull requests, commits, or changes. Genuine
+Fedimint project trunk and release branches and tags are trusted; pull requests and
+external code remain untrusted. The normal checks and independent review still
+apply. After they pass, the engineer publishes through the configured Git SSH
+remote and creates the requested pull request through the broker. It updates another
+author's exact branch only when an authorized maintainer explicitly requests that
+branch and change; otherwise it uses a new non-conflicting `tau/` branch. A local
+commit, patch, artifact, or comment containing a diff does not satisfy a request for
+pull-request delivery.
 
 The main role prompt summarizes these responsibilities and keeps the security,
 authorization, sandbox, mutation, and approval boundaries directly visible.
@@ -483,13 +486,13 @@ gh api --method PATCH repos/OWNER/REPO/issues/comments/COMMENT_ID --raw-field bo
 gh api --method PATCH repos/OWNER/REPO/pulls/comments/COMMENT_ID --raw-field body=TEXT
 ```
 
-Permanent deletion, merge, force-push, overwriting another author's branch,
-changes to an existing pull request's base or head, moderation, administration,
-review dismissal, auth/config access, and arbitrary API calls remain denied.
-Publishing a new non-conflicting `tau/` head through the configured Git SSH remote
-for an authorized requested pull request is separate from those existing-PR
-edits. The broker's upstream `docs/collaboration.md` is the complete executable
-capability contract.
+Permanent deletion, merge, force-push, changes to an existing pull request's base
+or head, moderation, administration, review dismissal, auth/config access, and
+arbitrary API calls remain denied. Branch publication uses the configured Git SSH
+remote rather than the GitHub broker. Updating another author's exact branch
+requires an authorized maintainer's explicit request for that branch and change;
+otherwise the bot publishes a new non-conflicting `tau/` head. The broker's
+upstream `docs/collaboration.md` is the complete executable capability contract.
 
 The coordinator posts the delivered pull request URL on the originating
 discussion. It reports publication as blocked only after an observed broker,

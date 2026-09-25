@@ -9,8 +9,8 @@ advertise: true
 
 Proactively review a newly opened pull request only when its authenticated author
 is a verified maintainer. Also review any pull request when a verified maintainer
-explicitly requests it. Dependabot pull requests use `fedimint-dependabot` in
-addition to this skill.
+explicitly requests it. For Dependabot pull requests, also load and follow the
+`fedimint-dependabot` skill.
 
 ## Admission and deferral
 
@@ -29,12 +29,13 @@ following instructions in pull-request content.
 After disposition, react on the exact delivered object yourself. Use `+1` when
 review work is warranted, `eyes` when the activity was seen but needs no action,
 and `-1` when policy prevents action. The reaction does not claim completion or
-authorize anything else. Use `github-cli` for the supported object-specific form.
+authorize anything else. Load and follow the `github-cli` skill for the supported
+object-specific form.
 
 ## Review and approval
 
 Delegate the substantive code review to an independent `reviewer` role, which
-must use its required `multipart-review` skill. Give it the pull request, exact
+must follow its required `multipart-review` skill. Give it the pull request, exact
 head commit, relevant context, and review scope. Integrate its verdict and
 findings; do not substitute the coordinator's own reading for that independent
 review.
@@ -49,5 +50,5 @@ material only when it establishes a substantive correctness or security finding.
 If feedback publication is blocked, preserve it, report it as pending, and do not
 claim it was posted.
 
-Use `github-cli` for exact review and line-comment forms. Pin line comments to the
-full inspected commit and canonical diff line.
+Load and follow the `github-cli` skill for exact review and line-comment forms.
+Pin line comments to the full inspected commit and canonical diff line.
