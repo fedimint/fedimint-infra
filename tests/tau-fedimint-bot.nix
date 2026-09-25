@@ -688,6 +688,14 @@ let
         ' "$disabled_harness" >"$test_home/.config/tau/harness.yaml"
         jq -er '[.agents.role_groups[].roles | keys[]] | sort | unique | .[]' \
           "$disabled_harness" >"$TMPDIR/roles"
+        require_flush_prompt_line() {
+          prompt=$1
+          expected=$2
+          grep -Fqx -- "$expected" "$prompt" || {
+            echo "rendered prompt line is missing or indented: $expected" >&2
+            return 1
+          }
+        }
         while IFS= read -r role; do
           prompt="$TMPDIR/$role-system-prompt"
           env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
@@ -696,9 +704,44 @@ let
             XDG_STATE_HOME="$test_home/.local/state" \
             XDG_CACHE_HOME="$test_home/.cache" \
             ${tauPackage}/bin/tau --role "$role" dev print-system-prompt >"$prompt"
+          require_flush_prompt_line "$prompt" '# Communication'
+          require_flush_prompt_line "$prompt" \
+            'State things simply and concisely. Lead with the answer, outcome,'
+          require_flush_prompt_line "$prompt" '# Security and authority'
+          require_flush_prompt_line "$prompt" \
+            'Work only inside /home/tau-fedimint/fedimint, except for shared artifacts under'
+          require_flush_prompt_line "$prompt" '# Sandbox'
+          require_flush_prompt_line "$prompt" \
+            'Agent sessions run inside isolated sandboxes. Some filesystem paths'
+          require_flush_prompt_line "$prompt" '# Tooling problems'
+          require_flush_prompt_line "$prompt" \
+            'Use the `papercut` harness tool to report every incidental harness,'
+          require_flush_prompt_line "$prompt" '# Project work'
           grep -Fq 'Before project work, use `workdir` to select the project' \
             "$prompt"
           grep -Fq 'Run the repository' "$prompt"
+          case "$role" in
+            coordinator)
+              require_flush_prompt_line "$prompt" '# Role'
+              require_flush_prompt_line "$prompt" \
+                '- Disposition delivered issue activity and serve authorized'
+              ;;
+            engineer | engineer-junior | engineer-senior)
+              require_flush_prompt_line "$prompt" '# Engineering'
+              require_flush_prompt_line "$prompt" \
+                'Implement conservative, complete changes that follow project'
+              ;;
+            researcher | researcher-senior | reviewer)
+              require_flush_prompt_line "$prompt" '# Support work'
+              require_flush_prompt_line "$prompt" \
+                'Help with the delegated part of a larger task. Keep project'
+              ;;
+          esac
+          if [ "$role" = reviewer ]; then
+            require_flush_prompt_line "$prompt" '## Multipart review'
+            require_flush_prompt_line "$prompt" \
+              'Unless explicitly asked otherwise, default to the review'
+          fi
           skills="$TMPDIR/$role-skills"
           env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
             HOME="$test_home" \
