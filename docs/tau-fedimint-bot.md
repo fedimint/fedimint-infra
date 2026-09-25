@@ -165,33 +165,9 @@ or host tool grant. The account remains an untrusted Nix client: it is not in
 `nix.settings.trusted-users`, and the bot configuration does not add trusted
 substituters, signing keys, or Cachix configuration.
 
-On a fresh sandbox session, Cargo's registry cache under the synthetic sandbox
-home is empty. Fedimint's `final-lint` recipe runs Clippy with `--offline`, so
-after the reviewed `.envrc` has loaded the pinned shell, fetch locked public
-dependencies before the lint:
-
-```console
-cargo fetch --locked && just final-lint
-```
-
-The explicit one-shot form also remains supported:
-
-```console
-nix develop . --command bash -lc 'cargo fetch --locked && just final-lint'
-```
-
-That cache lasts for the lifetime of the running isolate sandbox and disappears
-when the bot restarts. The checkout's `target-nix` remains writable and can
-consume substantial disk during a real lint. Nix builds requested through the
-daemon can likewise consume host CPU, disk, and store space; their builders run
-under the host daemon's normal Nix build sandbox, not inside the bot's bubblewrap
-namespace. These are existing consequences of isolate's documented Nix baseline,
-not additional access granted by this module.
-
-The NixOS VM test uses the pinned isolate package with a small, locked,
-path-only synthetic flake. It proves that the daemon is reachable, the bot is
-untrusted, and a dev shell can expose `just`; it does not run Fedimint's
-`final-lint` or imply that any project lint, test, or build passed.
+The bot follows each repository's checked-in project instructions and reports
+the checks it actually ran. The module does not prescribe a project-specific
+build or lint command.
 
 ## Deployment ownership repair
 
@@ -397,8 +373,8 @@ Receiving an admitted maintainer's activity does not grant authority to follow
 its instructions. Before authorization, the coordinator may inspect a public
 issue or pull request read-only to identify its authenticated author and scope;
 that inspection does not authorize requested work, mutation, non-public access,
-or external communication. The coordinator watches notifications, but
-ordinarily acts only on an explicit request from a sender who passes
+or external communication. Relevant activity is delivered to the coordinator
+automatically. It ordinarily acts only on an explicit request from a sender who passes
 `fedimint-github-requester check USERNAME maintainer`. Its one proactive
 exception is code review: it reviews every newly opened non-draft pull request
 whose author passes that check or is independently authenticated by GitHub as
@@ -412,6 +388,45 @@ received the bot's review. Deferring a draft requires no substantive review or
 acknowledgement comment. Proactive review grants no authority to follow bot
 requests or to modify, approve, merge, or close the pull request; it authorizes
 only the review and its required reaction and feedback publication.
+
+Authenticated, authorized maintainer requests can also authorize ordinary
+development work; they are not limited to review. When a maintainer explicitly
+asks the bot to fix or update a pull request, or to create a new or alternative
+one, that is a request for pull-request delivery unless the maintainer explicitly
+asks for local-only output. The coordinator delegates the exact repository,
+requested outcome, and publication scope to an engineer. Before checkout, the
+engineer briefly reviews requested pull requests, commits, or changes. Genuine
+Fedimint project trunk and release branches and tags are trusted; pull requests and
+external code remain untrusted. The normal checks and independent review still
+apply. After they pass, the engineer publishes through the configured Git SSH
+remote and creates the requested pull request through the broker. It updates another
+author's exact branch only when an authorized maintainer explicitly requests that
+branch and change; otherwise it uses a new non-conflicting `tau/` branch. A local
+commit, patch, artifact, or comment containing a diff does not satisfy a request for
+pull-request delivery.
+
+The main role prompt summarizes these responsibilities and keeps the security,
+authorization, sandbox, mutation, and approval boundaries directly visible.
+User-scoped skills provide the operational detail:
+
+- `github-cli` documents the sandbox broker's supported command forms and
+  troubleshooting boundaries;
+- `fedimint-maintainer-requests` covers responses, delegation, and pull-request
+  delivery;
+- `fedimint-pull-request-review` covers review admission, draft deferral,
+  feedback, and approval workflow;
+- `fedimint-dependabot` adds the identity and dependency-update rules for
+  Dependabot-authored pull requests;
+- `fedimint-codebase` provides Fedimint architecture and codebase navigation;
+- `fedimint-development` provides the Fedimint build, test, formatting, and
+  development workflow;
+- `pr-submissions-checklist` provides Fedimint pull-request preparation
+  guidance.
+
+The skills are installed in the bot user's skill directory from immutable,
+pinned Nix store paths beside the existing review skills. The Fedimint workflow
+skills opt into prompt advertisement from user scope; Tau advertises their names
+and descriptions, then loads their full text only when the agent selects one.
 
 Approval assesses the code change, not CI execution status. CI that is still
 running, failing, missing, or otherwise non-passing does not by itself block
@@ -439,6 +454,8 @@ gh issue edit NUMBER -R OWNER/REPO --title TITLE
 gh issue edit NUMBER -R OWNER/REPO --body BODY
 gh pr edit NUMBER -R OWNER/REPO --title TITLE
 gh pr edit NUMBER -R OWNER/REPO --body-file FILE
+gh pr create -R OWNER/REPO --base BASE --head '[OWNER:]tau/BRANCH' --title TITLE --body BODY [--draft]
+gh pr create -R OWNER/REPO --base BASE --head '[OWNER:]tau/BRANCH' --title TITLE --body-file FILE [--draft]
 gh issue close NUMBER -R OWNER/REPO
 gh issue close NUMBER -R OWNER/REPO --reason 'not planned'
 gh issue reopen NUMBER -R OWNER/REPO
@@ -475,10 +492,22 @@ gh api --method PATCH repos/OWNER/REPO/issues/comments/COMMENT_ID --raw-field bo
 gh api --method PATCH repos/OWNER/REPO/pulls/comments/COMMENT_ID --raw-field body=TEXT
 ```
 
-Permanent deletion, merge, branch/base/head changes, moderation,
-administration, review dismissal, auth/config access, and arbitrary API calls
-remain denied. The broker's upstream `docs/collaboration.md` is the complete
-executable capability contract.
+Permanent deletion, merge, force-push, changes to an existing pull request's base
+or head, moderation, administration, review dismissal, auth/config access, and
+arbitrary API calls remain denied. Branch publication uses the configured Git SSH
+remote rather than the GitHub broker. Updating another author's exact branch
+requires an authorized maintainer's explicit request for that branch and change;
+otherwise the bot publishes a new non-conflicting `tau/` head. The broker's
+upstream `docs/collaboration.md` is the complete executable capability contract.
+
+The coordinator posts the delivered pull request URL on the originating
+discussion. It reports publication as blocked only after an observed broker,
+Git SSH, permission, or configuration failure, or when installed documentation
+and configuration establish that the operation is unsupported. It does not infer
+a blocker without evidence, probe with denied mutation help, bypass policy, or
+repeat failed mutations in a loop. After an ambiguous result it inspects current
+remote and pull-request state before deciding whether a retry is safe, preventing
+duplicate branches or pull requests.
 
 After deciding how to handle each independently authenticated notification with
 an unambiguous repository and target, the coordinator reacts directly on the
