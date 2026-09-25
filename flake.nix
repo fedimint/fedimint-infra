@@ -21,11 +21,11 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=30c8b43410a84294f31f74451f9f7f09a94df473";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=cd852ff26dcdad8027aea0bc2fd396c1ca61f9fb";
     };
 
     tau-ext-github = {
-      url = "git+https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git?ref=master&rev=179ef6568db527e27cb50bf47e6b23a364f3148a";
+      url = "git+https://iris.radicle.network/zeY514sMfgDNMC8czs3C1V1MFsaH.git?ref=master&rev=afb532126a4a44d468188ee7183e40c84781f4b8";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };

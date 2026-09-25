@@ -750,10 +750,24 @@ let
 
         test_home="$TMPDIR/tau-home"
         test_workspace="$TMPDIR/workspace"
+        test_project="$test_workspace/project"
+        test_workdir="$test_project/subdir"
         mkdir -p \
           "$test_home/.config/tau" \
           "$test_home/.config/agents/skills" \
-          "$test_workspace"
+          "$test_project/.agents/skills/project-subdir-test" \
+          "$test_workdir"
+        cat >"$test_project/AGENTS.md" <<'EOF'
+        PROJECT_SUBDIR_AGENTS_MARKER
+        EOF
+        cat >"$test_project/.agents/skills/project-subdir-test/SKILL.md" <<'EOF'
+        ---
+        name: project-subdir-test
+        description: Test skill discovered from an ancestor of the configured workdir.
+        ---
+
+        PROJECT_SUBDIR_SKILL_MARKER
+        EOF
         for name in ${lib.escapeShellArgs upstreamSkillNames}; do
           ln -s "${skillsSource}/skills/$name" \
             "$test_home/.config/agents/skills/$name"
@@ -766,8 +780,8 @@ let
           ln -s "${localSkills.${name}}" \
             "$test_home/.config/agents/skills/${name}"
         '') localSkillNames}
-        jq --arg workspace "$test_workspace" '
-          .extensions["core-shell"].config.working_directory = $workspace
+        jq --arg workspace "$test_workspace" --arg workdir "$test_workdir" '
+          .extensions["core-shell"].config.working_directory = $workdir
           | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
         ' "$disabled_harness" >"$test_home/.config/tau/harness.yaml"
         jq -er '[.agents.role_groups[].roles | keys[]] | sort | unique | .[]' \
@@ -844,6 +858,7 @@ let
             ([.[].name] | sort) as $actual
             | ($expected | sort) as $expected
             | (($expected - $actual) | length == 0)
+            and ($actual | index("project-subdir-test") != null)
             and ($actual | index("linked-specs-grooming") == null)
           ' "$skills" >/dev/null
           provider_prompt="$TMPDIR/$role-provider-prompt"
@@ -856,6 +871,8 @@ let
           for name in ${lib.escapeShellArgs fedimintSkillNames}; do
             grep -Fq "<name>$name</name>" "$provider_prompt"
           done
+          grep -Fq 'PROJECT_SUBDIR_AGENTS_MARKER' "$provider_prompt"
+          grep -Fq '<name>project-subdir-test</name>' "$provider_prompt"
         done <"$TMPDIR/roles"
 
         jq -e '
@@ -1007,7 +1024,7 @@ let
         if isinstance(hello, BaseException):
             raise hello
         assert hello["message"] == "hello"
-        assert hello["payload"]["protocol_version"] == {"major": 9, "minor": 0}
+        assert hello["payload"]["protocol_version"] == {"major": 10, "minor": 0}
         config = {
             "token_secret": "github_token",
             "identity_key_secret": "github_identity_key",

@@ -73,7 +73,7 @@ later requires only a new alias target.
   shell rather than broadening the ambient toolchain.
 - Tau, `tau-ext-github`, `isolate`, `gh-isolate`, and `clank` packages pinned
   as flake inputs.
-  Tau and `tau-ext-github` are pinned together at their reviewed protocol 9
+  Tau and `tau-ext-github` are pinned together at their reviewed protocol 10
   revisions. `tau-ext-github` comes from its public Radicle repository through
   the Iris HTTPS gateway. The inputs come from public sources and are locked to
   explicit revisions.
