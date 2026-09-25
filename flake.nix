@@ -25,7 +25,7 @@
     };
 
     tau-ext-github = {
-      url = "git+https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=f67822edfcec845f34f6c9f09381947bf2acc008";
+      url = "git+https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git?ref=master&rev=179ef6568db527e27cb50bf47e6b23a364f3148a";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
@@ -332,6 +332,7 @@
             };
           };
           checks = nixpkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+            tau-ext-github-tests = inputs.tau-ext-github.checks.${system}.tests;
             tau-fedimint-bot-config = import ./tests/tau-fedimint-bot.nix {
               inherit system nixpkgs agenix;
               module = ./modules/tau-fedimint-bot.nix;

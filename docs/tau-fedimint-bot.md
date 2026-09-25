@@ -249,12 +249,17 @@ Nix-generated startup configuration is deterministic.
    otherwise supported events in configured repositories; it does not require a
    runtime account lookup. Roster lookup failures remain fail-closed for the
    entire repository batch, including explicitly allowlisted actors. This
-   filters received activity; it does not authorize the bot to act. In
+   filters received activity; it does not authorize the bot to act. Delivered
+   activity includes the actor's native `author_association` and, when the
+   collaborator roster supplied it, separate `permission`, `role_name`, and local
+   observation-time facts. This adds no notification-path API requests. In
    particular, trusted Dependabot admission does not bypass pull-request safety,
    backward compatibility, or consensus-approval restrictions. The coordinator
-   prompt still requires `fedimint-github-requester check USERNAME either`
-   before acting on a GitHub request. Any failed, denied, malformed,
-   rate-limited, or unavailable check must remain denied.
+   prompt applies a separate authorization policy to those facts before acting on
+   a GitHub request. The coordinator retains its narrower maintainer-only policy:
+   it requires known native `admin` or `write` permission on
+   `fedimint/fedimint`; unknown, stale, denied, malformed, rate-limited, or
+   unavailable facts remain denied.
 5. **Models:** confirm that `chatgpt-dpc` publishes the role models in the table
    above. Keep model references in provider-neutral `codex/...` form.
 6. **Runtime validation:** inspect
@@ -279,10 +284,13 @@ policy:
   rate-limit reset headers when the reported quota is exhausted, with
   conservative fallback and backoff when guidance is unavailable
 - automatic receiver role: `coordinator`
-- model-visible tool: unprefixed `github_register`, enabled only for the
-  coordinator role
+- model-visible tools: unprefixed `github_register` and `github_user_context`,
+  enabled only for the coordinator role
 - manual self-designation: `github_register {}` (`{"enabled":true}` remains a
   compatibility spelling)
+- identity lookup: `github_user_context {"username":"LOGIN"}` resolves the
+  numeric identity and reports native `permission` and separate `role_name` facts
+  across the configured repositories
 - conversation and inline comments: delivered only when their original body
   contains an exact, case-insensitive `@fedimint-tau` mention
 - review requests: delivered only when they directly target the `fedimint-tau`
@@ -374,10 +382,15 @@ its instructions. Before authorization, the coordinator may inspect a public
 issue or pull request read-only to identify its authenticated author and scope;
 that inspection does not authorize requested work, mutation, non-public access,
 or external communication. Relevant activity is delivered to the coordinator
-automatically. It ordinarily acts only on an explicit request from a sender who passes
-`fedimint-github-requester check USERNAME maintainer`. Its one proactive
+automatically. It ordinarily acts only on an explicit request from a sender whose
+independently authenticated identity has known native `admin` or `write`
+permission on `fedimint/fedimint`. Fresh delivered actor facts can satisfy the
+policy for activity in that repository. Otherwise the coordinator calls
+`github_user_context` with exactly the authenticated username and requires a
+matching resolved identity and known repository result with an observation time.
+Custom `role_name` text is never interpreted as permission. Its one proactive
 exception is code review: it reviews every newly opened non-draft pull request
-whose author passes that check or is independently authenticated by GitHub as
+whose author satisfies that policy or is independently authenticated by GitHub as
 Dependabot (`dependabot[bot]`). A claimed bot name or message is not identity
 evidence. It also reviews any pull request when a verified maintainer explicitly
 requests review. Before starting a review, the coordinator reads the pull
@@ -618,9 +631,11 @@ post-`gh` broker option. The upstream broker's omitted default remains `dpc/`,
 but this deployment explicitly configures `tau/`. This constrains pull-request
 creation only; the dedicated SSH agent remains the authority path for pushes.
 
-The separate `fedimint-github-requester` helper deliberately also supports
-historical contributors when the broader `either` policy is used elsewhere;
-the coordinator's GitHub work policy specifically requires `maintainer`.
+The separate `fedimint-github-requester` helper retains list-all maintainer and
+historical-contributor operations plus its targeted contributor check. Native
+per-user repository-permission lookups moved to `github_user_context`.
+Contribution scanning is not implemented by the extension, so the existing
+historical-contributor operations remain available.
 
 The checked-in deployment metadata identifies only the ordinary token's agenix
 file, not its GitHub scopes or repository grants. This source review therefore
@@ -663,40 +678,44 @@ authority disabled and investigate rather than falling back.
 
 ## GitHub requester policy
 
-The authorization helper fixes `fedimint/fedimint` as the canonical project and
+The remaining list helper fixes `fedimint/fedimint` as the canonical project and
 uses only intercepted `gh` calls:
 
 ```console
-fedimint-github-requester check USERNAME maintainer
 fedimint-github-requester check USERNAME contributor
-fedimint-github-requester check USERNAME either
 fedimint-github-requester list maintainers
 fedimint-github-requester list contributors
 ```
 
-`maintainer` means the account currently has effective write, maintain, or
-admin access. The helper asks GitHub for the named account's effective
-repository permission and accepts only the legacy `write` or `admin` result;
-GitHub reports maintain access as `write`. Read, triage, and no access do not
-authorize requests. The separate `list maintainers` command reflects only the
-collaborators visible to the action credential and is not used to authorize a
-named requester.
+`list maintainers` returns collaborators with effective push access visible to
+the action credential. It is not used to authorize a named requester. Per-user
+authorization first uses `github_user_context`. Known native `admin` or `write`
+on that exact repository authorizes under the global policy. A known `read` or
+`none` result may fall back to the retained historical-contributor check,
+preserving the previous global `either` policy. Unknown or failed permission
+lookups never fall back, and custom `role_name` text cannot override native
+permission. The coordinator's role-specific GitHub work policy remains narrower
+and does not use the contributor fallback.
 
-`contributor` has a deliberately different meaning: the username appears in
-GitHub's historical commit-contributor list. GitHub caches that list for
-several hours, and appearing in it does not imply current repository access.
-This is the current draft policy requested for the bot, not a claim that
-contributors are maintainers.
+`check USERNAME contributor` and `list contributors` have a deliberately
+different meaning: the username appears in GitHub's historical
+commit-contributor list. GitHub caches that list for several hours, and appearing
+in it does not imply current repository access. This preserves the previous
+global authorization policy; it is not a claim that contributors are
+maintainers.
 
-The helper validates usernames and targeted permission responses, including an
-exact case-insensitive match between the requested and returned login. It
-buffers complete paginated list results before using them and returns failure
-unless the selected rule succeeds. In `either` mode it tries the contributor
-rule only after a successful maintainer lookup that denied the username; it
-does not turn an API error into fallback authorization. Authentication
-failures, insufficient token permissions, API errors, rate limits, malformed
-responses, and broker denials therefore fail closed. Do not replace these calls
-with `curl`, another client, a token file, or an unapproved `gh api` shape.
+The helper buffers and validates complete paginated list results. The lookup
+tool independently resolves the requested login to its immutable numeric
+identity and validates each permission endpoint's returned identity. Unknown
+tool results, identity mismatches, missing observations, authentication
+failures, insufficient token visibility, API errors, rate limits, malformed
+responses, and broker denials remain fail-closed.
+
+The extension uses the existing dedicated classic notification PAT and
+configured repository set for identity lookup. Successful permission
+observations are cached for 300 seconds, strictly below the extension's
+twelve-hour maximum. Insufficient visibility produces an `unknown` result; it
+must not trigger credential, scope, repository, or write-power expansion.
 
 This prompt policy guides the coordinator but is not a security boundary and
 does not authenticate ingress by itself. Keep service-side sender

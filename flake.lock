@@ -7556,16 +7556,17 @@
         "selfci": "selfci_9"
       },
       "locked": {
-        "lastModified": 1790233951,
-        "narHash": "sha256-3JcNqT1yCj2UYy1h82HnCZSrWdvsc9203jfiu04lP2I=",
-        "ref": "refs/heads/master",
-        "rev": "f67822edfcec845f34f6c9f09381947bf2acc008",
-        "revCount": 10,
+        "lastModified": 1790362905,
+        "narHash": "sha256-XPCF9KZ0Q4+nqokmDSO/cm545HKHvc02TZ4mx99fidI=",
+        "ref": "master",
+        "rev": "179ef6568db527e27cb50bf47e6b23a364f3148a",
+        "revCount": 11,
         "type": "git",
         "url": "https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git"
       },
       "original": {
-        "rev": "f67822edfcec845f34f6c9f09381947bf2acc008",
+        "ref": "master",
+        "rev": "179ef6568db527e27cb50bf47e6b23a364f3148a",
         "type": "git",
         "url": "https://iris.radicle.xyz/zeY514sMfgDNMC8czs3C1V1MFsaH.git"
       }
