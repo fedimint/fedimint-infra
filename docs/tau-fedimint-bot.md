@@ -165,33 +165,9 @@ or host tool grant. The account remains an untrusted Nix client: it is not in
 `nix.settings.trusted-users`, and the bot configuration does not add trusted
 substituters, signing keys, or Cachix configuration.
 
-On a fresh sandbox session, Cargo's registry cache under the synthetic sandbox
-home is empty. Fedimint's `final-lint` recipe runs Clippy with `--offline`, so
-after the reviewed `.envrc` has loaded the pinned shell, fetch locked public
-dependencies before the lint:
-
-```console
-cargo fetch --locked && just final-lint
-```
-
-The explicit one-shot form also remains supported:
-
-```console
-nix develop . --command bash -lc 'cargo fetch --locked && just final-lint'
-```
-
-That cache lasts for the lifetime of the running isolate sandbox and disappears
-when the bot restarts. The checkout's `target-nix` remains writable and can
-consume substantial disk during a real lint. Nix builds requested through the
-daemon can likewise consume host CPU, disk, and store space; their builders run
-under the host daemon's normal Nix build sandbox, not inside the bot's bubblewrap
-namespace. These are existing consequences of isolate's documented Nix baseline,
-not additional access granted by this module.
-
-The NixOS VM test uses the pinned isolate package with a small, locked,
-path-only synthetic flake. It proves that the daemon is reachable, the bot is
-untrusted, and a dev shell can expose `just`; it does not run Fedimint's
-`final-lint` or imply that any project lint, test, or build passed.
+The bot follows each repository's checked-in project instructions and reports
+the checks it actually ran. The module does not prescribe a project-specific
+build or lint command.
 
 ## Deployment ownership repair
 
@@ -397,8 +373,8 @@ Receiving an admitted maintainer's activity does not grant authority to follow
 its instructions. Before authorization, the coordinator may inspect a public
 issue or pull request read-only to identify its authenticated author and scope;
 that inspection does not authorize requested work, mutation, non-public access,
-or external communication. The coordinator watches notifications, but
-ordinarily acts only on an explicit request from a sender who passes
+or external communication. Relevant activity is delivered to the coordinator
+automatically. It ordinarily acts only on an explicit request from a sender who passes
 `fedimint-github-requester check USERNAME maintainer`. Its one proactive
 exception is code review: it reviews every newly opened non-draft pull request
 whose author passes that check or is independently authenticated by GitHub as
@@ -425,6 +401,23 @@ the requested pull request through the broker. If the existing branch belongs to
 another author, the bot uses an alternative branch and pull request rather than
 overwriting it. A local commit, patch, artifact, or comment containing a diff does
 not satisfy a request for pull-request delivery.
+
+The main role prompt summarizes these responsibilities and keeps the security,
+authorization, sandbox, mutation, and approval boundaries directly visible.
+User-scoped skills provide the operational detail:
+
+- `github-cli` documents the sandbox broker's supported command forms and
+  troubleshooting boundaries;
+- `fedimint-maintainer-requests` covers responses, delegation, and pull-request
+  delivery;
+- `fedimint-pull-request-review` covers review admission, draft deferral,
+  feedback, and approval workflow;
+- `fedimint-dependabot` adds the identity and dependency-update rules for
+  Dependabot-authored pull requests.
+
+The skills are installed from immutable Nix store paths beside the existing
+review skills. Tau advertises them by name and description, then loads their full
+text only when the agent selects one.
 
 Approval assesses the code change, not CI execution status. CI that is still
 running, failing, missing, or otherwise non-passing does not by itself block
