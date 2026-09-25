@@ -56,6 +56,37 @@ these commands after every deployment. Discover the current numeric UID, binary,
 session, and root coordinator agent ID; never hard-code an old PID, socket hash,
 UID, or agent ID. A stable session name does not identify one daemon incarnation.
 
+For an operator command that must use the bot's complete isolate profile, log in
+as `tau-fedimint` and use the installed wrapper:
+
+```sh
+tau-fedimint-sandbox TAU_ARGUMENT...
+```
+
+The wrapper selects the same `fedimint-bot` profile, project-root working
+directory, fixed HOME/XDG environment, config and state mounts, runtime
+directory, SSH agent, and managed secret sources as the service. It passes every
+Tau argument literally. It does not call the service launcher, clear the fixed
+session, or attach to the running daemon automatically, and it refuses to run as
+another user or without the installed managed isolate config.
+
+Tau's `dev print-prompt` command configures ordinary extensions, which retain
+their normal persistent state and startup side effects. Do not start a second
+live GitHub notifier merely to inspect a prompt. Disable that extension
+explicitly:
+
+```sh
+tau-fedimint-sandbox \
+  --disable-extension github-notifications \
+  --role coordinator \
+  dev print-prompt
+```
+
+Omitting the disable flag preserves ordinary Tau semantics and may start the
+notifier. Other commands can likewise create a new harness or mutate state;
+the wrapper supplies the service sandbox, not read-only administration
+semantics.
+
 ## Triage from least to most sensitive
 
 Use this order and stop as soon as the evidence answers the question:

@@ -20,6 +20,18 @@ let
       exit 1
     '';
   dummyIsolatePackage = pkgs.writeShellScriptBin "isolate" ''
+    if [ -n "''${TAU_FEDIMINT_TEST_CAPTURE-}" ]; then
+      {
+        printf '%s\0' "$PWD"
+        printf '%s\0' "$HOME"
+        printf '%s\0' "$XDG_CONFIG_HOME"
+        printf '%s\0' "$XDG_STATE_HOME"
+        printf '%s\0' "$XDG_CACHE_HOME"
+        printf '%s\0' "$XDG_RUNTIME_DIR"
+        printf '%s\0' "$@"
+      } >"$TAU_FEDIMINT_TEST_CAPTURE"
+      exit 0
+    fi
     echo "test-only isolate" >&2
     exit 42
   '';
@@ -112,6 +124,10 @@ let
     lib.findFirst (package: lib.getName package == "fzf")
       (throw "fzf package missing from the Tau bot user profile")
       disabled.config.users.users.tau-fedimint.packages;
+  tauSandboxPackage =
+    lib.findFirst (package: lib.getName package == "tau-fedimint-sandbox")
+      (throw "tau-fedimint-sandbox package missing from the Tau bot user profile")
+      disabled.config.users.users.tau-fedimint.packages;
   alternateProviderStart =
     alternateProvider.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   enabledStart = enabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
@@ -203,6 +219,21 @@ let
         grep -Fqx '  StrictHostKeyChecking yes' "$ssh_config"
         grep -Fqx '  UserKnownHostsFile /dev/null' "$ssh_config"
         grep -Fqx 'Host github.com' "$ssh_config"
+
+        sandbox_wrapper=${tauSandboxPackage}/bin/tau-fedimint-sandbox
+        test -x "$sandbox_wrapper"
+        grep -Fq 'must run as tau-fedimint' "$sandbox_wrapper"
+        grep -Fq 'cd /home/tau-fedimint/fedimint' "$sandbox_wrapper"
+        grep -Fq '${dummyIsolatePackage}/bin/isolate exec' "$sandbox_wrapper"
+        grep -Fq -- '--profile fedimint-bot' "$sandbox_wrapper"
+        grep -Fq '${tauPackage}/bin/tau "$@"' "$sandbox_wrapper"
+        grep -Fq 'export HOME=/home/tau-fedimint' "$sandbox_wrapper"
+        grep -Fq 'export XDG_CONFIG_HOME=/home/tau-fedimint/.config' "$sandbox_wrapper"
+        grep -Fq 'export XDG_RUNTIME_DIR=/run/user/1001' "$sandbox_wrapper"
+        grep -Fq 'managed fedimint-bot isolate config is missing' "$sandbox_wrapper"
+        ! grep -Fq 'tau-fedimint-clear-session' "$sandbox_wrapper"
+        ! grep -Fq -- '--session tau-fedimint-bot' "$sandbox_wrapper"
+        ! grep -Fq 'TAU_SECRET_' "$sandbox_wrapper"
 
         jq -e '
           (.extensions["github-notifications"] == null)
@@ -1284,6 +1315,32 @@ let
               "${disabledStart}"
           )
           assert status == 42
+      machine.fail("${tauSandboxPackage}/bin/tau-fedimint-sandbox --version")
+      machine.succeed(
+          "set -eu\n"
+          "capture=/tmp/tau-sandbox-args\n"
+          "expected=/tmp/tau-sandbox-expected\n"
+          "runuser -u tau-fedimint -- env "
+          "HOME=/tmp/wrong-home "
+          "XDG_CONFIG_HOME=/tmp/wrong-config "
+          "XDG_STATE_HOME=/tmp/wrong-state "
+          "XDG_CACHE_HOME=/tmp/wrong-cache "
+          "XDG_RUNTIME_DIR=/tmp/wrong-runtime "
+          "TAU_FEDIMINT_TEST_CAPTURE=\"$capture\" "
+          "${tauSandboxPackage}/bin/tau-fedimint-sandbox "
+          "--role 'coordinator role' \"\" '*' >/dev/null\n"
+          "printf '%s\\0' "
+          "'/home/tau-fedimint/fedimint' "
+          "'/home/tau-fedimint' "
+          "'/home/tau-fedimint/.config' "
+          "'/home/tau-fedimint/.local/state' "
+          "'/home/tau-fedimint/.cache' "
+          "'/run/user/1001' "
+          "'exec' '--profile' 'fedimint-bot' '--' "
+          "'${tauPackage}/bin/tau' "
+          "'--role' 'coordinator role' \"\" '*' >\"$expected\"\n"
+          "cmp \"$expected\" \"$capture\""
+      )
       machine.succeed(
           "test \"$(runuser -u tau-fedimint -- git -C "
           "/home/tau-fedimint/fedimint/fedimint "
@@ -1536,6 +1593,7 @@ assert !(lib.elem pkgs.jujutsu disabled.config.environment.systemPackages);
 assert lib.elem pkgs.bubblewrap disabled.config.systemd.user.services.tau-fedimint-bot.path;
 assert lib.elem direnvDpcPackage disabled.config.systemd.user.services.tau-fedimint-bot.path;
 assert lib.elem pkgs.just disabled.config.systemd.user.services.tau-fedimint-bot.path;
+assert lib.elem tauSandboxPackage disabled.config.users.users.tau-fedimint.packages;
 assert disabled.config.programs.ssh.knownHosts.github-ed25519.hostNames == [ "github.com" ];
 assert
   disabled.config.programs.ssh.knownHosts.github-ed25519.publicKey

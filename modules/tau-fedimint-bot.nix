@@ -1072,6 +1072,39 @@ let
     fi
   '';
 
+  tauSandbox = pkgs.writeShellApplication {
+    name = "tau-fedimint-sandbox";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      set -eu
+
+      if [ "$(${pkgs.coreutils}/bin/id -u)" -ne ${toString cfg.uid} ]; then
+        echo "tau-fedimint-sandbox must run as ${user}" >&2
+        exit 1
+      fi
+      if [ "$#" -eq 0 ]; then
+        echo "usage: tau-fedimint-sandbox TAU_ARGUMENT..." >&2
+        exit 64
+      fi
+
+      export HOME=${lib.escapeShellArg home}
+      export XDG_CONFIG_HOME=${lib.escapeShellArg "${home}/.config"}
+      export XDG_STATE_HOME=${lib.escapeShellArg "${home}/.local/state"}
+      export XDG_CACHE_HOME=${lib.escapeShellArg "${home}/.cache"}
+      export XDG_RUNTIME_DIR=${lib.escapeShellArg runtimeDir}
+      if [ ! -f "$XDG_CONFIG_HOME/isolate/isolate.yaml" ]; then
+        echo "managed fedimint-bot isolate config is missing" >&2
+        exit 1
+      fi
+
+      cd ${lib.escapeShellArg projectRoot}
+      exec ${cfg.isolatePackage}/bin/isolate exec \
+        --profile fedimint-bot \
+        -- \
+        ${cfg.tauPackage}/bin/tau "$@"
+    '';
+  };
+
   startBot = pkgs.writeShellScript "tau-fedimint-start" ''
     set -euo pipefail
     install -d -m 0700 \
@@ -1278,7 +1311,10 @@ in
       createHome = true;
       linger = true;
       openssh.authorizedKeys.keys = cfg.sshAuthorizedKeys;
-      packages = [ pkgs.fzf ];
+      packages = [
+        pkgs.fzf
+        tauSandbox
+      ];
     };
 
     programs.ssh.knownHosts.github-ed25519 = {
