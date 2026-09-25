@@ -33,6 +33,20 @@ let
     "multipart-review-rust-style"
     "multipart-review-skills"
   ];
+  fedimintSkillNames = [
+    "fedimint-codebase"
+    "fedimint-development"
+    "pr-submissions-checklist"
+  ];
+  fedimintUserSkills = pkgs.runCommand "tau-fedimint-user-skills" { } ''
+    mkdir -p "$out"
+    for name in ${lib.escapeShellArgs fedimintSkillNames}; do
+      mkdir "$out/$name"
+      sed '1a advertise: true' \
+        "${cfg.fedimintSkillsSource}/.agents/skills/$name/SKILL.md" \
+        >"$out/$name/SKILL.md"
+    done
+  '';
   localSkills = {
     github-cli = ../.agents/skills/github-cli;
     fedimint-maintainer-requests = ../.agents/skills/fedimint-maintainer-requests;
@@ -44,6 +58,10 @@ let
       inherit name;
       source = "${cfg.skillsSource}/skills/${name}";
     }) upstreamSkillNames
+    ++ map (name: {
+      inherit name;
+      source = "${fedimintUserSkills}/${name}";
+    }) fedimintSkillNames
     ++ lib.mapAttrsToList (name: source: {
       inherit name source;
     }) localSkills;
@@ -490,6 +508,11 @@ let
             Before project work, use `workdir` to select the project's actual
             checkout so shell integration can use its own tools. Follow checked-in
             instructions and use the pinned development environment for checks.
+            For Fedimint work, load `fedimint-codebase` before navigating the
+            codebase or deciding where a change belongs, and load
+            `fedimint-development` before changing or reviewing code or using the
+            project's development workflows. Load `pr-submissions-checklist`
+            before creating or updating a Fedimint pull request.
             '';
           }
         ];
@@ -1002,6 +1025,11 @@ in
       default = null;
       description = "Linked Specs and multipart review skill source supplied by a pinned flake input.";
     };
+    fedimintSkillsSource = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Fedimint project skill source supplied by a pinned flake input.";
+    };
     githubTokenAgeFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
@@ -1073,6 +1101,10 @@ in
       {
         assertion = cfg.skillsSource != null;
         message = "tau-fedimint-bot requires review skills from a pinned flake input";
+      }
+      {
+        assertion = cfg.fedimintSkillsSource != null;
+        message = "tau-fedimint-bot requires Fedimint project skills from a pinned flake input";
       }
       {
         assertion = cfg.githubTokenAgeFile != null;

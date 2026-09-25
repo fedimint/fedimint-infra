@@ -2212,6 +2212,23 @@
         "type": "github"
       }
     },
+    "fedimint-skills": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1790099718,
+        "narHash": "sha256-Cp0fetzG5HYWxfiUOocXthG76+MbKoBx6kMP04d2Tt8=",
+        "owner": "fedimint",
+        "repo": "fedimint",
+        "rev": "57c7e8c57c584650b85eb55eb6d2f8ba605f4798",
+        "type": "github"
+      },
+      "original": {
+        "owner": "fedimint",
+        "repo": "fedimint",
+        "rev": "57c7e8c57c584650b85eb55eb6d2f8ba605f4798",
+        "type": "github"
+      }
+    },
     "fenix": {
       "inputs": {
         "nixpkgs": [
@@ -5868,6 +5885,7 @@
         "clank": "clank",
         "disko": "disko",
         "fedimint": "fedimint",
+        "fedimint-skills": "fedimint-skills",
         "flake-utils": "flake-utils_9",
         "gh-isolate": "gh-isolate",
         "isolate": "isolate",

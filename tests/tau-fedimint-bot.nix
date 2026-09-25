@@ -7,6 +7,7 @@
   isolatePackage,
   ghBrokerPackage,
   skillsSource,
+  fedimintSkillsSource,
   githubNotificationsPackage,
 }:
 
@@ -49,6 +50,7 @@ let
     inherit ghBrokerPackage;
     clankPackage = dummyPackage "clank";
     inherit skillsSource;
+    inherit fedimintSkillsSource;
     githubTokenAgeFile = actionToken;
     sshPrivateKeyAgeFile = sshKey;
     sshAuthorizedKeys = [ "ssh-ed25519 test-only" ];
@@ -161,6 +163,11 @@ let
     "multipart-review-rust-style"
     "multipart-review-skills"
   ];
+  fedimintSkillNames = [
+    "fedimint-codebase"
+    "fedimint-development"
+    "pr-submissions-checklist"
+  ];
   localSkills = {
     github-cli = ../.agents/skills/github-cli;
     fedimint-maintainer-requests = ../.agents/skills/fedimint-maintainer-requests;
@@ -168,7 +175,17 @@ let
     fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
   };
   localSkillNames = builtins.attrNames localSkills;
-  installedSkillNames = upstreamSkillNames ++ localSkillNames;
+  installedSkillNames = upstreamSkillNames ++ fedimintSkillNames ++ localSkillNames;
+  fedimintSkillSources = lib.genAttrs fedimintSkillNames (
+    name:
+    let
+      prefix = "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ";
+      rule = lib.findFirst (lib.hasPrefix prefix) (
+        throw "tmpfiles rule for ${name} is missing"
+      ) disabled.config.systemd.tmpfiles.rules;
+    in
+    lib.removePrefix prefix rule
+  );
   configCheck =
     pkgs.runCommand "tau-fedimint-bot-config-check"
       {
@@ -715,6 +732,10 @@ let
             "$test_home/.config/agents/skills/$name"
         done
         ${lib.concatMapStringsSep "\n" (name: ''
+          ln -s "${fedimintSkillSources.${name}}" \
+            "$test_home/.config/agents/skills/${name}"
+        '') fedimintSkillNames}
+        ${lib.concatMapStringsSep "\n" (name: ''
           ln -s "${localSkills.${name}}" \
             "$test_home/.config/agents/skills/${name}"
         '') localSkillNames}
@@ -754,6 +775,8 @@ let
             'Report each distinct harness, tooling, or environment problem once'
           require_flush_prompt_line "$prompt" '# Project work'
           grep -Fq 'Before project work, use `workdir` to select the project' \
+            "$prompt"
+          grep -Fq 'For Fedimint work, load `fedimint-codebase` before navigating' \
             "$prompt"
           case "$role" in
             coordinator)
@@ -796,6 +819,16 @@ let
             | (($expected - $actual) | length == 0)
             and ($actual | index("linked-specs-grooming") == null)
           ' "$skills" >/dev/null
+          provider_prompt="$TMPDIR/$role-provider-prompt"
+          env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
+            HOME="$test_home" \
+            XDG_CONFIG_HOME="$test_home/.config" \
+            XDG_STATE_HOME="$test_home/.local/state" \
+            XDG_CACHE_HOME="$test_home/.cache" \
+            ${tauPackage}/bin/tau --role "$role" dev print-prompt >"$provider_prompt"
+          for name in ${lib.escapeShellArgs fedimintSkillNames}; do
+            grep -Fq "<name>$name</name>" "$provider_prompt"
+          done
         done <"$TMPDIR/roles"
 
         jq -e '
@@ -1544,6 +1577,11 @@ assert lib.all (
   name:
   lib.elem "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ${skillsSource}/skills/${name}" disabled.config.systemd.tmpfiles.rules
 ) upstreamSkillNames;
+assert lib.all (
+  name:
+  lib.elem "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ${fedimintSkillSources.${name}}"
+    disabled.config.systemd.tmpfiles.rules
+) fedimintSkillNames;
 assert lib.all (
   name:
   lib.elem "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ${localSkills.${name}}" disabled.config.systemd.tmpfiles.rules

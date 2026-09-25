@@ -416,11 +416,17 @@ User-scoped skills provide the operational detail:
 - `fedimint-pull-request-review` covers review admission, draft deferral,
   feedback, and approval workflow;
 - `fedimint-dependabot` adds the identity and dependency-update rules for
-  Dependabot-authored pull requests.
+  Dependabot-authored pull requests;
+- `fedimint-codebase` provides Fedimint architecture and codebase navigation;
+- `fedimint-development` provides the Fedimint build, test, formatting, and
+  development workflow;
+- `pr-submissions-checklist` provides Fedimint pull-request preparation
+  guidance.
 
-The skills are installed from immutable Nix store paths beside the existing
-review skills. Tau advertises them by name and description, then loads their full
-text only when the agent selects one.
+The skills are installed in the bot user's skill directory from immutable,
+pinned Nix store paths beside the existing review skills. The Fedimint workflow
+skills opt into prompt advertisement from user scope; Tau advertises their names
+and descriptions, then loads their full text only when the agent selects one.
 
 Approval assesses the code change, not CI execution status. CI that is still
 running, failing, missing, or otherwise non-passing does not by itself block
