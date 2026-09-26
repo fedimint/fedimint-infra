@@ -16,9 +16,11 @@ explicitly requests it. For Dependabot pull requests, also load and follow the
 
 Inspect current pull-request state before reviewing. Do not review a draft.
 Reconsider a proactively deferred draft only after delivered `ready_for_review`
-activity, then confirm that it remains open, is no longer draft, and has not already
-received the bot's review. Draft deferral needs no substantive review or comment.
-Avoid duplicate reviews.
+activity or a new explicit request from a verified maintainer, then confirm that it
+remains open, is no longer draft, and has not already received the bot's review.
+Do not create durable work, schedule reminders, or periodically poll solely to
+reconsider a draft. Draft deferral needs no substantive review or comment. Avoid
+duplicate reviews.
 
 Proactive review authority covers only review, its notification reaction, and
 feedback publication. It does not authorize modification, merge, closure, or
