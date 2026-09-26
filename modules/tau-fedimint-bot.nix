@@ -1194,7 +1194,11 @@ in
       cfg.ghBrokerPackage
       direnvDpc
       pkgs.git
+      pkgs.gnupg
       pkgs.just
+      pkgs.jq
+      pkgs.python3
+      pkgs.ripgrep
     ]
     ++ lib.optional cfg.githubNotifications.enable cfg.githubNotifications.package;
 

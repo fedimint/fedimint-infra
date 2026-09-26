@@ -1382,9 +1382,11 @@ let
         direnvDpcPackage
         pkgs.bubblewrap
         pkgs.git
+        pkgs.gnupg
         pkgs.jq
         pkgs.just
         (pkgs.python3.withPackages (python: [ python.cbor2 ]))
+        pkgs.ripgrep
         githubNotificationsPackage
       ];
     };
@@ -1753,9 +1755,12 @@ let
           "exec --profile tool-test -- bash -euc '"
           "test -S /nix/var/nix/daemon-socket/socket; "
           "test \"$(nix store info --store daemon --json | jq -r .trusted)\" = false; "
-          "lock_before=$(sha256sum flake.lock); "
-          "nix develop --offline --no-write-lock-file .#default "
-          "--command just --version | grep -q \"^just \"; "
+           "lock_before=$(sha256sum flake.lock); "
+           "for tool in rg jq python3 gpg; do command -v \"$tool\"; done; "
+           "nix develop --offline --no-write-lock-file .#default "
+           "--command bash -euc \""
+           "command -v rg && command -v jq && command -v python3 && command -v gpg && "
+           "rg --version && jq --version && python3 --version && gpg --version && just --version\"; "
           "test \"$(sha256sum flake.lock)\" = \"$lock_before\"; "
           "artifact=$(mktemp /tmp/public/isolate-artifact-XXXXXX); "
           "printf shared >\"$artifact\"; "
@@ -1790,7 +1795,11 @@ assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-token"
 assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-identity-key");
 assert !(lib.elem githubNotificationsPackage disabled.config.environment.systemPackages);
 assert lib.elem pkgs.git disabled.config.environment.systemPackages;
+assert lib.elem pkgs.gnupg disabled.config.environment.systemPackages;
 assert lib.elem pkgs.just disabled.config.environment.systemPackages;
+assert lib.elem pkgs.jq disabled.config.environment.systemPackages;
+assert lib.elem pkgs.python3 disabled.config.environment.systemPackages;
+assert lib.elem pkgs.ripgrep disabled.config.environment.systemPackages;
 assert lib.elem direnvDpcPackage disabled.config.environment.systemPackages;
 assert !(lib.elem pkgs.jujutsu disabled.config.environment.systemPackages);
 assert lib.elem pkgs.bubblewrap disabled.config.systemd.user.services.tau-fedimint-bot.path;
