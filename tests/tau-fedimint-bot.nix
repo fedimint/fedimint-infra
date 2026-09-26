@@ -345,6 +345,16 @@ let
           | select(.name == "fedimint-bot.papercuts" and .priority == 18)
           | .text
         ' "$disabled_harness" >"$TMPDIR/papercuts-prompt"
+        jq -er '
+          .agents.prompt_fragments[]
+          | select(.name == "fedimint-bot.github-cli-directory" and .priority == 16)
+          | .text
+        ' "$disabled_harness" >"$TMPDIR/github-cli-directory-prompt"
+        grep -Fq 'Run' "$TMPDIR/github-cli-directory-prompt"
+        grep -Fq 'from /home/tau-fedimint/fedimint with explicit' \
+          "$TMPDIR/github-cli-directory-prompt"
+        grep -Fq '`-R OWNER/REPO`' "$TMPDIR/github-cli-directory-prompt"
+        grep -Fq 'Do not run `gh auth login`' "$TMPDIR/github-cli-directory-prompt"
         grep -Fq '# Communication' "$TMPDIR/bot-prompts"
         grep -Fq '# Security and authority' "$TMPDIR/bot-prompts"
         grep -Fq '# Project work' "$TMPDIR/bot-prompts"

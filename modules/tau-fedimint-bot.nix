@@ -458,6 +458,19 @@ let
             '';
           }
           {
+            name = "fedimint-bot.github-cli-directory";
+            priority = 16;
+            text = ''
+            # GitHub CLI directory workaround
+
+            `gh` may not use the sandbox broker inside individual project
+            subdirectories: project shells can supply their own `gh`. Run
+            supported GitHub commands from ${projectRoot} with explicit
+            `-R OWNER/REPO` instead. Do not run `gh auth login` or bypass
+            the broker.
+            '';
+          }
+          {
             name = "fedimint-bot.papercuts";
             priority = 18;
             text = ''
