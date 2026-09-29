@@ -517,7 +517,7 @@ let
             ];
             roles = {
               researcher = {
-                model = "codex/gpt-6-sol";
+                model = "codex/gpt-6.1-sol";
                 effort = 0.5;
                 description = "Default researcher for separate research.";
               };
@@ -527,7 +527,7 @@ let
                 description = "Deep-thinking researcher for complex work.";
               };
               reviewer = {
-                model = "codex/gpt-6-sol";
+                model = "codex/gpt-6.1-sol";
                 effort = 0.5;
                 description = "Independent code reviewer; review without editing.";
                 required_skills = [ "multipart-review" ];
@@ -610,13 +610,13 @@ let
             roles = {
               engineer-junior = {
                 order = 10;
-                model = "codex/gpt-6-sol";
+                model = "codex/gpt-6.1-sol";
                 effort = 0.25;
                 description = "Fast contributor for straightforward tasks.";
               };
               engineer = {
                 order = 20;
-                model = "codex/gpt-6-sol";
+                model = "codex/gpt-6.1-sol";
                 effort = 0.5;
                 description = "Default software engineer.";
               };
@@ -691,7 +691,7 @@ let
             ];
             roles.coordinator = {
               order = 0;
-              model = "codex/gpt-6-sol";
+              model = "codex/gpt-6.1-sol";
               effort = 0.35;
               description = "Coordinates work and delivers the integrated result.";
               compactions = {
@@ -1049,7 +1049,7 @@ in
     };
     model = lib.mkOption {
       type = lib.types.str;
-      default = "codex/gpt-6-sol";
+      default = "codex/gpt-6.1-sol";
       description = "Provider-neutral default model inherited by roles without an override.";
     };
     providerProfile = lib.mkOption {
