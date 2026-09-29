@@ -1,5 +1,11 @@
 { lib, pkgs, ... }: {
 
+  # radicle-node 1.10.3 is marked insecure because private repository traffic
+  # between nodes is neither encrypted nor authenticated. This node hosts only
+  # public repositories, so that specific private-repository issue does not
+  # apply here. Keep the exception scoped to the host using this module.
+  nixpkgs.config.permittedInsecurePackages = [ "radicle-node-1.10.3" ];
+
   age.secrets = {
     radicle-seednode = {
       file = ../secrets/radicle-seednode.age;
