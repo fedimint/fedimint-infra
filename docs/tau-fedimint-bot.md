@@ -11,13 +11,13 @@ later requires only a new alias target.
 
 | Role | Model | Effort |
 | --- | --- | ---: |
-| coordinator | `codex/gpt-6-sol` | 0.35 |
-| engineer-junior | `codex/gpt-6-sol` | 0.25 |
-| engineer | `codex/gpt-6-sol` | 0.5 |
+| coordinator | `codex/gpt-6.1-sol` | 0.35 |
+| engineer-junior | `codex/gpt-6.1-sol` | 0.25 |
+| engineer | `codex/gpt-6.1-sol` | 0.5 |
 | engineer-senior | `codex/gpt-6-astra` | 0.25 |
-| researcher | `codex/gpt-6-sol` | 0.5 |
+| researcher | `codex/gpt-6.1-sol` | 0.5 |
 | researcher-senior | `codex/gpt-6-astra` | 0.5 |
-| reviewer | `codex/gpt-6-sol` | 0.5 |
+| reviewer | `codex/gpt-6.1-sol` | 0.5 |
 
 ## Implemented shape
 
@@ -73,8 +73,8 @@ later requires only a new alias target.
   shell rather than broadening the ambient toolchain.
 - Tau, `tau-ext-github`, `isolate`, `gh-isolate`, and `clank` packages pinned
   as flake inputs.
-  Tau and `tau-ext-github` are pinned together at their reviewed protocol 10
-  revisions. `tau-ext-github` comes from its public Radicle repository through
+  Tau and `tau-ext-github` use compatible protocol 10 revisions.
+  `tau-ext-github` comes from its public Radicle repository through
   the Iris HTTPS gateway. The inputs come from public sources and are locked to
   explicit revisions.
 - A narrow writable Clank state directory at

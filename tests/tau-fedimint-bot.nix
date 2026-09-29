@@ -263,7 +263,7 @@ let
         jq -e '
           (.extensions["github-notifications"] == null)
           and (.aliases.providers.codex == "chatgpt-dpc")
-          and (.agents.model == "codex/gpt-6-sol")
+          and (.agents.model == "codex/gpt-6.1-sol")
           and (.agents.effort == 0.5)
           and (.agents.compactions == {
             "compact-after-done": {
@@ -291,7 +291,7 @@ let
             "researcher-senior",
             "reviewer"
           ])
-          and (.agents.role_groups.coordinator.roles.coordinator.model == "codex/gpt-6-sol")
+          and (.agents.role_groups.coordinator.roles.coordinator.model == "codex/gpt-6.1-sol")
           and (.agents.role_groups.coordinator.roles.coordinator.effort == 0.35)
           and (.agents.role_groups.coordinator.roles.coordinator.compactions == {
             "compact-after-done": {
@@ -308,17 +308,17 @@ let
               }
             }
           })
-          and (.agents.role_groups.engineer.roles["engineer-junior"].model == "codex/gpt-6-sol")
+          and (.agents.role_groups.engineer.roles["engineer-junior"].model == "codex/gpt-6.1-sol")
           and (.agents.role_groups.engineer.roles["engineer-junior"].effort == 0.25)
-          and (.agents.role_groups.engineer.roles.engineer.model == "codex/gpt-6-sol")
+          and (.agents.role_groups.engineer.roles.engineer.model == "codex/gpt-6.1-sol")
           and (.agents.role_groups.engineer.roles.engineer.effort == 0.5)
           and (.agents.role_groups.engineer.roles["engineer-senior"].model == "codex/gpt-6-astra")
           and (.agents.role_groups.engineer.roles["engineer-senior"].effort == 0.25)
-          and (.agents.role_groups.support.roles.researcher.model == "codex/gpt-6-sol")
+          and (.agents.role_groups.support.roles.researcher.model == "codex/gpt-6.1-sol")
           and (.agents.role_groups.support.roles.researcher.effort == 0.5)
           and (.agents.role_groups.support.roles["researcher-senior"].model == "codex/gpt-6-astra")
           and (.agents.role_groups.support.roles["researcher-senior"].effort == 0.5)
-          and (.agents.role_groups.support.roles.reviewer.model == "codex/gpt-6-sol")
+          and (.agents.role_groups.support.roles.reviewer.model == "codex/gpt-6.1-sol")
           and (.agents.role_groups.support.roles.reviewer.effort == 0.5)
           and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == [])
           and (.extensions["core-shell"].config.shell.prefix == [
@@ -329,7 +329,7 @@ let
         ' "$disabled_harness" >/dev/null
         jq -e '
           (.aliases.providers.codex == "future-provider")
-          and (.agents.model == "codex/gpt-6-sol")
+          and (.agents.model == "codex/gpt-6.1-sol")
         ' "$alternate_provider_harness" >/dev/null
         jq -r '
           [
@@ -1059,6 +1059,10 @@ let
             {
                 "message": "configure",
                 "payload": {
+                    # The pinned core sends these additive protocol 10.2 fields
+                    # to the independently pinned protocol 10.0 extension.
+                    "harness_protocol_version": {"major": 10, "minor": 2},
+                    "absent_optional_secrets": [],
                     "config": config,
                     "instance_name": "github-notifications",
                     "secrets": {
