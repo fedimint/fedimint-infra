@@ -100,9 +100,6 @@
 
       fedimintAutomationPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ3EKT3vVlYnZ4v3jBBlt+ug6Q+msgQEFT+ErT6ZDEs5 fedimint-infra-agent@dpc.pw";
 
-      runnerRootAuthorizedKeys =
-        hostName: adminKeys ++ nixpkgs.lib.optional (hostName == "runner-01") fedimintAutomationPublicKey;
-
       makeRunner =
         {
           system,
@@ -127,7 +124,7 @@
             inherit inputs;
             hostName = name;
             inherit adminKeys;
-            rootAuthorizedKeys = runnerRootAuthorizedKeys name;
+            rootAuthorizedKeys = adminKeys ++ [ fedimintAutomationPublicKey ];
             inherit runners;
           };
         };
@@ -343,14 +340,25 @@
               fedimintSkillsSource = inputs.fedimint-skills;
               githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
             };
-            runner-01-root-ssh-authorization = import ./tests/runner-01-root-ssh-authorization.nix {
+            runner-root-ssh-authorization = import ./tests/runner-root-ssh-authorization.nix {
               inherit system nixpkgs;
               automationPublicKey = fedimintAutomationPublicKey;
-              adminKeys = adminKeys;
-              runner01RootAuthorizedKeys =
-                nixosConfigurations.runner-01.config.users.users.root.openssh.authorizedKeys.keys;
-              runner02RootAuthorizedKeys =
-                nixosConfigurations.runner-02.config.users.users.root.openssh.authorizedKeys.keys;
+              inherit adminKeys;
+              runnerRootAuthorizedKeys =
+                map (name: nixosConfigurations.${name}.config.users.users.root.openssh.authorizedKeys.keys)
+                  [
+                    "runner-01"
+                    "runner-02"
+                    "runner-04"
+                    "runner-arm-01"
+                  ];
+              nonRunnerRootAuthorizedKeys =
+                map (name: nixosConfigurations.${name}.config.users.users.root.openssh.authorizedKeys.keys)
+                  [
+                    "fedimintd-01"
+                    "irohdns-eu-01"
+                    "irohrelay-eu-01"
+                  ];
               botAuthorizedKeys =
                 nixosConfigurations.runner-01.config.users.users.tau-fedimint.openssh.authorizedKeys.keys;
             };
