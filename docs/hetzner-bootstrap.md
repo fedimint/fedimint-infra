@@ -16,6 +16,14 @@ ssh-copy-id root@fedimint-runner-01
 
 then run `just bootstrap <args>` and let it do its job. That should be it.
 
+If the kexec step fails with `kexec_file_load failed: Address not available`
+(seen on a Hetzner Cloud VPS running Ubuntu 26.04), force the legacy
+`kexec_load` syscall:
+
+```
+nix run github:nix-community/nixos-anywhere -- --kexec-extra-flags "--kexec-syscall" --flake .#<host> root@<ip>
+```
+
 ## Switching into NixOS Installer
 
 In case you just need to switch to NixOS installer for some reason.
