@@ -20,6 +20,12 @@
       url = "github:fedimint/fedimint?rev=de7448559f5ddcff63698d624d6592156870a533";
     };
 
+    # Kept separate from `fedimint` so recurringdv2 can track releases
+    # independently of the fedimintd hosts.
+    fedimint-recurringdv2 = {
+      url = "github:fedimint/fedimint?ref=v0.12.1";
+    };
+
     tau = {
       url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=0bb9ac5a3e8eadf720b8a20b5dd7f1c1b0f419ff";
     };
@@ -250,6 +256,27 @@
             hostName = name;
           };
         };
+
+      makeRecurringdv2 =
+        { name }:
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            topLevelModule
+            ./modules/nixos-nixpkgs-last-modified.nix
+
+            disko.nixosModules.disko
+            agenix.nixosModules.default
+
+            ./hosts/recurringdv2/configuration.nix
+          ];
+          specialArgs = {
+            inherit inputs;
+            inherit adminKeys;
+            hostName = name;
+          };
+        };
+
       nixosConfigurations = {
         runner-01 = makeRunnerAmd {
           name = "runner-01";
@@ -309,6 +336,9 @@
           serverIp = "5.78.106.169";
         };
         irohrelay-us-01 = makeIrohRelay { name = "irohrelay-us-01"; };
+
+        # 65.109.14.99
+        recurringdv2-01 = makeRecurringdv2 { name = "recurringdv2-01"; };
       };
     in
     {

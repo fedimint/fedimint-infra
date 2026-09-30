@@ -76,10 +76,14 @@ apply-all-iroh:
   just apply irohrelay-eu-01 "root@irohrelay-eu-01.dev.fedimint.org"
   just apply irohrelay-us-01 "root@irohrelay-us-01.dev.fedimint.org"
 
+apply-recurringdv2:
+  just apply recurringdv2-01 "root@recurringdv2-01.dev.fedimint.org"
+
 apply-all:
   just apply-all-runners
   just apply-all-fedimintd
   just apply-all-iroh
+  just apply-recurringdv2
 
 # Bootstrap host using nixos-anywhere
 bootstrap HOST SSH_HOST:
