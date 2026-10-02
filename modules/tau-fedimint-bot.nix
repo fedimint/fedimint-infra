@@ -527,7 +527,7 @@ let
                 description = "Deep-thinking researcher for complex work.";
               };
               reviewer = {
-                model = "codex/gpt-6.1-sol";
+                model = "codex/gpt-6-astra";
                 effort = 0.5;
                 description = "Independent code reviewer; review without editing.";
                 required_skills = [ "multipart-review" ];

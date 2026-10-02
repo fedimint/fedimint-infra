@@ -17,7 +17,7 @@ later requires only a new alias target.
 | engineer-senior | `codex/gpt-6-astra` | 0.25 |
 | researcher | `codex/gpt-6.1-sol` | 0.5 |
 | researcher-senior | `codex/gpt-6-astra` | 0.5 |
-| reviewer | `codex/gpt-6.1-sol` | 0.5 |
+| reviewer | `codex/gpt-6-astra` | 0.5 |
 
 ## Implemented shape
 

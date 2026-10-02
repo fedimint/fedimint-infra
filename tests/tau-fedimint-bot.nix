@@ -318,7 +318,7 @@ let
           and (.agents.role_groups.support.roles.researcher.effort == 0.5)
           and (.agents.role_groups.support.roles["researcher-senior"].model == "codex/gpt-6-astra")
           and (.agents.role_groups.support.roles["researcher-senior"].effort == 0.5)
-          and (.agents.role_groups.support.roles.reviewer.model == "codex/gpt-6.1-sol")
+          and (.agents.role_groups.support.roles.reviewer.model == "codex/gpt-6-astra")
           and (.agents.role_groups.support.roles.reviewer.effort == 0.5)
           and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == [])
           and (.extensions["core-shell"].config.shell.prefix == [
