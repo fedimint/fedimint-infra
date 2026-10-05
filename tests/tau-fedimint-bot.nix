@@ -238,6 +238,8 @@ let
         test "$(${pkgs.git}/bin/git config --file "$git_config" user.name)" = "fedimint-tau"
         test "$(${pkgs.git}/bin/git config --file "$git_config" user.email)" = \
           "332691140+fedimint-tau@users.noreply.github.com"
+        test "$(${pkgs.git}/bin/git config --file "$git_config" core.sshCommand)" = \
+          "${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config"
         test "$(grep -Fxc 'Host *' "$ssh_config")" -eq 1
         grep -Fqx '  BatchMode yes' "$ssh_config"
         grep -Fqx '  GlobalKnownHostsFile /etc/ssh/ssh_known_hosts' "$ssh_config"
@@ -1692,6 +1694,10 @@ let
           "test \"$bad_status\" -ne 0; "
           "printf \"%s\\n\" \"$bad_output\" | grep -F "
           "\"Bad owner or permissions\"; "
+          "git init -q /home/tau-fedimint/fedimint/new-ssh-checkout; "
+          "for directory in /home/tau-fedimint/fedimint "
+          "/home/tau-fedimint/fedimint/new-ssh-checkout; do "
+          "cd \"$directory\"; "
           "set +e; "
           "output=$(GIT_TRACE=1 git ls-remote ssh://git@127.0.0.1:1/unused 2>&1); "
           "status=$?; "
@@ -1700,7 +1706,9 @@ let
           "printf \"%s\\n\" \"$output\" | grep -F "
           "\"${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config\"; "
           "printf \"%s\\n\" \"$output\" | grep -F \"Connection refused\"; "
-          "! printf \"%s\\n\" \"$output\" | grep -F \"Bad owner or permissions\"'\n"
+          "! printf \"%s\\n\" \"$output\" | grep -F \"Bad owner or permissions\"; "
+          "done; "
+          "rm -rf /home/tau-fedimint/fedimint/new-ssh-checkout'\n"
           "mv /home/tau-fedimint/.config/isolate/isolate.yaml.saved "
           "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
           "rm /home/tau-fedimint/fedimint/root-owned-ssh-config "

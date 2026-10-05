@@ -66,6 +66,11 @@ later requires only a new alias target.
   Startup refuses unexpected fetch or push URLs instead of broadening the
   rewrite to other GitHub repositories. GitHub's published ED25519 host key is
   pinned in the system SSH known-hosts configuration.
+- All Git SSH operations use the managed SSH configuration by default, including
+  initial wiki clones outside the managed checkouts. This avoids system SSH
+  config includes whose ownership is incompatible with the sandbox's user
+  namespace. Strict host-key checking and the dedicated agent remain unchanged;
+  this does not rewrite repository URLs or grant additional GitHub permissions.
 - `just` is present in both the bot service path and the system profile path
   retained by isolate, so sandbox commands can resolve it. Project recipes can
   still require the repository's development environment and tools beyond

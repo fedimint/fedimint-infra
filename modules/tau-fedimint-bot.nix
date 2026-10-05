@@ -106,6 +106,8 @@ let
     [user]
       name = fedimint-tau
       email = 332691140+fedimint-tau@users.noreply.github.com
+    [core]
+      sshCommand = ${gitSshCommand}
   '';
   sshConfig = pkgs.writeText "tau-fedimint-ssh-config" ''
     Host *
