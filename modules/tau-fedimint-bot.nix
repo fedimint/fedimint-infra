@@ -52,6 +52,7 @@ let
     fedimint-maintainer-requests = ../.agents/skills/fedimint-maintainer-requests;
     fedimint-pull-request-review = ../.agents/skills/fedimint-pull-request-review;
     fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
+    fedimint-weekly-dev-summary = ../.agents/skills/fedimint-weekly-dev-summary;
   };
   installedSkills =
     map (name: {

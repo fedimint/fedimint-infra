@@ -173,6 +173,7 @@ let
     fedimint-maintainer-requests = ../.agents/skills/fedimint-maintainer-requests;
     fedimint-pull-request-review = ../.agents/skills/fedimint-pull-request-review;
     fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
+    fedimint-weekly-dev-summary = ../.agents/skills/fedimint-weekly-dev-summary;
   };
   localSkillNames = builtins.attrNames localSkills;
   installedSkillNames = upstreamSkillNames ++ fedimintSkillNames ++ localSkillNames;
@@ -527,6 +528,20 @@ let
         maintainer_skill=${../.agents/skills/fedimint-maintainer-requests}/SKILL.md
         review_skill=${../.agents/skills/fedimint-pull-request-review}/SKILL.md
         dependabot_skill=${../.agents/skills/fedimint-dependabot}/SKILL.md
+        weekly_skill=${../.agents/skills/fedimint-weekly-dev-summary}/SKILL.md
+        grep -Fq 'name: fedimint-weekly-dev-summary' "$weekly_skill"
+        grep -Fq 'advertise: true' "$weekly_skill"
+        grep -Fq 'Accept explicit UTC start and end timestamps' "$weekly_skill"
+        grep -Fq 'start <= activity time < end' "$weekly_skill"
+        grep -Fq 'Follow every next page/cursor' "$weekly_skill"
+        grep -Fq 'stop publication and return the' "$weekly_skill"
+        grep -Fq '## Pull requests' "$weekly_skill"
+        grep -Fq '## Issues' "$weekly_skill"
+        grep -Fq '**What was done this week:**' "$weekly_skill"
+        grep -Fq '**Current status:**' "$weekly_skill"
+        grep -Fq '**Next:**' "$weekly_skill"
+        grep -Fq 'git@github.com:fedimint/fedimint.wiki.git' "$weekly_skill"
+        grep -Fq 'Never force-push' "$weekly_skill"
         grep -Fq 'sandbox broker with a' "$github_skill"
         grep -Fq 'gh issue close NUMBER -R OWNER/REPO' "$github_skill"
         grep -Fq 'gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE' \
