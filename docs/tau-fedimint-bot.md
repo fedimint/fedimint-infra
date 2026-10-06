@@ -6,12 +6,36 @@ Runner-01 deliberately sets `discord.enable = false`. No Discord subprocess,
 credentials, coordinator grants, or escalation prompt are installed while
 disabled. Weekly reporting and GitHub delivery are unchanged.
 
+The operator has supplied the guild/channel and three human maintainer IDs;
+these are recorded in the disabled runner configuration. The operator also
+confirmed that the app is installed and holds its token privately. Channel
+permissions and live connectivity have not been tested.
+
+Both Discord secret paths now have recipient policies in `secrets.nix`,
+matching the existing runner-01 bot credentials (runner-01 plus administrators).
+From the repository root, populate the token in your local editor:
+
+```console
+just agenix-edit secrets/tau-fedimint-discord-token.age
+```
+
+The recipe defaults to `$HOME/.ssh/id_ed25519.agenix`; pass your authorized
+identity file as its second argument if different. Enter only the bot token
+in the editor, not YAML or a shell command. Do not send it in chat or put it in
+command-line arguments; use a local editor without cloud synchronization.
+Only the resulting encrypted `.age` file should be tracked.
+Provision the independent stable identity secret separately, using
+`just agenix-edit secrets/tau-fedimint-discord-identity-key.age` when ready.
+Neither encrypted file is required by evaluation while Discord stays disabled,
+and its secret source options remain unset until the files exist. Editing a
+secret does not activate Discord or deploy the configuration.
+
 Activation checklist (operator action required):
 
-1. Create a maintainer-only ordinary guild **text channel**. Supply its exact
-   guild/channel IDs and approved **human** maintainer user IDs. Channel
+1. Confirm the supplied destination is a maintainer-only ordinary guild
+   **text channel** and keep the approved **human** sender list current. Channel
    membership is separate from the extension's sender allowlist.
-2. Install a Discord bot with view/send access to that channel. The prepared
+2. Confirm the installed Discord bot has view/send access to that channel. The prepared
    bridge accepts only personal mentions of the bot in that exact channel.
    It does not request privileged message-content access or all-message intake.
 3. Securely provision two independent agenix sources: a bot token (not a user

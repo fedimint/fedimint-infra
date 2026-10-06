@@ -283,9 +283,19 @@
               services.tau-fedimint-bot = {
                 enable = true;
                 weeklySummary.enable = true;
-                # Prepared but deliberately offline until IDs, managed secrets,
+                # Confirmed identities; remain offline until managed secrets
                 # and an approved portable extension source are supplied.
-                discord.enable = false;
+                discord = {
+                  enable = false;
+                  guildId = 990354215060795454;
+                  channelId = 1023312920634994838;
+                  allowedUserIds = [
+                    332755519561400320 # dpc
+                    999685318158602331 # m1sterc00lguy
+                    913133336749305856 # elsirion
+                  ];
+                  # Leave secret source options unset until encrypted files exist.
+                };
                 tauPackage = inputs.tau.packages.x86_64-linux.tau;
                 isolatePackage = inputs.isolate.packages.x86_64-linux.default;
                 ghBrokerPackage = inputs.gh-isolate.packages.x86_64-linux.default;
