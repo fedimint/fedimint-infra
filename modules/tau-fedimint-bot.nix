@@ -1021,6 +1021,14 @@ in
 {
   options.services.tau-fedimint-bot = {
     enable = lib.mkEnableOption "the isolated Tau Fedimint bot";
+    weeklySummary = {
+      enable = lib.mkEnableOption "weekly development summary delivery";
+      onCalendar = lib.mkOption {
+        type = lib.types.str;
+        default = "Mon *-*-* 09:00:00 UTC";
+        description = "systemd calendar for delivery; reports always cover the previous Monday-to-Monday UTC week.";
+      };
+    };
     tauPackage = lib.mkOption {
       type = lib.types.nullOr lib.types.package;
       default = null;
@@ -1261,6 +1269,40 @@ in
         '';
         Restart = "on-failure";
         RestartSec = "5s";
+      };
+    };
+
+    systemd.user.timers.tau-fedimint-weekly-summary = lib.mkIf cfg.weeklySummary.enable {
+      description = "Request the weekly Fedimint development summary";
+      wantedBy = [ "timers.target" ];
+      unitConfig.ConditionUser = user;
+      timerConfig = {
+        OnCalendar = cfg.weeklySummary.onCalendar;
+        Persistent = false;
+        AccuracySec = "1min";
+        Unit = "tau-fedimint-weekly-summary.service";
+      };
+    };
+
+    systemd.user.services.tau-fedimint-weekly-summary = lib.mkIf cfg.weeklySummary.enable {
+      description = "Deliver one weekly-summary instruction to the existing bot";
+      unitConfig.ConditionUser = user;
+      # Do not start/restart the bot as a side effect of delivering a message.
+      after = [ "tau-fedimint-bot.service" ];
+      environment = {
+        HOME = home;
+        XDG_CONFIG_HOME = "${home}/.config";
+        XDG_STATE_HOME = "${home}/.local/state";
+        XDG_CACHE_HOME = "${home}/.cache";
+        XDG_RUNTIME_DIR = runtimeDir;
+      };
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${pkgs.python3}/bin/python3 ${../bin/tau-weekly-summary.py} ${cfg.tauPackage}/bin/tau";
+        TimeoutStartSec = "90s";
+        Restart = "no";
+        WorkingDirectory = home;
+        UMask = "0077";
       };
     };
 

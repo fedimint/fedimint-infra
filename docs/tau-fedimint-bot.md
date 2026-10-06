@@ -1,5 +1,48 @@
 # Tau Fedimint bot
 
+## Weekly development summary
+
+Runner-01 enables `services.tau-fedimint-bot.weeklySummary.enable`. Its user
+timer `tau-fedimint-weekly-summary.timer` defaults to **Monday 09:00 UTC**;
+change `weeklySummary.onCalendar` to select another systemd calendar.
+The delivery time is configurable, but the reporting window always covers the
+most recently completed Monday 00:00 UTC to Monday 00:00 UTC week.
+The message includes exact half-open timestamps and a stable occurrence ID
+derived from the window end. Reruns within that week target the same wiki page.
+
+The oneshot service runs as the bot account in its existing HOME/XDG environment
+and invokes the pinned `tau message '&tau-fedimint-bot'`, with literal stdin and
+**without `--wait-response`**. It asks the existing coordinator to execute the
+installed `fedimint-weekly-dev-summary` skill, including safe wiki publication.
+It neither starts a new harness/notifier nor starts or restarts the bot.
+
+Transport semantics were checked against installed Tau `91d51d6`: exit zero
+means delivery acknowledged, not report completion or successful publication.
+The CLI does not retry. A disconnect before acknowledgement can mean delivery
+is uncertain, and killing the caller does not cancel already delivered work.
+The unit allows at most 90 seconds and has no automatic retry on any failure.
+Read its journal and the existing bot state before deciding whether to resend.
+An occurrence ID identifies the report; it is not transport deduplication.
+
+`Persistent=false` deliberately skips missed runs while the user manager/timer
+is inactive, including the first installation after that week's scheduled time.
+Deployment/activation does not itself request a report. Failures are visible in
+the service journal; there is no catch-up queue or completion monitor.
+Normal scheduling resumes at the next calendar occurrence.
+
+For an operator-approved rerun of an older week, use the installed oneshot
+unit's `ExecStart` command under the bot identity/environment, appending
+`--window-end YYYY-MM-DDT00:00:00Z` (a Monday). Do not simply start the service
+after the next Monday: without an explicit end it selects the new week.
+Never use a real message or wiki publication as a deployment health probe.
+On the runner, inspect the units and next scheduled time read-only (`systemctl
+cat` does not support the `--machine` user-manager connection):
+
+```console
+cat /etc/systemd/user/tau-fedimint-weekly-summary.service /etc/systemd/user/tau-fedimint-weekly-summary.timer
+systemctl --user --machine=tau-fedimint@.host list-timers tau-fedimint-weekly-summary.timer
+```
+
 `runner-01` enables one isolated Tau session under the dedicated
 `tau-fedimint` account. Its agenix credentials belong to the dedicated
 `fedimint-tau` GitHub account: one action token, one notification-reader token,

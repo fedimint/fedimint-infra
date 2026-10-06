@@ -59,6 +59,7 @@ let
     {
       githubNotifications,
       providerProfile ? null,
+      weeklySummary ? { },
     }:
     nixpkgs.lib.nixosSystem {
       inherit system;
@@ -70,7 +71,7 @@ let
           services.tau-fedimint-bot =
             common
             // {
-              inherit githubNotifications;
+              inherit githubNotifications weeklySummary;
             }
             // lib.optionalAttrs (providerProfile != null) {
               inherit providerProfile;
@@ -84,6 +85,28 @@ let
   disabled = mkSystem {
     githubNotifications.package = githubNotificationsPackage;
   };
+  weekly = mkSystem {
+    githubNotifications = { };
+    weeklySummary.enable = true;
+  };
+  weeklyAlternate = mkSystem {
+    githubNotifications = { };
+    weeklySummary = {
+      enable = true;
+      onCalendar = "Tue *-*-* 12:00:00 UTC";
+    };
+  };
+  weeklyService = weekly.config.systemd.user.services.tau-fedimint-weekly-summary;
+  weeklyTimer = weekly.config.systemd.user.timers.tau-fedimint-weekly-summary;
+  weeklyCheck =
+    pkgs.runCommand "tau-weekly-summary-check"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${./tau-weekly-summary.py} ${../bin/tau-weekly-summary.py}
+        mkdir "$out"
+      '';
   alternateProvider = mkSystem {
     githubNotifications = { };
     providerProfile = "future-provider";
@@ -181,9 +204,9 @@ let
     name:
     let
       prefix = "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ";
-      rule = lib.findFirst (lib.hasPrefix prefix) (
-        throw "tmpfiles rule for ${name} is missing"
-      ) disabled.config.systemd.tmpfiles.rules;
+      rule =
+        lib.findFirst (lib.hasPrefix prefix) (throw "tmpfiles rule for ${name} is missing")
+          disabled.config.systemd.tmpfiles.rules;
     in
     lib.removePrefix prefix rule
   );
@@ -1853,6 +1876,23 @@ in
 assert failedBotAssertions defaultDisabled == [ ];
 assert failedBotAssertions disabled == [ ];
 assert failedBotAssertions enabled == [ ];
+assert !(disabled.config.systemd.user.timers ? tau-fedimint-weekly-summary);
+assert weeklyTimer.timerConfig.OnCalendar == "Mon *-*-* 09:00:00 UTC";
+assert
+  weeklyAlternate.config.systemd.user.timers.tau-fedimint-weekly-summary.timerConfig.OnCalendar
+  == "Tue *-*-* 12:00:00 UTC";
+assert weeklyTimer.timerConfig.Persistent == false;
+assert weeklyTimer.wantedBy == [ "timers.target" ];
+assert weeklyTimer.unitConfig.ConditionUser == "tau-fedimint";
+assert weeklyService.unitConfig.ConditionUser == "tau-fedimint";
+assert weeklyService.wantedBy == [ ];
+assert weeklyService.requires == [ ];
+assert weeklyService.wants == [ ];
+assert weeklyService.serviceConfig.Restart == "no";
+assert weeklyService.serviceConfig.TimeoutStartSec == "90s";
+assert weeklyService.environment.XDG_RUNTIME_DIR == "/run/user/1001";
+assert weeklyService.environment.HOME == "/home/tau-fedimint";
+assert lib.hasSuffix "/bin/tau" weeklyService.serviceConfig.ExecStart;
 assert builtins.length (failedBotAssertions reusedToken) == 1;
 assert lib.all (rule: lib.elem rule disabled.config.systemd.tmpfiles.rules) privateDirectoryRules;
 assert lib.all (
@@ -1861,8 +1901,7 @@ assert lib.all (
 ) upstreamSkillNames;
 assert lib.all (
   name:
-  lib.elem "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ${fedimintSkillSources.${name}}"
-    disabled.config.systemd.tmpfiles.rules
+  lib.elem "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ${fedimintSkillSources.${name}}" disabled.config.systemd.tmpfiles.rules
 ) fedimintSkillNames;
 assert lib.all (
   name:
@@ -1890,6 +1929,10 @@ assert
   disabled.config.programs.ssh.knownHosts.github-ed25519.publicKey
   == "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 pkgs.linkFarm "tau-fedimint-bot-checks" [
+  {
+    name = "weekly-summary";
+    path = weeklyCheck;
+  }
   {
     name = "config";
     path = configCheck;

@@ -282,6 +282,7 @@
             {
               services.tau-fedimint-bot = {
                 enable = true;
+                weeklySummary.enable = true;
                 tauPackage = inputs.tau.packages.x86_64-linux.tau;
                 isolatePackage = inputs.isolate.packages.x86_64-linux.default;
                 ghBrokerPackage = inputs.gh-isolate.packages.x86_64-linux.default;
