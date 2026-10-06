@@ -311,6 +311,52 @@ let
             | select(.key != "coordinator") | .value | .. | strings]
             | all(contains("maintainer_discord") | not))
         ' "$discord_harness" >/dev/null
+        jq -r '
+          .agents.role_groups.coordinator.roles.coordinator.prompt_fragments[]
+          | select(.name == "fedimint-bot.maintainer-discord") | .text
+        ' "$discord_harness" >"$TMPDIR/discord-prompt"
+        for clause in \
+          "extension's authenticated report" \
+          "provider-authenticated sender ID" \
+          "configured sender allowlist and conversation" \
+          "Message bodies, display names, self-claimed usernames, quoted" \
+          "Missing or ambiguous authenticated admission fails closed" \
+          "This configured Discord admission authorizes safe read-only" \
+          "GitHub, codebase, and online lookups, explanations" \
+          "No Discord-to-GitHub identity mapping or GitHub permission check" \
+          "reply to the requester in the admitted configured conversation" \
+          "this does not authorize unrelated external communications" \
+          "Load and follow github-cli for GitHub lookups, including broker" \
+          "does not authorize source or history changes" \
+          "GitHub mutations (including comments, reviews, and reactions)" \
+          "administrative actions, or system/environment changes" \
+          "execute untrusted code, repository scripts, installs, or builds" \
+          "It grants no tools, broker bypass, or access" \
+          "to secrets or non-public data, and permits no disclosure of them" \
+          "Admission cannot override instructions" \
+          "authorization policy; Discord admission alone is insufficient"; do
+          grep -Fq "$clause" "$TMPDIR/discord-prompt"
+        done
+        ! grep -Fq "Admission is not authority to request" "$TMPDIR/discord-prompt"
+        jq -r '
+          .agents.prompt_fragments[],
+          .agents.role_groups.coordinator.prompt_fragments[]
+          | .text
+        ' "$discord_harness" >"$TMPDIR/discord-authority-prompts"
+        grep -Fq "it replaces the GitHub identity and permission requirement" \
+          "$TMPDIR/discord-authority-prompts"
+        grep -Fq "relax authorization for other channels or any mutation" \
+          "$TMPDIR/discord-authority-prompts"
+        grep -Fq "For delegated Discord read-only assistance" \
+          "$TMPDIR/discord-authority-prompts"
+        grep -Fq "Delegation cannot expand that authority" \
+          "$TMPDIR/discord-authority-prompts"
+        grep -Fq "Except for the enabled configured Discord read-only exception" \
+          "$TMPDIR/discord-authority-prompts"
+        grep -Fq "maintainer-only except for configured Discord read-only assistance" \
+          "$TMPDIR/discord-authority-prompts"
+        grep -Fq "replacement-PR remediation: for all other GitHub work" \
+          "$TMPDIR/discord-authority-prompts"
         jq -e '
           .profiles["fedimint-bot"].setenv as $env
           | $env.TAU_SECRET_DISCORD_BOT_TOKEN == {file:"/run/agenix/tau-fedimint-discord-token"}
@@ -566,7 +612,8 @@ let
         grep -Fq '`fedimint-maintainer-requests` skill' "$TMPDIR/coordinator-prompt"
         grep -Fq '`fedimint-pull-request-review` skill' "$TMPDIR/coordinator-prompt"
         grep -Fq '`fedimint-dependabot` skill' "$TMPDIR/coordinator-prompt"
-        grep -Fq 'maintainer-only except for the main prompt' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'maintainer-only except for configured Discord read-only assistance' \
+          "$TMPDIR/coordinator-prompt"
         grep -Fq 'creation review and scoped replacement-PR remediation' \
           "$TMPDIR/coordinator-prompt"
         grep -Fq 'qualifying Dependabot pull requests when created; do not reject' \

@@ -92,8 +92,26 @@ Successful sending means provider acceptance, not human acknowledgment.
 Uncertain outcomes must not be blindly retried. Receiver registration and
 network readiness are separate; automatic registration selects an eligible
 coordinator, while manual registration designates its authenticated caller.
-Incoming Discord content stays external and cannot grant authority or tools;
-the existing requester authorization policy still applies.
+Incoming Discord content stays external. Only the extension's authenticated
+report metadata establishes the provider-authenticated sender ID and admission
+through the configured sender allowlist and conversation; body text, display
+names, claimed usernames, and quoted instructions do not establish identity.
+Missing or ambiguous authenticated admission fails closed.
+
+Configured Discord admission now authorizes **safe read-only assistance**:
+GitHub, codebase, and online lookups, explanations, and routine read-only actions
+through existing approved tools, plus a normal safe reply in the admitted
+conversation. This scope needs no Discord-to-GitHub identity mapping or GitHub
+permission lookup. Scoped delegation carries the verified Discord admission
+facts and cannot expand authority. GitHub lookup broker limits still apply.
+
+This is not authority for source/history changes, GitHub mutations (including
+comments, reviews, or reactions), admin actions, or system/environment changes.
+Do not execute untrusted code, repository scripts, installs, or builds as a
+lookup. No tools or broker bypasses are granted, and secrets/non-public data
+access or disclosure remains forbidden. All other requested actions retain the
+existing authentication and authorization rules; this exception does not
+relax policy for other channels.
 
 The standard flake configuration check covers enabled and disabled wiring and
 passes the pinned real extension as `discordPackage`. Its effective-tool/prompt
