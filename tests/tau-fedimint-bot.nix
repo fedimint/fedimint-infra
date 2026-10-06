@@ -1188,6 +1188,7 @@ let
         touch "$out"
       '';
   githubToolRegistrationTest = pkgs.writeText "tau-fedimint-github-tool-registration.py" ''
+    import os
     import subprocess
     import sys
     import queue
@@ -1199,6 +1200,25 @@ let
     executable = sys.argv[1]
     lookup_enabled = sys.argv[2] == "enabled"
     signal.alarm(30)
+
+    def decode_messages(stream):
+        # cbor2 5.8 reads ahead: keep one decoder for the entire CBOR sequence.
+        decoder = cbor2.CBORDecoder(stream)
+        while True:
+            yield decoder.decode()
+
+    # Batch frames into one pipe write so the decoder must retain read-ahead.
+    burst = [
+        {"message": "hello", "payload": {}},
+        {"message": "emit", "payload": {"event": {"event": "tool.registration_declared"}}},
+        {"message": "ready", "payload": {}},
+    ]
+    read_fd, write_fd = os.pipe()
+    os.write(write_fd, b"".join(cbor2.dumps(message) for message in burst))
+    os.close(write_fd)
+    with os.fdopen(read_fd, "rb", buffering=0) as stream:
+        messages = decode_messages(stream)
+        assert [next(messages) for _ in burst] == burst
 
     def registrations(lookup_enabled):
         process = subprocess.Popen(
@@ -1212,8 +1232,8 @@ let
 
         def read_messages():
             try:
-                while True:
-                    messages.put(cbor2.load(process.stdout))
+                for message in decode_messages(process.stdout):
+                    messages.put(message)
             except BaseException as error:
                 messages.put(error)
 
