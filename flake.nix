@@ -27,7 +27,7 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=91d51d60f661ca6dae1dda75b1cc86b5282716ca";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=6ee78b807329f8a113566ab65037ac0f9c38a99e";
     };
 
     tau-ext-github = {
@@ -283,6 +283,9 @@
               services.tau-fedimint-bot = {
                 enable = true;
                 weeklySummary.enable = true;
+                # Prepared but deliberately offline until IDs, managed secrets,
+                # and an approved portable extension source are supplied.
+                discord.enable = false;
                 tauPackage = inputs.tau.packages.x86_64-linux.tau;
                 isolatePackage = inputs.isolate.packages.x86_64-linux.default;
                 ghBrokerPackage = inputs.gh-isolate.packages.x86_64-linux.default;

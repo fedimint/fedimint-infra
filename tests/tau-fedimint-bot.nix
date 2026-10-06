@@ -9,6 +9,7 @@
   skillsSource,
   fedimintSkillsSource,
   githubNotificationsPackage,
+  discordPackage ? null,
 }:
 
 let
@@ -60,6 +61,7 @@ let
       githubNotifications,
       providerProfile ? null,
       weeklySummary ? { },
+      discord ? { },
     }:
     nixpkgs.lib.nixosSystem {
       inherit system;
@@ -71,7 +73,7 @@ let
           services.tau-fedimint-bot =
             common
             // {
-              inherit githubNotifications weeklySummary;
+              inherit githubNotifications weeklySummary discord;
             }
             // lib.optionalAttrs (providerProfile != null) {
               inherit providerProfile;
@@ -119,6 +121,29 @@ let
       identityKeyAgeFile = identityKey;
     };
   };
+  discordSettings = {
+    enable = true;
+    package = if discordPackage == null then dummyPackage "tau-ext-discord" else discordPackage;
+    guildId = 123456789012345678;
+    channelId = 234567890123456789;
+    allowedUserIds = [ 345678901234567890 ];
+    tokenAgeFile = builtins.toFile "discord-token.age" "test-only";
+    identityKeyAgeFile = builtins.toFile "discord-identity.age" "test-only";
+  };
+  discordEnabled = mkSystem {
+    githubNotifications = enabled.config.services.tau-fedimint-bot.githubNotifications;
+    discord = discordSettings;
+  };
+  discordMissing = mkSystem {
+    githubNotifications = { };
+    discord.enable = true;
+  };
+  discordReusedSecret = mkSystem {
+    githubNotifications = { };
+    discord = discordSettings // {
+      identityKeyAgeFile = discordSettings.tokenAgeFile;
+    };
+  };
   reusedToken = mkSystem {
     githubNotifications = {
       enable = true;
@@ -136,6 +161,7 @@ let
         lib.hasPrefix "tau-fedimint-bot " assertion.message
         || lib.hasPrefix "GitHub notifications " assertion.message
         || lib.hasPrefix "GitHub notification " assertion.message
+        || lib.hasPrefix "Discord " assertion.message
       )
     ) systemConfig.config.assertions;
   disabledStart = disabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
@@ -156,6 +182,7 @@ let
   alternateProviderStart =
     alternateProvider.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   enabledStart = enabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  discordStart = discordEnabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   privateDirectoryRules = map (path: "d ${path} 0700 tau-fedimint tau-fedimint -") [
     "/home/tau-fedimint/fedimint"
     "/home/tau-fedimint/.config"
@@ -251,6 +278,46 @@ let
         test -n "$enabled_isolate"
         test -n "$git_config"
         test -n "$ssh_config"
+
+        discord_harness=$(sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${discordStart})
+        discord_isolate=$(sed -n 's#.*install -m 0600 \([^ ]*isolate.yaml\).*#\1#p' ${discordStart})
+        jq -e '
+          .extensions["maintainer-discord"] as $d
+          | $d.enable == true and $d.require == true
+          and $d.tool_prefix == "maintainer"
+          and ($d.command[0] | endswith("/bin/tau-ext-discord"))
+          and $d.secrets == {discord_bot_token:{}, discord_identity_key:{}}
+          and $d.config == {
+            bot_token_secret:"discord_bot_token",
+            identity_key_secret:"discord_identity_key",
+            allowed_user_ids:[345678901234567890],
+            message_content:false, register_on_start:true, role:"coordinator",
+            conversations:[{
+              alias:"fedimint_maintainers", guild_id:123456789012345678,
+              channel_id:234567890123456789, description:"Fedimint maintainer assistance",
+              receive:"mentions_only", proactive_send:true
+            }]
+          }
+          and .agents.disable_tool_tags == ["discord:*"]
+          and .agents.role_groups.coordinator.roles.coordinator.enable_tools == [
+            "github_register","github_user_context",
+            "maintainer_discord_register","maintainer_discord_conversations","maintainer_discord_send"
+          ]
+          and ([.agents.role_groups.coordinator.roles.coordinator.prompt_fragments[].text]
+            | join("\n") | contains("On an uncertain outcome, do not retry"))
+          and ([.agents.role_groups | to_entries[]
+            | select(.key != "coordinator") | .value | .. | strings]
+            | all(contains("maintainer_discord") | not))
+        ' "$discord_harness" >/dev/null
+        jq -e '
+          .profiles["fedimint-bot"].setenv as $env
+          | $env.TAU_SECRET_DISCORD_BOT_TOKEN == {file:"/run/agenix/tau-fedimint-discord-token"}
+          and $env.TAU_SECRET_DISCORD_IDENTITY_KEY == {file:"/run/agenix/tau-fedimint-discord-identity-key"}
+          and ($env | has("TAU_SECRET_GITHUB_TOKEN"))
+        ' "$discord_isolate" >/dev/null
+        for config in "$disabled_harness" "$enabled_harness" "$disabled_isolate" "$enabled_isolate"; do
+          ! grep -q 'maintainer_discord\|maintainer-discord\|TAU_SECRET_DISCORD' "$config"
+        done
 
         for config in "$disabled_harness" "$alternate_provider_harness" "$enabled_harness" \
           "$disabled_isolate" "$enabled_isolate"; do
@@ -966,6 +1033,42 @@ let
           grep -Fq 'PROJECT_SUBDIR_AGENTS_MARKER' "$provider_prompt"
           grep -Fq '<name>project-subdir-test</name>' "$provider_prompt"
         done <"$TMPDIR/roles"
+
+        ${lib.optionalString (discordPackage != null) ''
+          # Exercise the real extension's scoped declarations and effective
+          # role grants, with null config and no secrets: no Discord transport.
+          jq --arg workspace "$test_workspace" --arg workdir "$test_workdir" '
+            .extensions["maintainer-discord"].config = null
+            | .extensions["maintainer-discord"].secrets = {}
+            | del(.extensions["github-notifications"])
+            | .extensions["core-shell"].config.working_directory = $workdir
+            | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
+          ' "$discord_harness" >"$test_home/.config/tau/harness.yaml"
+          while IFS= read -r role; do
+            env -u TAU_PROFILE HOME="$test_home" \
+              XDG_CONFIG_HOME="$test_home/.config" \
+              XDG_STATE_HOME="$test_home/.local/state" \
+              XDG_CACHE_HOME="$test_home/.cache" \
+              ${tauPackage}/bin/tau --role "$role" dev print-tools >"$TMPDIR/discord-$role-tools"
+            env -u TAU_PROFILE HOME="$test_home" \
+              XDG_CONFIG_HOME="$test_home/.config" \
+              XDG_STATE_HOME="$test_home/.local/state" \
+              XDG_CACHE_HOME="$test_home/.cache" \
+              ${tauPackage}/bin/tau --role "$role" dev print-system-prompt >"$TMPDIR/discord-$role-prompt"
+            if [ "$role" = coordinator ]; then
+              printf '%s\n' maintainer_discord_conversations \
+                maintainer_discord_register maintainer_discord_send >"$TMPDIR/expected-discord-tools"
+              grep -oE 'maintainer_discord_[a-z_]+' "$TMPDIR/discord-$role-tools" |
+                sort -u >"$TMPDIR/actual-discord-tools"
+              cmp "$TMPDIR/expected-discord-tools" "$TMPDIR/actual-discord-tools"
+              grep -q 'On an uncertain outcome, do not retry' "$TMPDIR/discord-$role-prompt"
+            else
+              ! grep -q 'maintainer_discord' "$TMPDIR/discord-$role-tools"
+              ! grep -q 'maintainer_discord' "$TMPDIR/discord-$role-prompt"
+            fi
+          done <"$TMPDIR/roles"
+          cp "$disabled_harness" "$test_home/.config/tau/harness.yaml"
+        ''}
 
         jq -e '
           .extensions["github-notifications"] as $extension
@@ -1876,6 +1979,12 @@ in
 assert failedBotAssertions defaultDisabled == [ ];
 assert failedBotAssertions disabled == [ ];
 assert failedBotAssertions enabled == [ ];
+assert failedBotAssertions discordEnabled == [ ];
+assert builtins.length (failedBotAssertions discordMissing) == 5;
+assert builtins.length (failedBotAssertions discordReusedSecret) == 1;
+assert !(disabled.config.age.secrets ? tau-fedimint-discord-token);
+assert discordEnabled.config.age.secrets.tau-fedimint-discord-token.mode == "0400";
+assert discordEnabled.config.age.secrets.tau-fedimint-discord-identity-key.owner == "tau-fedimint";
 assert !(disabled.config.systemd.user.timers ? tau-fedimint-weekly-summary);
 assert weeklyTimer.timerConfig.OnCalendar == "Mon *-*-* 09:00:00 UTC";
 assert

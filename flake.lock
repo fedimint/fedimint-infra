@@ -8360,16 +8360,16 @@
         "tau-ext-zulip": "tau-ext-zulip"
       },
       "locked": {
-        "lastModified": 1791238910,
-        "narHash": "sha256-lKPpKNr3p5HFGfgHvXndKau5uBjgAl9FYVMjEnwD0wE=",
+        "lastModified": 1791245547,
+        "narHash": "sha256-7JHUvLr0V7Tw6kGUCao5xeE6hvCKf3cbjIalgZgPFxQ=",
         "ref": "refs/heads/master",
-        "rev": "91d51d60f661ca6dae1dda75b1cc86b5282716ca",
-        "revCount": 3573,
+        "rev": "6ee78b807329f8a113566ab65037ac0f9c38a99e",
+        "revCount": 3574,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       },
       "original": {
-        "rev": "91d51d60f661ca6dae1dda75b1cc86b5282716ca",
+        "rev": "6ee78b807329f8a113566ab65037ac0f9c38a99e",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       }

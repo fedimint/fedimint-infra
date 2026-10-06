@@ -1,5 +1,79 @@
 # Tau Fedimint bot
 
+## Private Discord maintainer channel (prepared, disabled)
+
+Runner-01 deliberately sets `discord.enable = false`. No Discord subprocess,
+credentials, coordinator grants, or escalation prompt are installed while
+disabled. Weekly reporting and GitHub delivery are unchanged.
+
+Activation checklist (operator action required):
+
+1. Create a maintainer-only ordinary guild **text channel**. Supply its exact
+   guild/channel IDs and approved **human** maintainer user IDs. Channel
+   membership is separate from the extension's sender allowlist.
+2. Install a Discord bot with view/send access to that channel. The prepared
+   bridge accepts only personal mentions of the bot in that exact channel.
+   It does not request privileged message-content access or all-message intake.
+3. Securely provision two independent agenix sources: a bot token (not a user
+   token) and stable identity secret text of at least 32 bytes. Follow the
+   existing secret recipient procedure; never put plaintext in Git, Nix,
+   prompts, tickets, logs, or chat. Add only encrypted `.age` files.
+4. Supply a compatible `tau-ext-discord` **package from an approved portable
+   pinned source**. Reviewed local revision
+   `f5fdea420430773c81b77dc4fbf862db8214f29a` uses SDK/proto 0.10.0, wire 10.2,
+   whose credential-free handshake passed against deployed Tau wire 10.4.
+   There is currently no agreed extension publication destination/visibility.
+   Do not commit a workstation `git+file:` input or a raw `/nix/store` path.
+5. Set the following options with the actual values, run the configuration
+   tests and runner closure build, then deploy through the normal runner
+   procedure. A live Discord receive/send test requires separate explicit
+   authorization; neither mock tests nor handshake tests prove channel access.
+
+```nix
+services.tau-fedimint-bot.discord = {
+  enable = true;
+  package = approvedDiscordPackage;
+  guildId = actualGuildId;
+  channelId = actualChannelId;
+  allowedUserIds = approvedHumanMaintainerIds;
+  tokenAgeFile = ./secrets/tau-fedimint-discord-token.age;
+  identityKeyAgeFile = ./secrets/tau-fedimint-discord-identity-key.age;
+};
+```
+
+The symbolic values above are a template, not deployable identities.
+Keep snowflakes as exact positive integers (Nix supports signed 64-bit
+integers); do not round-trip IDs through floating-point JSON tools.
+
+Enabled wiring requires the extension and both secrets rather than silently
+dropping escalation on startup failure. Agenix keeps decrypted sources under
+`/run/agenix` with bot-owned `0400` permissions. Isolate injects only
+`TAU_SECRET_DISCORD_BOT_TOKEN` and `TAU_SECRET_DISCORD_IDENTITY_KEY` from those
+files; Tau resolves and delivers only the declared secrets. No credential
+value enters the generated configuration or Nix store.
+
+Only the coordinator receives `maintainer_discord_register`,
+`maintainer_discord_conversations`, and `maintainer_discord_send`. A global
+`discord:*` deny baseline keeps reactions, attachments, and other Discord
+tools unavailable. The conditional prompt permits one concise alert for an
+unexpected problem requiring external help, not routine progress. It requires
+safe evidence, the impact, attempted fixes, and the exact help needed.
+
+Posts **do not ping users or roles**: the extension suppresses mentions.
+Successful sending means provider acceptance, not human acknowledgment.
+Uncertain outcomes must not be blindly retried. Receiver registration and
+network readiness are separate; automatic registration selects an eligible
+coordinator, while manual registration designates its authenticated caller.
+Incoming Discord content stays external and cannot grant authority or tools;
+the existing requester authorization policy still applies.
+
+The standard flake configuration check covers enabled and disabled wiring
+using a non-running test package. For a real-extension tool/prompt check,
+import `tests/tau-fedimint-bot.nix` with its usual flake arguments and an explicit
+`discordPackage` argument. That check uses **null config and no secrets**, so
+it can verify declarations/grants without connecting to Discord. Production
+configuration still uses the complete fixed-channel config.
+
 ## Weekly development summary
 
 Runner-01 enables `services.tau-fedimint-bot.weeklySummary.enable`. Its user
