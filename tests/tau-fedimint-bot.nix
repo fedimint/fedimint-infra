@@ -326,6 +326,15 @@ let
           | select(.name == "fedimint-bot.maintainer-discord") | .text
         ' "$discord_harness" >"$TMPDIR/discord-prompt"
         for clause in \
+          "For standard tasks from GitHub notifications, Discord is only for" \
+          "reporting unexpected problems requiring attention, not task updates." \
+          "Do not post routine acknowledgements, progress, status updates, or" \
+          "completion reports for those tasks, including successful reviews" \
+          "and no-action dispositions. Keep their normal GitHub responses and" \
+          "internal task reporting on the existing paths instead." \
+          "This restriction does not change explicitly requested scheduled" \
+          "weekly-summary publication announcements or safe replies to admitted" \
+          "Discord read-only requests below." \
           "extension's authenticated report" \
           "provider-authenticated sender ID" \
           "configured sender allowlist and conversation" \
@@ -1124,6 +1133,12 @@ let
                 sort -u >"$TMPDIR/actual-discord-tools"
               cmp "$TMPDIR/expected-discord-tools" "$TMPDIR/actual-discord-tools"
               grep -q 'On an uncertain outcome, do not retry' "$TMPDIR/discord-$role-prompt"
+              grep -Fq 'reporting unexpected problems requiring attention, not task updates.' \
+                "$TMPDIR/discord-$role-prompt"
+              grep -Fq 'completion reports for those tasks, including successful reviews' \
+                "$TMPDIR/discord-$role-prompt"
+              grep -Fq 'weekly-summary publication announcements or safe replies to admitted' \
+                "$TMPDIR/discord-$role-prompt"
             else
               ! grep -q 'maintainer_discord' "$TMPDIR/discord-$role-tools"
               ! grep -q 'maintainer_discord' "$TMPDIR/discord-$role-prompt"

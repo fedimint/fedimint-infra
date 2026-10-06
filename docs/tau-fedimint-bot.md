@@ -96,6 +96,12 @@ Only the coordinator receives `maintainer_discord_register`,
 tools unavailable. The conditional prompt permits one concise alert for an
 unexpected problem requiring external help, not routine progress. It requires
 safe evidence, the impact, attempted fixes, and the exact help needed.
+Standard tasks from GitHub notifications must not post routine acknowledgements,
+progress, status updates, or completion reports to Discord, including successful
+reviews and no-action dispositions. Their normal GitHub responses and internal
+task reports stay on the existing paths. Explicit scheduled weekly-summary
+publication announcements and safe replies to admitted Discord read-only requests
+remain permitted.
 
 Posts **do not ping users or roles**: the extension suppresses mentions.
 Successful sending means provider acceptance, not human acknowledgment.
