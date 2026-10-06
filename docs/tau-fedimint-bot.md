@@ -81,10 +81,28 @@ timer `tau-fedimint-weekly-summary.timer` defaults to **Monday 06:00 California
 time** (`America/Los_Angeles`, following daylight saving time: 13:00 UTC in
 summer/PDT, 14:00 UTC in winter/PST);
 change `weeklySummary.onCalendar` to select another systemd calendar.
-The delivery time is configurable, but the reporting window always covers the
-most recently completed Monday 00:00 UTC to Monday 00:00 UTC week.
+The delivery time is configurable. Each new invocation captures the current UTC
+time once and covers the preceding **184 hours (7 days plus 16 hours)**, up to
+but excluding that endpoint, rather than a calendar week.
 The message includes exact half-open timestamps and a stable occurrence ID
-derived from the window end. Reruns within that week target the same wiki page.
+derived from the captured window end. This intentional overlap helps retain
+activity across weekly runs; items are deduplicated within a report, not
+suppressed across reports. DST changes or delayed execution can change the
+overlap, but not the 184-hour lookback.
+
+Reports use the exact Markdown heading `Week summary: D Month, YYYY` (unpadded
+day, full English month), from the captured endpoint's America/Los_Angeles date.
+For example, an endpoint of `2026-05-11T13:00:00Z` gives
+`Week summary: 11 May, 2026`. GitHub advises against colons in wiki filenames,
+so the portable filename/URL slug is `Week-summary-11-May,-2026.md` /
+`Week-summary-11-May,-2026`; the requested colon stays in the Markdown heading.
+Explicit reruns reuse that same page. Existing timestamp-named reports for the
+same window are renamed rather than duplicated; different-window same-date
+collisions require clarification rather than overwriting.
+Primary naming guidance: [GitHub — Adding or editing wiki pages, About wiki
+filenames](https://docs.github.com/en/communities/documenting-your-project-with-wikis/adding-or-editing-wiki-pages#about-wiki-filenames).
+GitHub derives its navigation title from the filename, so that title may omit
+the colon even though the report's visible H1 includes it.
 
 The oneshot service runs as the bot account in its existing HOME/XDG environment
 and invokes the pinned `tau message '&tau-fedimint-bot'`, with literal stdin and
@@ -106,10 +124,15 @@ Deployment/activation does not itself request a report. Failures are visible in
 the service journal; there is no catch-up queue or completion monitor.
 Normal scheduling resumes at the next calendar occurrence.
 
-For an operator-approved rerun of an older week, use the installed oneshot
+For an operator-approved rerun of an older report, use the installed oneshot
 unit's `ExecStart` command under the bot identity/environment, appending
-`--window-end YYYY-MM-DDT00:00:00Z` (a Monday). Do not simply start the service
-after the next Monday: without an explicit end it selects the new week.
+`--window-end YYYY-MM-DDTHH:MM:SSZ` with the original captured endpoint (any
+weekday/time). This reuses the same window, occurrence ID, and report page.
+Do not simply start the service to rerun a report: without an explicit endpoint
+it captures a new current time and therefore creates a new reporting window.
+Earlier manual instructions with Monday-midnight seven-day boundaries describe
+the old behavior; for a fresh manual test ask the skill to capture now and look
+back 184 hours instead.
 Never use a real message or wiki publication as a deployment health probe.
 On the runner, inspect the units and next scheduled time read-only (`systemctl
 cat` does not support the `--machine` user-manager connection):

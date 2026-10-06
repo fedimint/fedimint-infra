@@ -622,7 +622,10 @@ let
         weekly_skill=${../.agents/skills/fedimint-weekly-dev-summary}/SKILL.md
         grep -Fq 'name: fedimint-weekly-dev-summary' "$weekly_skill"
         grep -Fq 'advertise: true' "$weekly_skill"
-        grep -Fq 'Accept explicit UTC start and end timestamps' "$weekly_skill"
+        grep -Fq '7 days plus 16 hours (184 hours)' "$weekly_skill"
+        grep -Fq 'reuse that original endpoint rather than sampling now' "$weekly_skill"
+        grep -Fq 'Week summary: D Month, YYYY' "$weekly_skill"
+        grep -Fq 'Week-summary-D-Month,-YYYY.md' "$weekly_skill"
         grep -Fq 'start <= activity time < end' "$weekly_skill"
         grep -Fq 'Follow every next page/cursor' "$weekly_skill"
         grep -Fq 'stop publication and return the' "$weekly_skill"
@@ -2002,6 +2005,7 @@ assert weeklyService.serviceConfig.Restart == "no";
 assert weeklyService.serviceConfig.TimeoutStartSec == "90s";
 assert weeklyService.environment.XDG_RUNTIME_DIR == "/run/user/1001";
 assert weeklyService.environment.HOME == "/home/tau-fedimint";
+assert weeklyService.environment.PYTHONTZPATH == "${pkgs.tzdata}/share/zoneinfo";
 assert lib.hasSuffix "/bin/tau" weeklyService.serviceConfig.ExecStart;
 assert builtins.length (failedBotAssertions reusedToken) == 1;
 assert lib.all (rule: lib.elem rule disabled.config.systemd.tmpfiles.rules) privateDirectoryRules;

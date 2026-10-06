@@ -1095,7 +1095,7 @@ in
       onCalendar = lib.mkOption {
         type = lib.types.str;
         default = "Mon *-*-* 06:00:00 America/Los_Angeles";
-        description = "systemd calendar for delivery; reports always cover the previous Monday-to-Monday UTC week.";
+        description = "systemd calendar for delivery; reports cover the 184 hours preceding the captured invocation time.";
       };
     };
     tauPackage = lib.mkOption {
@@ -1436,6 +1436,7 @@ in
         XDG_STATE_HOME = "${home}/.local/state";
         XDG_CACHE_HOME = "${home}/.cache";
         XDG_RUNTIME_DIR = runtimeDir;
+        PYTHONTZPATH = "${pkgs.tzdata}/share/zoneinfo";
       };
       serviceConfig = {
         Type = "oneshot";
