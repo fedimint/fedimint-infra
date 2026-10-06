@@ -72,10 +72,34 @@ an item's current state alone as proof of activity within the window.
    point is the fully paginated repository issues endpoint, which includes PRs:
 
    ```sh
-   gh api --paginate 'repos/fedimint/fedimint/issues?state=all&per_page=100'
-   gh api --paginate 'repos/fedimint/fedimint/issues/NUMBER/timeline?per_page=100'
-   gh api --paginate 'repos/fedimint/fedimint/issues/NUMBER/comments?per_page=100'
+   tau-github-collect 'repos/fedimint/fedimint/issues?state=all&per_page=100' NEW_PRIVATE_CAPTURE.http
+   tau-github-collect 'repos/fedimint/fedimint/issues/NUMBER/timeline?per_page=100' NEW_PRIVATE_TIMELINE.http
+   tau-github-collect 'repos/fedimint/fedimint/issues/NUMBER/comments?per_page=100' NEW_PRIVATE_COMMENTS.http
    ```
+
+   Run from the project container root, not a nested development shell that can
+   shadow the broker's `gh`. Use a fresh owner-private temporary directory
+   (`mktemp -d`) and new filenames within it; never reuse an existing capture.
+   The helper invokes the existing brokered `gh api --paginate --include`
+   command, captures its actual exit and complete stdout privately, and validates
+   HTTP status, JSON content type, complete compact array bodies, and previous/
+   next-page continuity before returning counts. It retains the exact raw
+   response pages (including every field and numeric spelling), without jq,
+   templates, slurp, projection, truncation, or deduplication. Never use the
+   unframed raw inventory command: pinned gh combines all pages on one line,
+   which can exceed the broker's 8 MiB physical-line limit.
+
+   Read the retained raw body arrays only after the helper exits successfully;
+   do not parse its small count summary as the inventory. Decode numbers exactly
+   (Python integers and `decimal.Decimal`, not floating-point decode/re-encode).
+   The helper enforces a 600-second deadline, 256 MiB stdout capture, 1 MiB stderr,
+   8 MiB physical lines, and 64 KiB / 256 response-header lines per page.
+   A nonzero exit, missing/redacted/malformed/multiline page, missing required
+   headers or pagination metadata, or resource limit means incomplete evidence.
+   It removes failed captures; stop collection and report the gap, never increase
+   bounds or bypass the broker. The broker still caps each individual raw page
+   at 8 MiB. This section contains the installed collection contract; infrastructure
+   operators can also consult `fedimint-infra/docs/tau-github-collection.md`.
 
    Replace `NUMBER` with each actual number. Classify entries with a
    `pull_request` field as PRs and deduplicate by repository + number. Search
@@ -88,9 +112,9 @@ an item's current state alone as proof of activity within the window.
 
    ```sh
    gh api repos/fedimint/fedimint/pulls/NUMBER
-   gh api --paginate 'repos/fedimint/fedimint/pulls/NUMBER/reviews?per_page=100'
-   gh api --paginate 'repos/fedimint/fedimint/pulls/NUMBER/comments?per_page=100'
-   gh api --paginate 'repos/fedimint/fedimint/pulls/NUMBER/commits?per_page=100'
+   tau-github-collect 'repos/fedimint/fedimint/pulls/NUMBER/reviews?per_page=100' NEW_PRIVATE_REVIEWS.http
+   tau-github-collect 'repos/fedimint/fedimint/pulls/NUMBER/comments?per_page=100' NEW_PRIVATE_REVIEW_COMMENTS.http
+   tau-github-collect 'repos/fedimint/fedimint/pulls/NUMBER/commits?per_page=100' NEW_PRIVATE_COMMITS.http
    ```
 
    Filter evidence by its relevant event timestamp, including comment

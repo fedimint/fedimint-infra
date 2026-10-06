@@ -1022,6 +1022,10 @@ let
     fi
   '';
 
+  githubCollector = pkgs.writeShellScriptBin "tau-github-collect" ''
+    exec ${pkgs.python3}/bin/python3 ${../bin/tau-github-collect.py} "$@"
+  '';
+
   tauSandbox = pkgs.writeShellApplication {
     name = "tau-fedimint-sandbox";
     runtimeInputs = [ pkgs.coreutils ];
@@ -1386,6 +1390,7 @@ in
       cfg.clankPackage
       githubRequester
       cfg.ghBrokerPackage
+      githubCollector
       direnvDpc
       pkgs.git
       pkgs.gnupg
