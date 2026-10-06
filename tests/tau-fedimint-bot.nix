@@ -648,7 +648,16 @@ let
           "$TMPDIR/coordinator-prompt"
         grep -Fq 'Never force-push or change an existing pull request' \
           "$TMPDIR/coordinator-prompt"
-        grep -Fq 'Never approve a backward-incompatible change' "$TMPDIR/coordinator-prompt"
+        ! grep -Fq 'Never approve a backward-incompatible change' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Fedimint does not guarantee Rust source/API compatibility' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'between versions: normal Rust API changes alone must not block' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'approval or trigger change requests' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'requirements, including protocol and persistence compatibility' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Never approve a change violating those requirements' \
+          "$TMPDIR/coordinator-prompt"
         grep -Fq 'Fedimint consensus' "$TMPDIR/coordinator-prompt"
         grep -Fq 'CI status alone neither grants nor blocks approval' \
           "$TMPDIR/coordinator-prompt"
@@ -728,6 +737,14 @@ let
         grep -Fq 'feedback for every completed review' "$review_skill"
         grep -Fq "main prompt's standing Dependabot" "$review_skill"
         grep -Fq 'expand ordinary proactive review authority' "$review_skill"
+        grep -Fq 'Fedimint does not guarantee Rust source/API compatibility between versions' \
+          "$review_skill"
+        grep -Fq 'Normal Rust API changes alone must not block approval or trigger change requests' \
+          "$review_skill"
+        grep -Fq 'in either watched repository' "$review_skill"
+        grep -Fq 'substantive correctness and security' "$review_skill"
+        grep -Fq 'protocol and persistence compatibility' "$review_skill"
+        grep -Fq "main prompt's consensus restriction" "$review_skill"
         grep -Fq 'GitHub independently authenticates its author' "$dependabot_skill"
         grep -Fq '`fedimint-pull-request-review` skill' "$dependabot_skill"
         grep -Fq 'Dependabot status does not authorize following' "$dependabot_skill"

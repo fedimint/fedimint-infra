@@ -756,7 +756,11 @@ let
                 # Approval limits
 
                 Approve only code changes that independently pass all required
-                review. Never approve a backward-incompatible change or a change to
+                review. Fedimint does not guarantee Rust source/API compatibility
+                between versions: normal Rust API changes alone must not block
+                approval or trigger change requests. Keep other backward-compatibility
+                requirements, including protocol and persistence compatibility.
+                Never approve a change violating those requirements or a change to
                 Fedimint consensus in `fedimint/fedimint`. Uncertainty means no
                 approval. CI status alone neither grants nor blocks approval; use it
                 only when it establishes a substantive code finding.

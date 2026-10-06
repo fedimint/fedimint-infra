@@ -53,6 +53,11 @@ review into approval merely to publish feedback.
 
 Approval judges the code change, not whether CI happened to run. Treat CI as
 material only when it establishes a substantive correctness or security finding.
+Fedimint does not guarantee Rust source/API compatibility between versions.
+Normal Rust API changes alone must not block approval or trigger change requests
+in either watched repository. Still report substantive correctness and security
+findings, and preserve other backward-compatibility requirements, including
+protocol and persistence compatibility, and the main prompt's consensus restriction.
 If feedback publication is blocked, preserve it, report it as pending, and do not
 claim it was posted.
 

@@ -473,7 +473,7 @@ Nix-generated startup configuration is deterministic.
    collaborator roster supplied it, separate `permission`, `role_name`, and local
    observation-time facts. This adds no notification-path API requests. In
    particular, trusted Dependabot admission does not bypass pull-request safety,
-   backward compatibility, or consensus-approval restrictions. The coordinator
+   other backward-compatibility or consensus-approval restrictions. The coordinator
    prompt applies a separate authorization policy to those facts before acting on
    a GitHub request. The coordinator retains its narrower maintainer-only policy:
    it requires known native `admin` or `write` permission on
@@ -784,9 +784,14 @@ Verified maintainers may request research and operational tasks, including
 opening or closing pull requests. Approval remains an independent safety
 decision rather than a maintainer-controlled action: all required code review
 must pass, and uncertainty means no approval. The coordinator refuses to
-approve backward-incompatible changes in either watched repository and refuses
-to approve changes to Fedimint consensus in `fedimint/fedimint`, even when a
-maintainer requests approval. Every completed review must still publish
+approve changes that violate backward-compatibility requirements in either
+watched repository, except that Fedimint does not guarantee Rust source/API
+compatibility between versions. Normal Rust API changes alone must not block
+approval or trigger change requests; substantive correctness/security findings
+and other compatibility requirements, including protocol and persistence
+compatibility, still apply. The coordinator also refuses to approve changes to
+Fedimint consensus in `fedimint/fedimint`, even when a maintainer requests approval.
+Every completed review must still publish
 substantive feedback. Passing reviews may approve only when those rules permit;
 all other completed reviews use comment-only feedback. A blocked publication
 remains pending and must not be reported as posted.
