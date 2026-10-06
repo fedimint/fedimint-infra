@@ -126,6 +126,18 @@ class WeeklySummaryTests(unittest.TestCase):
             self.assertIn("rolling 184-hour lookback", message)
             self.assertIn("do not omit activity because a previous report included it", message)
 
+    def test_published_page_discord_handoff(self):
+        start, end = weekly.reporting_window(
+            datetime.fromisoformat("2026-10-06T00:36:23+00:00")
+        )
+        message = weekly.instruction(start, end)
+        self.assertIn("Only after successful wiki publication and verification", message)
+        self.assertIn("maintainer_discord_send to fedimint_maintainers", message)
+        self.assertIn("the final published wiki page URL", message)
+        self.assertIn("Do not send a draft or unpublished link", message)
+        self.assertIn("uncertain-send/no-blind-retry policy", message)
+        self.assertIn("without claiming the notification succeeded", message)
+
     def test_bad_window_never_sends(self):
         for end in ("bad", "2026-10-06", "2026-10-05T09:00:00+01:00"):
             result = subprocess.run(

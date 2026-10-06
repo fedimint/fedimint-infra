@@ -44,6 +44,12 @@ def instruction(start, end):
         "do not create a second report. Follow the skill's evidence, access, "
         "and safe-publication rules. If blocked, retain the draft and report "
         "the blocker rather than claim publication succeeded.\n"
+        "Only after successful wiki publication and verification, notify the "
+        "maintainers via maintainer_discord_send to fedimint_maintainers with "
+        "the final published wiki page URL. Do not send a draft or unpublished "
+        "link. Follow the existing uncertain-send/no-blind-retry policy; if "
+        "notification is blocked or delivery is uncertain, report that status "
+        "without claiming the notification succeeded.\n"
     )
 
 

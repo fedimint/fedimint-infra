@@ -142,6 +142,10 @@ The oneshot service runs as the bot account in its existing HOME/XDG environment
 and invokes the pinned `tau message '&tau-fedimint-bot'`, with literal stdin and
 **without `--wait-response`**. It asks the existing coordinator to execute the
 installed `fedimint-weekly-dev-summary` skill, including safe wiki publication.
+After successful publication and verification, the prompt asks the coordinator
+to send the final wiki page URL to `fedimint_maintainers` via
+`maintainer_discord_send`. It forbids draft/unpublished links and blind retries
+after uncertain delivery; blocked or uncertain notifications are reported as such.
 It neither starts a new harness/notifier nor starts or restarts the bot.
 
 Transport semantics were checked against installed Tau `91d51d6`: exit zero
