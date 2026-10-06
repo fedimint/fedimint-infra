@@ -1094,7 +1094,7 @@ in
       enable = lib.mkEnableOption "weekly development summary delivery";
       onCalendar = lib.mkOption {
         type = lib.types.str;
-        default = "Mon *-*-* 09:00:00 UTC";
+        default = "Mon *-*-* 06:00:00 America/Los_Angeles";
         description = "systemd calendar for delivery; reports always cover the previous Monday-to-Monday UTC week.";
       };
     };

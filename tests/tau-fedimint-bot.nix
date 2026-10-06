@@ -106,6 +106,7 @@ let
         nativeBuildInputs = [ pkgs.python3 ];
       }
       ''
+        export PYTHONTZPATH=${pkgs.tzdata}/share/zoneinfo
         python3 ${./tau-weekly-summary.py} ${../bin/tau-weekly-summary.py}
         mkdir "$out"
       '';
@@ -1986,7 +1987,7 @@ assert !(disabled.config.age.secrets ? tau-fedimint-discord-token);
 assert discordEnabled.config.age.secrets.tau-fedimint-discord-token.mode == "0400";
 assert discordEnabled.config.age.secrets.tau-fedimint-discord-identity-key.owner == "tau-fedimint";
 assert !(disabled.config.systemd.user.timers ? tau-fedimint-weekly-summary);
-assert weeklyTimer.timerConfig.OnCalendar == "Mon *-*-* 09:00:00 UTC";
+assert weeklyTimer.timerConfig.OnCalendar == "Mon *-*-* 06:00:00 America/Los_Angeles";
 assert
   weeklyAlternate.config.systemd.user.timers.tau-fedimint-weekly-summary.timerConfig.OnCalendar
   == "Tue *-*-* 12:00:00 UTC";

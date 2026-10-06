@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 SCRIPT = Path(sys.argv.pop(1))
@@ -15,6 +16,23 @@ spec.loader.exec_module(weekly)
 
 
 class WeeklySummaryTests(unittest.TestCase):
+    def test_california_schedule_windows(self):
+        california = ZoneInfo("America/Los_Angeles")
+        for date, expected_hour in [
+            ("2026-07-06", 13),  # PDT
+            ("2026-12-07", 14),  # PST
+            ("2026-03-09", 13),  # first Monday after spring transition
+            ("2026-11-02", 14),  # first Monday after fall transition
+        ]:
+            scheduled = datetime.fromisoformat(f"{date}T06:00:00").replace(
+                tzinfo=california
+            )
+            utc = scheduled.astimezone(weekly.timezone.utc)
+            self.assertEqual(utc.hour, expected_hour)
+            start, end = weekly.reporting_window(scheduled)
+            self.assertEqual(weekly.timestamp(end), f"{date}T00:00:00Z")
+            self.assertEqual((end - start).total_seconds(), 7 * 86400)
+
     def test_windows(self):
         for now, expected in [
             ("2026-10-05T09:00:00+00:00", "2026-10-05T00:00:00Z"),

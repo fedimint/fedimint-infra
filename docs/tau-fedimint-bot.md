@@ -77,7 +77,9 @@ configuration still uses the complete fixed-channel config.
 ## Weekly development summary
 
 Runner-01 enables `services.tau-fedimint-bot.weeklySummary.enable`. Its user
-timer `tau-fedimint-weekly-summary.timer` defaults to **Monday 09:00 UTC**;
+timer `tau-fedimint-weekly-summary.timer` defaults to **Monday 06:00 California
+time** (`America/Los_Angeles`, following daylight saving time: 13:00 UTC in
+summer/PDT, 14:00 UTC in winter/PST);
 change `weeklySummary.onCalendar` to select another systemd calendar.
 The delivery time is configurable, but the reporting window always covers the
 most recently completed Monday 00:00 UTC to Monday 00:00 UTC week.
