@@ -1,13 +1,16 @@
 # Tau Fedimint bot
 
-## Private Discord maintainer channel (prepared, disabled)
+## Private Discord maintainer channel
 
-Runner-01 deliberately sets `discord.enable = false`. No Discord subprocess,
-credentials, coordinator grants, or escalation prompt are installed while
-disabled. Weekly reporting and GitHub delivery are unchanged.
+Runner-01 enables the operator-approved private channel using the independently
+pinned published extension and two operator-created encrypted agenix files.
+The bridge admits personal mentions from the three configured human maintainers
+and permits proactive coordinator alerts. Weekly reporting and GitHub delivery
+are unchanged. Setting `discord.enable = false` removes the subprocess,
+credentials, coordinator grants, and escalation prompt.
 
 The operator has supplied the guild/channel and three human maintainer IDs;
-these are recorded in the disabled runner configuration. The operator also
+these are recorded in the runner configuration. The operator also
 confirmed that the app is installed and holds its token privately. Channel
 permissions and live connectivity have not been tested.
 
@@ -26,11 +29,11 @@ command-line arguments; use a local editor without cloud synchronization.
 Only the resulting encrypted `.age` file should be tracked.
 Provision the independent stable identity secret separately, using
 `just agenix-edit secrets/tau-fedimint-discord-identity-key.age` when ready.
-Neither encrypted file is required by evaluation while Discord stays disabled,
-and its secret source options remain unset until the files exist. Editing a
-secret does not activate Discord or deploy the configuration.
+Both encrypted files are wired into the enabled configuration. Editing a secret
+does not deploy the configuration; the new value takes effect after normal
+activation and harness restart.
 
-Activation checklist (operator action required):
+Operator maintenance and live-validation checklist:
 
 1. Confirm the supplied destination is a maintainer-only ordinary guild
    **text channel** and keep the approved **human** sender list current. Channel
@@ -46,9 +49,10 @@ Activation checklist (operator action required):
    pinned source**. Reviewed local revision
    `f5fdea420430773c81b77dc4fbf862db8214f29a` uses SDK/proto 0.10.0, wire 10.2,
    whose credential-free handshake passed against deployed Tau wire 10.4.
-   There is currently no agreed extension publication destination/visibility.
+   The approved public source is pinned from
+   `radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git`.
    Do not commit a workstation `git+file:` input or a raw `/nix/store` path.
-5. Set the following options with the actual values, run the configuration
+5. The following options describe the wiring; run the configuration
    tests and runner closure build, then deploy through the normal runner
    procedure. A live Discord receive/send test requires separate explicit
    authorization; neither mock tests nor handshake tests prove channel access.
@@ -91,12 +95,18 @@ coordinator, while manual registration designates its authenticated caller.
 Incoming Discord content stays external and cannot grant authority or tools;
 the existing requester authorization policy still applies.
 
-The standard flake configuration check covers enabled and disabled wiring
-using a non-running test package. For a real-extension tool/prompt check,
-import `tests/tau-fedimint-bot.nix` with its usual flake arguments and an explicit
-`discordPackage` argument. That check uses **null config and no secrets**, so
-it can verify declarations/grants without connecting to Discord. Production
-configuration still uses the complete fixed-channel config.
+The standard flake configuration check covers enabled and disabled wiring and
+passes the pinned real extension as `discordPackage`. Its effective-tool/prompt
+check uses **null config and no secrets**, so it verifies declarations/grants
+without connecting to Discord. Production configuration uses the complete
+fixed-channel config.
+
+Deployment changes the bot's startup script, so normal NixOS activation restarts
+`tau-fedimint-bot.service`. The existing startup policy clears the fixed
+`tau-fedimint-bot` session before creating a new coordinator and recovering work
+from Clank and repository state. Running agents and pending tools are interrupted;
+coordinate activation around active work. This integration does not change that
+restart policy, and no live test post is part of activation.
 
 ## Weekly development summary
 

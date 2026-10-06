@@ -36,6 +36,8 @@
       inputs.flake-utils.follows = "flake-utils";
     };
 
+    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=f5fdea420430773c81b77dc4fbf862db8214f29a";
+
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f";
 
     gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=87fb282f493bcf32b0ffc28b5738fefda9188618";
@@ -283,10 +285,11 @@
               services.tau-fedimint-bot = {
                 enable = true;
                 weeklySummary.enable = true;
-                # Confirmed identities; remain offline until managed secrets
-                # and an approved portable extension source are supplied.
+                # Operator-approved private channel, humans and encrypted
+                # credentials; the extension source is independently pinned.
                 discord = {
-                  enable = false;
+                  enable = true;
+                  package = inputs.tau-ext-discord.packages.x86_64-linux.tau-ext-discord;
                   guildId = 990354215060795454;
                   channelId = 1023312920634994838;
                   allowedUserIds = [
@@ -294,7 +297,8 @@
                     999685318158602331 # m1sterc00lguy
                     913133336749305856 # elsirion
                   ];
-                  # Leave secret source options unset until encrypted files exist.
+                  tokenAgeFile = ./secrets/tau-fedimint-discord-token.age;
+                  identityKeyAgeFile = ./secrets/tau-fedimint-discord-identity-key.age;
                 };
                 tauPackage = inputs.tau.packages.x86_64-linux.tau;
                 isolatePackage = inputs.isolate.packages.x86_64-linux.default;
@@ -383,6 +387,7 @@
               skillsSource = inputs.linked-specs-skills;
               fedimintSkillsSource = inputs.fedimint-skills;
               githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
+              discordPackage = inputs.tau-ext-discord.packages.${system}.tau-ext-discord;
             };
             runner-root-ssh-authorization = import ./tests/runner-root-ssh-authorization.nix {
               inherit system nixpkgs;
