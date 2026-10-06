@@ -353,12 +353,14 @@ let
           bot_token_secret = "discord_bot_token";
           identity_key_secret = "discord_identity_key";
           allowed_user_ids = cfg.discord.allowedUserIds;
+          sender_aliases = cfg.discord.senderAliases;
           message_content = false;
           register_on_start = true;
           role = "coordinator";
           conversations = [
             {
               alias = "fedimint_maintainers";
+              display_name = cfg.discord.displayName;
               guild_id = cfg.discord.guildId;
               channel_id = cfg.discord.channelId;
               description = "Fedimint maintainer assistance";
@@ -1210,6 +1212,23 @@ in
         type = lib.types.listOf lib.types.ints.positive;
         default = [ ];
         description = "Explicit human maintainer snowflakes; channel membership alone does not admit input.";
+      };
+      senderAliases = lib.mkOption {
+        type = lib.types.listOf (
+          lib.types.submodule {
+            options = {
+              user_id = lib.mkOption { type = lib.types.ints.positive; };
+              alias = lib.mkOption { type = lib.types.str; };
+            };
+          }
+        );
+        default = [ ];
+        description = "Inert operator-configured sender labels for already admitted Discord users; admission and stable identity remain unchanged.";
+      };
+      displayName = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Inert channel presentation label; never a routing alias or authorization grant.";
       };
       tokenAgeFile = lib.mkOption {
         type = lib.types.nullOr lib.types.path;

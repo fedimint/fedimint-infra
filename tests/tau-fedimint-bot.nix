@@ -130,6 +130,13 @@ let
     guildId = 123456789012345678;
     channelId = 234567890123456789;
     allowedUserIds = [ 345678901234567890 ];
+    senderAliases = [
+      {
+        user_id = 345678901234567890;
+        alias = "maintainer";
+      }
+    ];
+    displayName = "Fedimint maintainers";
     tokenAgeFile = builtins.toFile "discord-token.age" "test-only";
     identityKeyAgeFile = builtins.toFile "discord-identity.age" "test-only";
   };
@@ -294,9 +301,11 @@ let
             bot_token_secret:"discord_bot_token",
             identity_key_secret:"discord_identity_key",
             allowed_user_ids:[345678901234567890],
+            sender_aliases:[{user_id:345678901234567890, alias:"maintainer"}],
             message_content:false, register_on_start:true, role:"coordinator",
             conversations:[{
               alias:"fedimint_maintainers", guild_id:123456789012345678,
+              display_name:"Fedimint maintainers",
               channel_id:234567890123456789, description:"Fedimint maintainer assistance",
               receive:"mentions_only", proactive_send:true
             }]

@@ -8994,16 +8994,16 @@
         "selfci": "selfci_9"
       },
       "locked": {
-        "lastModified": 1791245139,
-        "narHash": "sha256-ATbv3/lhhafNKridgdQ32U3ooqxZoLBEooQ6zIWOKPI=",
+        "lastModified": 1791261399,
+        "narHash": "sha256-zT6LYIc4c3+v1r7x9zEE5KCBIdjZZJDnYchmCwgO2Eg=",
         "ref": "refs/heads/main",
-        "rev": "f5fdea420430773c81b77dc4fbf862db8214f29a",
-        "revCount": 31,
+        "rev": "fae57e20fb8376a4098ed31e104b579b675a1ecc",
+        "revCount": 32,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git"
       },
       "original": {
-        "rev": "f5fdea420430773c81b77dc4fbf862db8214f29a",
+        "rev": "fae57e20fb8376a4098ed31e104b579b675a1ecc",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git"
       }

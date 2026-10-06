@@ -47,7 +47,7 @@ Operator maintenance and live-validation checklist:
    prompts, tickets, logs, or chat. Add only encrypted `.age` files.
 4. Supply a compatible `tau-ext-discord` **package from an approved portable
    pinned source**. Reviewed local revision
-   `f5fdea420430773c81b77dc4fbf862db8214f29a` uses SDK/proto 0.10.0, wire 10.2,
+   `fae57e20fb8376a4098ed31e104b579b675a1ecc` uses SDK/proto 0.10.0, wire 10.2,
    whose credential-free handshake passed against deployed Tau wire 10.4.
    The approved public source is pinned from
    `radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git`.
@@ -72,6 +72,16 @@ services.tau-fedimint-bot.discord = {
 The symbolic values above are a template, not deployable identities.
 Keep snowflakes as exact positive integers (Nix supports signed 64-bit
 integers); do not round-trip IDs through floating-point JSON tools.
+
+The production configuration sets the operator-configured display label
+`Fedimint maintainers`, not a verified native Discord channel name.
+`displayName` becomes the extension's optional `conversations[].display_name`;
+`senderAliases` supplies existing `sender_aliases` entries (`user_id`, `alias`)
+for the already admitted dpc, m1sterc00lguy, and elsirion IDs. These labels are
+inert presentation, not identity lookup or authorization. The route stays
+`fedimint_maintainers` and the extension stays `maintainer-discord`.
+Incoming messages, replies, and proactive sends use the same configured
+channel presentation; retained reports keep their original labels.
 
 Enabled wiring requires the extension and both secrets rather than silently
 dropping escalation on startup failure. Agenix keeps decrypted sources under

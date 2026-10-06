@@ -36,7 +36,7 @@
       inputs.flake-utils.follows = "flake-utils";
     };
 
-    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=f5fdea420430773c81b77dc4fbf862db8214f29a";
+    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=fae57e20fb8376a4098ed31e104b579b675a1ecc";
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f";
 
@@ -292,6 +292,21 @@
                   package = inputs.tau-ext-discord.packages.x86_64-linux.tau-ext-discord;
                   guildId = 990354215060795454;
                   channelId = 1023312920634994838;
+                  displayName = "Fedimint maintainers";
+                  senderAliases = [
+                    {
+                      user_id = 332755519561400320;
+                      alias = "dpc";
+                    }
+                    {
+                      user_id = 999685318158602331;
+                      alias = "m1sterc00lguy";
+                    }
+                    {
+                      user_id = 913133336749305856;
+                      alias = "elsirion";
+                    }
+                  ];
                   allowedUserIds = [
                     332755519561400320 # dpc
                     999685318158602331 # m1sterc00lguy
