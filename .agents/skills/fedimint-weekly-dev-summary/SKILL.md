@@ -140,12 +140,62 @@ draft plus the blocker; publish an explicitly partial report only if requested.
 Do not claim exhaustive historical recovery. Do not silently truncate the report
 to fit a response or tool limit.
 
+## Classify activity by significance and outcome
+
+Within each of **Pull requests** and **Issues**, use these four subsections in
+this exact order: **done**, **updated**, **abandoned**, **unimportant**.
+Assign every item with observed in-window activity to exactly one subsection,
+using the collected evidence and refreshed current status:
+
+1. **unimportant** — The work is routine or insignificant, or its only observed
+   in-window activity is not meaningful (e.g. a routine rebase or machine-update).
+   An important older item with only routine activity this week belongs here.
+   Automation alone is not grounds for this classification: an automated fix
+   can deliver meaningful work.
+2. For items with meaningful in-window activity, classify the work's outcome:
+   - **done** — Meaningful work completed: a merged PR or an issue demonstrably
+     resolved/completed. A closed issue is not automatically abandoned; a closed
+     unmerged PR can also be completed if evidence shows its work landed elsewhere.
+   - **updated** — Meaningful progress, but work remains incomplete/open,
+     including reopened work. Discussion, diagnosis, design, or review can be
+     meaningful progress even without code changes.
+   - **abandoned** — Meaningful work closed without completion. Use observable
+     closure evidence, not invented motives; quote or summarize a reason only
+     when explicitly supported. Closure as duplicate or superseded requires
+     checking whether the work was completed elsewhere, not assuming completion.
+
+Apply significance before outcome; do not put routine work in done merely
+because it merged. The entry's activity still covers only the reporting window,
+while its category reflects the outcome at the recorded current-status check.
+If completion or closure happened after the window, explicitly distinguish that
+later outcome from this week's activity. Do not treat later activity as evidence
+of in-window progress. If evidence cannot distinguish completion from abandonment,
+record the uncertainty and follow the existing incomplete-evidence publication
+policy rather than guess.
+
+Examples (not report data):
+
+| Observed in-window activity and verified current outcome | Subsection |
+| --- | --- |
+| Substantive PR fix, now merged | done |
+| Issue diagnosis, fix verified and issue closed as resolved | done |
+| PR implementation/review, still open with work remaining | updated |
+| Issue discussion establishes a reproducer, still open | updated |
+| Substantive PR proposal, closed unmerged without completion | abandoned |
+| Meaningful issue investigation, explicitly closed without resolution | abandoned |
+| Important PR has only a routine rebase this window | unimportant |
+| Issue has only a routine machine label update this window | unimportant |
+| Automated PR fixes a substantive regression, now merged | done |
+| Issue closed as duplicate, linked fix verifies completion | done |
+| Meaningful work reopened after earlier closure, now incomplete | updated |
+
 ## Compose one page
 
 Use the structure below every time. The example is fictional: replace every
 placeholder, number, link, and assertion with verified report data. Keep entries
 concise; retain one entry per active item, with PRs only in the PR section.
-Order entries by item number within each section. Include links to material
+Order entries by item number within each subsection. Use level-three category
+headings and level-four item headings. Include links to material
 comments, reviews, or commits when they explain progress or blockers.
 
 For **Next**, prefer the explicit outstanding action from the discussion. Name
@@ -172,7 +222,13 @@ a closed issue or PR can still have an explicit follow-up.
 
 ## Pull requests
 
-### [#123 — Example implementation](https://github.com/fedimint/fedimint/pull/123)
+### done
+
+None.
+
+### updated
+
+#### [#123 — Example implementation](https://github.com/fedimint/fedimint/pull/123)
 
 - **What was done this week:** Added the implementation and received review
   feedback requesting a regression test ([review](https://github.com/fedimint/fedimint/pull/123#pullrequestreview-456)).
@@ -180,20 +236,47 @@ a closed issue or PR can still have an explicit follow-up.
   current head, but the requested regression test is still absent.
 - **Next:** Author to add the requested regression test, then request re-review.
 
+### abandoned
+
+None.
+
+### unimportant
+
+None.
+
 ## Issues
 
-### [#124 — Example bug report](https://github.com/fedimint/fedimint/issues/124)
+### done
+
+None.
+
+### updated
+
+#### [#124 — Example bug report](https://github.com/fedimint/fedimint/issues/124)
 
 - **What was done this week:** Reporter supplied logs; discussion narrowed the
   failure to reconnect handling ([comment](https://github.com/fedimint/fedimint/issues/124#issuecomment-789)).
 - **Current status:** Open; maintainers requested a minimal reproducer.
 - **Next:** Reporter to supply the requested reproducer before diagnosis continues.
+
+### abandoned
+
+None.
+
+### unimportant
+
+None.
 ```
 
-Keep both sections even when empty. Use `No pull requests with observed activity
+Keep both sections and all four subsections even when empty. Use `None.` for
+an empty subsection. If a whole section is empty, also state
+`No pull requests with observed activity
 in this window.` or `No issues with observed activity in this window.` If neither
 has activity, say so in the overview; do not invent progress or next steps.
 Coverage must describe the actual collection outcome, not copy the example.
+Count unimportant entries in coverage; do not omit or duplicate them. Keep their
+entries short, explaining the routine activity, current status, and any supported
+next action without promoting routine churn as main progress in the overview.
 
 ## Publish safely to the wiki
 
@@ -208,6 +291,8 @@ permissions, or use an alternative client/path to bypass an access denial.
    if the target is not clearly this window's generated report, stop and ask.
 2. Check the rendered Markdown, links, exact window, coverage, item counts,
    deduplication, status timestamps, and evidence for every next action.
+   Verify all four subsections under both Pull requests and Issues, exactly one
+   placement per active item, and evidence for each significance/outcome decision.
    Inspect the Git diff: only the intended report file may change, except that
    the prescribed same-window rename may delete the old report path and add
    the new one. No other paths may change.

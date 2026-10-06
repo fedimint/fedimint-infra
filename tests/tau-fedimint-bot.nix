@@ -108,6 +108,7 @@ let
       ''
         export PYTHONTZPATH=${pkgs.tzdata}/share/zoneinfo
         python3 ${./tau-weekly-summary.py} ${../bin/tau-weekly-summary.py}
+        python3 ${./tau-weekly-summary-skill.py} ${../.agents/skills/fedimint-weekly-dev-summary}/SKILL.md
         python3 ${./tau-github-collect.py} ${../bin/tau-github-collect.py}
         mkdir "$out"
       '';
