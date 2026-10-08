@@ -646,8 +646,12 @@ let
         grep -Fq 'or make unrelated writes' "$TMPDIR/coordinator-prompt"
         grep -Fq "Overwrite another author's branch only when" \
           "$TMPDIR/coordinator-prompt"
-        grep -Fq 'Never force-push or change an existing pull request' \
-          "$TMPDIR/coordinator-prompt"
+        for prompt in "$TMPDIR/coordinator-prompt" "$TMPDIR/engineer-prompt"; do
+          ! grep -Fq 'Never force-push' "$prompt"
+          grep -Fq 'expected-old-OID force-with-lease over configured Git SSH' "$prompt"
+          grep -Fq 'concurrent contributions' "$prompt"
+          grep -Fq 'including trunk/protected branches' "$prompt"
+        done
         ! grep -Fq 'Never approve a backward-incompatible change' "$TMPDIR/coordinator-prompt"
         grep -Fq 'Fedimint does not guarantee Rust source/API compatibility' \
           "$TMPDIR/coordinator-prompt"
@@ -679,7 +683,7 @@ let
           "$TMPDIR/engineer-prompt"
         grep -Fq 'only when an authorized maintainer explicitly requests' \
           "$TMPDIR/engineer-prompt"
-        grep -Fq 'Never force-push or change an existing pull' \
+        grep -Fq 'Never change an existing pull request' \
           "$TMPDIR/engineer-prompt"
 
         grep -Fq '# Before checkout' "$TMPDIR/engineer-checkout-prompt"
@@ -724,8 +728,21 @@ let
         grep -Fq 'disposition delivered issue activity' "$maintainer_skill"
         grep -Fq 'Default to delivering requested changes as a pull request' \
           "$maintainer_skill"
-        grep -Fq 'requested branch overwrite would require force-push' \
+        grep -Fq 'All other' \
           "$maintainer_skill"
+        grep -Fq 'expected-old-OID force-with-lease and concurrent-contribution checks' \
+          "$maintainer_skill"
+        grep -Fq 'numeric user ID `332691140`' "$github_skill"
+        grep -Fq 'current branch protection/rulesets' "$github_skill"
+        grep -Fq 'last verified bot-published state' "$github_skill"
+        grep -Fq 'new or unaccounted-for commits appeared, stop' "$github_skill"
+        grep -Fq 'git push --force-with-lease=refs/heads/BRANCH:EXPECTED_OLD_OID' "$github_skill"
+        grep -Fq 'origin LOCAL_COMMIT:refs/heads/BRANCH' "$github_skill"
+        grep -Fq 'Never use plain `--force`, a bare `--force-with-lease`' "$github_skill"
+        grep -Fq 'Do not refresh the' "$github_skill"
+        grep -Fq 'expected OID and retry blindly' "$github_skill"
+        grep -Fq 'exact PR head OID before claiming delivery' "$github_skill"
+        grep -Fq 'or broker/API/credential bypasses' "$github_skill"
         grep -Fq 'Do not review a draft' "$review_skill"
         grep -Fq 'ready_for_review' "$review_skill"
         grep -Fq 'new explicit request from a verified maintainer' "$review_skill"

@@ -663,8 +663,12 @@ let
                 Default to delivering requested changes as pull requests. Never
                 merge or make unrelated changes. Overwrite another author's branch
                 only when an authorized maintainer explicitly requests that exact
-                branch and change. Never force-push or change an existing pull
-                request's base or head.
+                branch and change. Never change an existing pull request's base or
+                head identity. Allow non-fast-forward updates only to verified
+                bot-owned `tau/` PR branches using the `github-cli` procedure:
+                explicit expected-old-OID force-with-lease over configured Git SSH,
+                preserving concurrent contributions. All other force-pushes remain
+                forbidden, including trunk/protected branches.
 
                 # Completion
 
@@ -750,8 +754,12 @@ let
                 Default to delivering requested changes as pull requests. Never merge
                 or make unrelated writes. Overwrite another author's branch only when
                 an authorized maintainer explicitly requests that exact branch and
-                change. Never force-push or change an existing pull request's base or
-                head.
+                change. Never change an existing pull request's base or head
+                identity. Allow non-fast-forward updates only to verified bot-owned
+                `tau/` PR branches using the `github-cli` procedure: explicit
+                expected-old-OID force-with-lease over configured Git SSH, preserving
+                concurrent contributions. All other force-pushes remain forbidden,
+                including trunk/protected branches.
 
                 # Approval limits
 

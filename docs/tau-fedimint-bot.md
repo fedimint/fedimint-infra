@@ -726,13 +726,28 @@ gh api --method PATCH repos/OWNER/REPO/issues/comments/COMMENT_ID --raw-field bo
 gh api --method PATCH repos/OWNER/REPO/pulls/comments/COMMENT_ID --raw-field body=TEXT
 ```
 
-Permanent deletion, merge, force-push, changes to an existing pull request's base
-or head, moderation, administration, review dismissal, auth/config access, and
+Permanent deletion, merge, changes to an existing pull request's base
+or head identity, moderation, administration, review dismissal, auth/config access, and
 arbitrary API calls remain denied. Branch publication uses the configured Git SSH
 remote rather than the GitHub broker. Updating another author's exact branch
 requires an authorized maintainer's explicit request for that branch and change;
 otherwise the bot publishes a new non-conflicting `tau/` head. The broker's
 upstream `docs/collaboration.md` is the complete executable capability contract.
+
+An authorized update to an existing bot-owned `tau/` pull-request branch may
+rewrite scoped bot commits through configured Git SSH, not through the broker.
+The `github-cli` skill defines the required procedure: verify the open PR's bot
+author identity, exact head repository/ref/OID, and branch protection; fetch and
+inspect the current head against the last verified bot-published state; preserve
+others' contributions; and complete normal checks and independent review.
+Publication uses only an explicit expected-old-OID
+`--force-with-lease=refs/heads/BRANCH:EXPECTED_OLD_OID` and one exact refspec.
+A failed lease or unaccounted-for contribution stops publication, rather than
+authorizing a refreshed lease and blind retry. Verify remote state after success
+or an ambiguous result. Plain force, implicit leases, other authors' branches
+(including Dependabot), trunk/release/protected branches, wiki history rewrites,
+and broker or credential bypasses remain forbidden. This does not change the PR's
+base or head identity or expand standing Dependabot remediation authority.
 
 The coordinator posts the delivered pull request URL on the originating
 discussion. It reports publication as blocked only after an observed broker,

@@ -42,6 +42,9 @@ branch.
 
 A local commit, patch, artifact, or comment containing a diff does not satisfy
 pull-request delivery. Post the delivered pull-request URL on the originating
-discussion. Never merge, force-push, or change an existing pull request's base or
-head. If a requested branch overwrite would require force-push or is unsupported,
-report that concrete blocker instead of widening authority.
+discussion. Never merge or change an existing pull request's base or head identity.
+For an authorized update to a verified bot-owned `tau/` pull-request branch, follow
+the `github-cli` bot-owned pull-request procedure, including its explicit
+expected-old-OID force-with-lease and concurrent-contribution checks. All other
+force-pushes remain forbidden. If an update is unsupported, report that concrete
+blocker instead of widening authority.
