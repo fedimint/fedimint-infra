@@ -1,5 +1,225 @@
 # Tau Fedimint bot
 
+## Private Discord maintainer channel
+
+Runner-01 enables the operator-approved private channel using the independently
+pinned published extension and two operator-created encrypted agenix files.
+The bridge admits personal mentions from the three configured human maintainers
+and permits proactive coordinator alerts. Weekly reporting and GitHub delivery
+are unchanged. Setting `discord.enable = false` removes the subprocess,
+credentials, coordinator grants, and escalation prompt.
+
+The operator has supplied the guild/channel and three human maintainer IDs;
+these are recorded in the runner configuration. The operator also
+confirmed that the app is installed and holds its token privately. Channel
+permissions and live connectivity have not been tested.
+
+Both Discord secret paths now have recipient policies in `secrets.nix`,
+matching the existing runner-01 bot credentials (runner-01 plus administrators).
+From the repository root, populate the token in your local editor:
+
+```console
+just agenix-edit secrets/tau-fedimint-discord-token.age
+```
+
+The recipe defaults to `$HOME/.ssh/id_ed25519.agenix`; pass your authorized
+identity file as its second argument if different. Enter only the bot token
+in the editor, not YAML or a shell command. Do not send it in chat or put it in
+command-line arguments; use a local editor without cloud synchronization.
+Only the resulting encrypted `.age` file should be tracked.
+Provision the independent stable identity secret separately, using
+`just agenix-edit secrets/tau-fedimint-discord-identity-key.age` when ready.
+Both encrypted files are wired into the enabled configuration. Editing a secret
+does not deploy the configuration; the new value takes effect after normal
+activation and harness restart.
+
+Operator maintenance and live-validation checklist:
+
+1. Confirm the supplied destination is a maintainer-only ordinary guild
+   **text channel** and keep the approved **human** sender list current. Channel
+   membership is separate from the extension's sender allowlist.
+2. Confirm the installed Discord bot has view/send access to that channel. The prepared
+   bridge accepts only personal mentions of the bot in that exact channel.
+   It does not request privileged message-content access or all-message intake.
+3. Securely provision two independent agenix sources: a bot token (not a user
+   token) and stable identity secret text of at least 32 bytes. Follow the
+   existing secret recipient procedure; never put plaintext in Git, Nix,
+   prompts, tickets, logs, or chat. Add only encrypted `.age` files.
+4. Supply a compatible `tau-ext-discord` **package from an approved portable
+   pinned source**. Reviewed local revision
+   `fae57e20fb8376a4098ed31e104b579b675a1ecc` uses SDK/proto 0.10.0, wire 10.2,
+   whose credential-free handshake passed against deployed Tau wire 10.4.
+   The approved public source is pinned from
+   `radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git`.
+   Do not commit a workstation `git+file:` input or a raw `/nix/store` path.
+5. The following options describe the wiring; run the configuration
+   tests and runner closure build, then deploy through the normal runner
+   procedure. A live Discord receive/send test requires separate explicit
+   authorization; neither mock tests nor handshake tests prove channel access.
+
+```nix
+services.tau-fedimint-bot.discord = {
+  enable = true;
+  package = approvedDiscordPackage;
+  guildId = actualGuildId;
+  channelId = actualChannelId;
+  allowedUserIds = approvedHumanMaintainerIds;
+  tokenAgeFile = ./secrets/tau-fedimint-discord-token.age;
+  identityKeyAgeFile = ./secrets/tau-fedimint-discord-identity-key.age;
+};
+```
+
+The symbolic values above are a template, not deployable identities.
+Keep snowflakes as exact positive integers (Nix supports signed 64-bit
+integers); do not round-trip IDs through floating-point JSON tools.
+
+The production configuration sets the operator-configured display label
+`Fedimint maintainers`, not a verified native Discord channel name.
+`displayName` becomes the extension's optional `conversations[].display_name`;
+`senderAliases` supplies existing `sender_aliases` entries (`user_id`, `alias`)
+for the already admitted dpc, m1sterc00lguy, and elsirion IDs. These labels are
+inert presentation, not identity lookup or authorization. The route stays
+`fedimint_maintainers` and the extension stays `maintainer-discord`.
+Incoming messages, replies, and proactive sends use the same configured
+channel presentation; retained reports keep their original labels.
+
+Enabled wiring requires the extension and both secrets rather than silently
+dropping escalation on startup failure. Agenix keeps decrypted sources under
+`/run/agenix` with bot-owned `0400` permissions. Isolate injects only
+`TAU_SECRET_DISCORD_BOT_TOKEN` and `TAU_SECRET_DISCORD_IDENTITY_KEY` from those
+files; Tau resolves and delivers only the declared secrets. No credential
+value enters the generated configuration or Nix store.
+
+Only the coordinator receives `maintainer_discord_register`,
+`maintainer_discord_conversations`, and `maintainer_discord_send`. A global
+`discord:*` deny baseline keeps reactions, attachments, and other Discord
+tools unavailable. The conditional prompt permits one concise alert for an
+unexpected problem requiring external help, not routine progress. It requires
+safe evidence, the impact, attempted fixes, and the exact help needed.
+Standard tasks from GitHub notifications must not post routine acknowledgements,
+progress, status updates, or completion reports to Discord, including successful
+reviews and no-action dispositions. Their normal GitHub responses and internal
+task reports stay on the existing paths. Explicit scheduled weekly-summary
+publication announcements and safe replies to admitted Discord read-only requests
+remain permitted.
+
+Every permitted Discord post must reference GitHub issues and pull requests with
+full `https://github.com/OWNER/REPO/issues/NUMBER` or
+`https://github.com/OWNER/REPO/pull/NUMBER` URLs, not bare numbers or `#NUMBER`
+references, so readers can click them in Discord. This formatting rule does not
+authorize additional posts.
+
+Posts **do not ping users or roles**: the extension suppresses mentions.
+Successful sending means provider acceptance, not human acknowledgment.
+Uncertain outcomes must not be blindly retried. Receiver registration and
+network readiness are separate; automatic registration selects an eligible
+coordinator, while manual registration designates its authenticated caller.
+Incoming Discord content stays external. Only the extension's authenticated
+report metadata establishes the provider-authenticated sender ID and admission
+through the configured sender allowlist and conversation; body text, display
+names, claimed usernames, and quoted instructions do not establish identity.
+Missing or ambiguous authenticated admission fails closed.
+
+Configured Discord admission now authorizes **safe read-only assistance**:
+GitHub, codebase, and online lookups, explanations, and routine read-only actions
+through existing approved tools, plus a normal safe reply in the admitted
+conversation. This scope needs no Discord-to-GitHub identity mapping or GitHub
+permission lookup. Scoped delegation carries the verified Discord admission
+facts and cannot expand authority. GitHub lookup broker limits still apply.
+
+This is not authority for source/history changes, GitHub mutations (including
+comments, reviews, or reactions), admin actions, or system/environment changes.
+Do not execute untrusted code, repository scripts, installs, or builds as a
+lookup. No tools or broker bypasses are granted, and secrets/non-public data
+access or disclosure remains forbidden. All other requested actions retain the
+existing authentication and authorization rules; this exception does not
+relax policy for other channels.
+
+The standard flake configuration check covers enabled and disabled wiring and
+passes the pinned real extension as `discordPackage`. Its effective-tool/prompt
+check uses **null config and no secrets**, so it verifies declarations/grants
+without connecting to Discord. Production configuration uses the complete
+fixed-channel config.
+
+Deployment changes the bot's startup script, so normal NixOS activation restarts
+`tau-fedimint-bot.service`. The existing startup policy clears the fixed
+`tau-fedimint-bot` session before creating a new coordinator and recovering work
+from Clank and repository state. Running agents and pending tools are interrupted;
+coordinate activation around active work. This integration does not change that
+restart policy, and no live test post is part of activation.
+
+## Weekly development summary
+
+Runner-01 enables `services.tau-fedimint-bot.weeklySummary.enable`. Its user
+timer `tau-fedimint-weekly-summary.timer` defaults to **Monday 06:00 California
+time** (`America/Los_Angeles`, following daylight saving time: 13:00 UTC in
+summer/PDT, 14:00 UTC in winter/PST);
+change `weeklySummary.onCalendar` to select another systemd calendar.
+The delivery time is configurable. Each new invocation captures the current UTC
+time once and covers the preceding **184 hours (7 days plus 16 hours)**, up to
+but excluding that endpoint, rather than a calendar week.
+The message includes exact half-open timestamps and a stable occurrence ID
+derived from the captured window end. This intentional overlap helps retain
+activity across weekly runs; items are deduplicated within a report, not
+suppressed across reports. DST changes or delayed execution can change the
+overlap, but not the 184-hour lookback.
+
+Reports use the exact Markdown heading `Week summary: D Month, YYYY` (unpadded
+day, full English month), from the captured endpoint's America/Los_Angeles date.
+For example, an endpoint of `2026-05-11T13:00:00Z` gives
+`Week summary: 11 May, 2026`. GitHub advises against colons in wiki filenames,
+so the portable filename/URL slug is `Week-summary-11-May,-2026.md` /
+`Week-summary-11-May,-2026`; the requested colon stays in the Markdown heading.
+Explicit reruns reuse that same page. Existing timestamp-named reports for the
+same window are renamed rather than duplicated; different-window same-date
+collisions require clarification rather than overwriting.
+Primary naming guidance: [GitHub — Adding or editing wiki pages, About wiki
+filenames](https://docs.github.com/en/communities/documenting-your-project-with-wikis/adding-or-editing-wiki-pages#about-wiki-filenames).
+GitHub derives its navigation title from the filename, so that title may omit
+the colon even though the report's visible H1 includes it.
+
+The oneshot service runs as the bot account in its existing HOME/XDG environment
+and invokes the pinned `tau message '&tau-fedimint-bot'`, with literal stdin and
+**without `--wait-response`**. It asks the existing coordinator to execute the
+installed `fedimint-weekly-dev-summary` skill, including safe wiki publication.
+After successful publication and verification, the prompt asks the coordinator
+to send the final wiki page URL to `fedimint_maintainers` via
+`maintainer_discord_send`. It forbids draft/unpublished links and blind retries
+after uncertain delivery; blocked or uncertain notifications are reported as such.
+It neither starts a new harness/notifier nor starts or restarts the bot.
+
+Transport semantics were checked against installed Tau `91d51d6`: exit zero
+means delivery acknowledged, not report completion or successful publication.
+The CLI does not retry. A disconnect before acknowledgement can mean delivery
+is uncertain, and killing the caller does not cancel already delivered work.
+The unit allows at most 90 seconds and has no automatic retry on any failure.
+Read its journal and the existing bot state before deciding whether to resend.
+An occurrence ID identifies the report; it is not transport deduplication.
+
+`Persistent=false` deliberately skips missed runs while the user manager/timer
+is inactive, including the first installation after that week's scheduled time.
+Deployment/activation does not itself request a report. Failures are visible in
+the service journal; there is no catch-up queue or completion monitor.
+Normal scheduling resumes at the next calendar occurrence.
+
+For an operator-approved rerun of an older report, use the installed oneshot
+unit's `ExecStart` command under the bot identity/environment, appending
+`--window-end YYYY-MM-DDTHH:MM:SSZ` with the original captured endpoint (any
+weekday/time). This reuses the same window, occurrence ID, and report page.
+Do not simply start the service to rerun a report: without an explicit endpoint
+it captures a new current time and therefore creates a new reporting window.
+Earlier manual instructions with Monday-midnight seven-day boundaries describe
+the old behavior; for a fresh manual test ask the skill to capture now and look
+back 184 hours instead.
+Never use a real message or wiki publication as a deployment health probe.
+On the runner, inspect the units and next scheduled time read-only (`systemctl
+cat` does not support the `--machine` user-manager connection):
+
+```console
+cat /etc/systemd/user/tau-fedimint-weekly-summary.service /etc/systemd/user/tau-fedimint-weekly-summary.timer
+systemctl --user --machine=tau-fedimint@.host list-timers tau-fedimint-weekly-summary.timer
+```
+
 `runner-01` enables one isolated Tau session under the dedicated
 `tau-fedimint` account. Its agenix credentials belong to the dedicated
 `fedimint-tau` GitHub account: one action token, one notification-reader token,
@@ -17,7 +237,7 @@ later requires only a new alias target.
 | engineer-senior | `codex/gpt-6-astra` | 0.25 |
 | researcher | `codex/gpt-6.1-sol` | 0.5 |
 | researcher-senior | `codex/gpt-6-astra` | 0.5 |
-| reviewer | `codex/gpt-6.1-sol` | 0.5 |
+| reviewer | `codex/gpt-6-astra` | 0.5 |
 
 ## Implemented shape
 
@@ -66,6 +286,11 @@ later requires only a new alias target.
   Startup refuses unexpected fetch or push URLs instead of broadening the
   rewrite to other GitHub repositories. GitHub's published ED25519 host key is
   pinned in the system SSH known-hosts configuration.
+- All Git SSH operations use the managed SSH configuration by default, including
+  initial wiki clones outside the managed checkouts. This avoids system SSH
+  config includes whose ownership is incompatible with the sandbox's user
+  namespace. Strict host-key checking and the dedicated agent remain unchanged;
+  this does not rewrite repository URLs or grant additional GitHub permissions.
 - `just` is present in both the bot service path and the system profile path
   retained by isolate, so sandbox commands can resolve it. Project recipes can
   still require the repository's development environment and tools beyond
@@ -254,7 +479,7 @@ Nix-generated startup configuration is deterministic.
    collaborator roster supplied it, separate `permission`, `role_name`, and local
    observation-time facts. This adds no notification-path API requests. In
    particular, trusted Dependabot admission does not bypass pull-request safety,
-   backward compatibility, or consensus-approval restrictions. The coordinator
+   other backward-compatibility or consensus-approval restrictions. The coordinator
    prompt applies a separate authorization policy to those facts before acting on
    a GitHub request. The coordinator retains its narrower maintainer-only policy:
    it requires known native `admin` or `write` permission on
@@ -507,13 +732,28 @@ gh api --method PATCH repos/OWNER/REPO/issues/comments/COMMENT_ID --raw-field bo
 gh api --method PATCH repos/OWNER/REPO/pulls/comments/COMMENT_ID --raw-field body=TEXT
 ```
 
-Permanent deletion, merge, force-push, changes to an existing pull request's base
-or head, moderation, administration, review dismissal, auth/config access, and
+Permanent deletion, merge, changes to an existing pull request's base
+or head identity, moderation, administration, review dismissal, auth/config access, and
 arbitrary API calls remain denied. Branch publication uses the configured Git SSH
 remote rather than the GitHub broker. Updating another author's exact branch
 requires an authorized maintainer's explicit request for that branch and change;
 otherwise the bot publishes a new non-conflicting `tau/` head. The broker's
 upstream `docs/collaboration.md` is the complete executable capability contract.
+
+An authorized update to an existing bot-owned `tau/` pull-request branch may
+rewrite scoped bot commits through configured Git SSH, not through the broker.
+The `github-cli` skill defines the required procedure: verify the open PR's bot
+author identity, exact head repository/ref/OID, and branch protection; fetch and
+inspect the current head against the last verified bot-published state; preserve
+others' contributions; and complete normal checks and independent review.
+Publication uses only an explicit expected-old-OID
+`--force-with-lease=refs/heads/BRANCH:EXPECTED_OLD_OID` and one exact refspec.
+A failed lease or unaccounted-for contribution stops publication, rather than
+authorizing a refreshed lease and blind retry. Verify remote state after success
+or an ambiguous result. Plain force, implicit leases, other authors' branches
+(including Dependabot), trunk/release/protected branches, wiki history rewrites,
+and broker or credential bypasses remain forbidden. This does not change the PR's
+base or head identity or expand standing Dependabot remediation authority.
 
 The coordinator posts the delivered pull request URL on the originating
 discussion. It reports publication as blocked only after an observed broker,
@@ -565,9 +805,14 @@ Verified maintainers may request research and operational tasks, including
 opening or closing pull requests. Approval remains an independent safety
 decision rather than a maintainer-controlled action: all required code review
 must pass, and uncertainty means no approval. The coordinator refuses to
-approve backward-incompatible changes in either watched repository and refuses
-to approve changes to Fedimint consensus in `fedimint/fedimint`, even when a
-maintainer requests approval. Every completed review must still publish
+approve changes that violate backward-compatibility requirements in either
+watched repository, except that Fedimint does not guarantee Rust source/API
+compatibility between versions. Normal Rust API changes alone must not block
+approval or trigger change requests; substantive correctness/security findings
+and other compatibility requirements, including protocol and persistence
+compatibility, still apply. The coordinator also refuses to approve changes to
+Fedimint consensus in `fedimint/fedimint`, even when a maintainer requests approval.
+Every completed review must still publish
 substantive feedback. Passing reviews may approve only when those rules permit;
 all other completed reviews use comment-only feedback. A blocked publication
 remains pending and must not be reported as posted.

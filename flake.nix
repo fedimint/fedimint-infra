@@ -27,7 +27,7 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=0bb9ac5a3e8eadf720b8a20b5dd7f1c1b0f419ff";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=6ee78b807329f8a113566ab65037ac0f9c38a99e";
     };
 
     tau-ext-github = {
@@ -36,9 +36,11 @@
       inputs.flake-utils.follows = "flake-utils";
     };
 
+    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=fae57e20fb8376a4098ed31e104b579b675a1ecc";
+
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f";
 
-    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=7815eeb170eeefa7aca7b027e5e5491f2311a689";
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=87fb282f493bcf32b0ffc28b5738fefda9188618";
 
     clank = {
       url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=56a03fecf62ca8090c3e5f5a089b6d9c62483c8d";
@@ -282,6 +284,37 @@
             {
               services.tau-fedimint-bot = {
                 enable = true;
+                weeklySummary.enable = true;
+                # Operator-approved private channel, humans and encrypted
+                # credentials; the extension source is independently pinned.
+                discord = {
+                  enable = true;
+                  package = inputs.tau-ext-discord.packages.x86_64-linux.tau-ext-discord;
+                  guildId = 990354215060795454;
+                  channelId = 1023312920634994838;
+                  displayName = "Fedimint maintainers";
+                  senderAliases = [
+                    {
+                      user_id = 332755519561400320;
+                      alias = "dpc";
+                    }
+                    {
+                      user_id = 999685318158602331;
+                      alias = "m1sterc00lguy";
+                    }
+                    {
+                      user_id = 913133336749305856;
+                      alias = "elsirion";
+                    }
+                  ];
+                  allowedUserIds = [
+                    332755519561400320 # dpc
+                    999685318158602331 # m1sterc00lguy
+                    913133336749305856 # elsirion
+                  ];
+                  tokenAgeFile = ./secrets/tau-fedimint-discord-token.age;
+                  identityKeyAgeFile = ./secrets/tau-fedimint-discord-identity-key.age;
+                };
                 tauPackage = inputs.tau.packages.x86_64-linux.tau;
                 isolatePackage = inputs.isolate.packages.x86_64-linux.default;
                 ghBrokerPackage = inputs.gh-isolate.packages.x86_64-linux.default;
@@ -369,6 +402,7 @@
               skillsSource = inputs.linked-specs-skills;
               fedimintSkillsSource = inputs.fedimint-skills;
               githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
+              discordPackage = inputs.tau-ext-discord.packages.${system}.tau-ext-discord;
             };
             runner-root-ssh-authorization = import ./tests/runner-root-ssh-authorization.nix {
               inherit system nixpkgs;

@@ -88,13 +88,56 @@ deprecated positions, pending-review arrays, or raw whole-review API writes.
 
 ## Boundaries and troubleshooting
 
-Permanent deletion, merge, force-push, changing an existing pull request's base or
+Permanent deletion, merge, changing an existing pull request's base or
 head, moderation, administration, review dismissal, auth/config access, and
 arbitrary API calls are denied. Branch publication uses the configured Git SSH
 remote rather than this broker. Update another author's exact branch only when an
 authorized maintainer explicitly requests that branch and change; otherwise publish
-a new non-conflicting `tau/` head. If the requested update requires force-push or is
-unsupported, report the concrete blocker.
+a new non-conflicting `tau/` head. Non-fast-forward updates are allowed only under
+the bot-owned pull-request procedure below; all other force-pushes remain forbidden.
+If the requested update is unsupported, report the concrete blocker.
+
+### Bot-owned pull-request branch rewrites
+
+For an authorized request or scoped delegation to update an existing bot-owned pull
+request, a rebase or amended commit may require a non-fast-forward push. This is a
+narrow Git SSH exception, not a new broker capability or permission to rewrite any
+branch merely because its name starts with `tau/`.
+
+1. Read current GitHub state and verify the open pull request's author is the
+   configured bot identity (`fedimint-tau`, numeric user ID `332691140`), its exact
+   head repository and `tau/` head ref, and its current head OID. Verify that the
+   configured SSH push remote targets that head repository. Never rewrite another
+   author's branch, a default/trunk/release branch, or a protected branch. Check
+   current branch protection/rulesets; if ownership, protection, or target evidence
+   is missing or ambiguous, stop and report the blocker.
+2. Fetch the exact head ref through the configured Git SSH transport, record its
+   full OID as `EXPECTED_OLD_OID`, and compare it with the current PR head OID.
+   Inspect its history against the last verified bot-published state. Preserve
+   others' contributions; if new or unaccounted-for commits appeared, stop and
+   report them rather than replacing them. A bot PR author and a matching lease
+   alone do not prove exclusive ownership of the branch's current contents.
+3. Rebase or amend only the scoped bot work, preserving reviewed changes and
+   contributions. Run the normal required checks and independent review. Re-read
+   PR identity, head target, and branch protection before publication; stop if
+   they changed. Push only the exact ref with an explicit expected-old-OID lease:
+
+   ```sh
+   git push --force-with-lease=refs/heads/BRANCH:EXPECTED_OLD_OID \
+     origin LOCAL_COMMIT:refs/heads/BRANCH
+   ```
+
+   Substitute the verified `tau/` head ref, recorded full OID, and reviewed local
+   commit. Use only the configured Git SSH remote and dedicated bot identity.
+   Never use plain `--force`, a bare `--force-with-lease`, wildcard/multiple
+   refspecs, or broker/API/credential bypasses.
+4. If the lease fails, stop and inspect the concurrent update. Do not refresh the
+   expected OID and retry blindly. After success or an ambiguous push result,
+   read remote state and verify the exact PR head OID before claiming delivery
+   or deciding whether any retry is safe.
+
+This exception does not authorize changing the PR's base or head identity,
+rewriting wiki history, or overwriting Dependabot or any other author's branches.
 
 Before reporting a blocker, inspect installed skill guidance, broker output, and
 current GitHub state. Base the blocker on an observed broker, Git SSH, permission,
