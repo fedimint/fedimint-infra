@@ -103,6 +103,12 @@ task reports stay on the existing paths. Explicit scheduled weekly-summary
 publication announcements and safe replies to admitted Discord read-only requests
 remain permitted.
 
+Every permitted Discord post must reference GitHub issues and pull requests with
+full `https://github.com/OWNER/REPO/issues/NUMBER` or
+`https://github.com/OWNER/REPO/pull/NUMBER` URLs, not bare numbers or `#NUMBER`
+references, so readers can click them in Discord. This formatting rule does not
+authorize additional posts.
+
 Posts **do not ping users or roles**: the extension suppresses mentions.
 Successful sending means provider acceptance, not human acknowledgment.
 Uncertain outcomes must not be blindly retried. Receiver registration and

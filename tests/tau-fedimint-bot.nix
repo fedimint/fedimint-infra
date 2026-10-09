@@ -335,6 +335,11 @@ let
           "This restriction does not change explicitly requested scheduled" \
           "weekly-summary publication announcements or safe replies to admitted" \
           "Discord read-only requests below." \
+          "In every permitted Discord post, reference GitHub issues and pull" \
+          "requests with their full https://github.com/OWNER/REPO/issues/NUMBER" \
+          "or https://github.com/OWNER/REPO/pull/NUMBER URLs, not bare numbers" \
+          "or #NUMBER references, so readers can click them in Discord." \
+          "This formatting rule does not authorize additional posts." \
           "extension's authenticated report" \
           "provider-authenticated sender ID" \
           "configured sender allowlist and conversation" \
@@ -1172,6 +1177,10 @@ let
               grep -Fq 'completion reports for those tasks, including successful reviews' \
                 "$TMPDIR/discord-$role-prompt"
               grep -Fq 'weekly-summary publication announcements or safe replies to admitted' \
+                "$TMPDIR/discord-$role-prompt"
+              grep -Fq 'requests with their full https://github.com/OWNER/REPO/issues/NUMBER' \
+                "$TMPDIR/discord-$role-prompt"
+              grep -Fq 'or https://github.com/OWNER/REPO/pull/NUMBER URLs, not bare numbers' \
                 "$TMPDIR/discord-$role-prompt"
             else
               ! grep -q 'maintainer_discord' "$TMPDIR/discord-$role-tools"
