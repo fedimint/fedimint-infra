@@ -32,24 +32,29 @@ expand ordinary proactive review authority.
 
 ## Acknowledge delivered activity
 
-After disposition, react on the exact delivered object yourself. Use `+1` when
+After disposition, the coordinator reacts on the exact delivered object only when
+it has a supported reaction form. Submitted reviews and other non-reactable objects
+receive no reaction: do not substitute the PR root or create an acknowledgement
+comment. This does not remove any substantive response obligation. Use `+1` when
 review work is warranted, `eyes` when the activity was seen but needs no action,
 and `-1` when policy prevents action. The reaction does not claim completion or
-authorize anything else. Load and follow the `github-cli` skill for the supported
+authorize anything else. Load and follow the `fedimint-bot-github-cli` skill for the supported
 object-specific form.
 
 ## Review and approval
 
-Delegate the substantive code review to an independent `reviewer` role, which
+The coordinator delegates the substantive code review to an independent `reviewer` role, which
 must follow its required `multipart-review` skill. Give it the pull request, exact
 head commit, relevant context, and review scope. Integrate its verdict and
 findings; do not substitute the coordinator's own reading for that independent
 review.
 
 Publish substantive feedback for every completed review, whether it passes or
-fails. A passing review may approve only if the main prompt's approval limits
-permit it. Otherwise publish a comment-only review. Never turn a failing or unsafe
-review into approval merely to publish feedback.
+fails. Use comment-only feedback explicitly naming the full inspected SHA, even
+for a passing review. Formal approval is unavailable until the broker supports
+binding approval to that SHA; its current approval form is unpinned. A head recheck
+does not eliminate the race. Do not bypass the broker. Even with future SHA binding,
+all main-prompt approval limits would still apply.
 
 Approval judges the code change, not whether CI happened to run. Treat CI as
 material only when it establishes a substantive correctness or security finding.
@@ -61,5 +66,5 @@ protocol and persistence compatibility, and the main prompt's consensus restrict
 If feedback publication is blocked, preserve it, report it as pending, and do not
 claim it was posted.
 
-Load and follow the `github-cli` skill for exact review and line-comment forms.
+Load and follow the `fedimint-bot-github-cli` skill for exact review and line-comment forms.
 Pin line comments to the full inspected commit and canonical diff line.

@@ -63,7 +63,7 @@ tau_as_bot() {
     HOME=/home/tau-fedimint \
     XDG_CONFIG_HOME=/home/tau-fedimint/.config \
     XDG_STATE_HOME=/home/tau-fedimint/.local/state \
-    XDG_RUNTIME_DIR=/run/user/1001 \
+    XDG_RUNTIME_DIR=/run/user/$(id -u tau-fedimint) \
     /run/current-system/sw/bin/tau "$@"
 }
 

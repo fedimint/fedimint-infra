@@ -627,7 +627,7 @@ create durable work, schedule reminders, or periodically poll solely to reconsid
 a draft. Deferring a draft requires no substantive review or acknowledgement
 comment. Proactive review grants no authority to follow bot
 requests or to modify, approve, merge, or close the pull request; it authorizes
-only the review and its required reaction and feedback publication.
+only the review, its reaction when the exact object supports one, and feedback publication.
 
 Authenticated, authorized maintainer requests can also authorize ordinary
 development work; they are not limited to review. When a maintainer explicitly
@@ -649,7 +649,7 @@ The main role prompt summarizes these responsibilities and keeps the security,
 authorization, sandbox, mutation, and approval boundaries directly visible.
 User-scoped skills provide the operational detail:
 
-- `github-cli` documents the sandbox broker's supported command forms and
+- `fedimint-bot-github-cli` documents the sandbox broker's supported command forms and
   troubleshooting boundaries;
 - `fedimint-maintainer-requests` covers responses, delegation, and pull-request
   delivery;
@@ -667,8 +667,17 @@ The skills are installed in the bot user's skill directory from immutable,
 pinned Nix store paths beside the existing review skills. The Fedimint workflow
 skills opt into prompt advertisement from user scope; Tau advertises their names
 and descriptions, then loads their full text only when the agent selects one.
+The bot-specific CLI name avoids colliding with the workstation's generic
+`github-cli` skill during project discovery. Operator debugging and grooming
+skills remain discoverable on the workstation. On a future activation, tmpfiles
+removes the old bot-managed `github-cli` link from the dedicated bot user's skill
+directory; workstation user skills are not touched.
 
-Approval assesses the code change, not CI execution status. CI that is still
+Formal automated approval is currently unavailable because the installed broker
+does not bind approval to the independently inspected SHA. Passing reviews publish
+comment-only feedback naming that full SHA instead. Rechecking the head cannot
+eliminate the race, and alternative clients or raw API bypasses are forbidden.
+Future SHA-bound approval would still assess the code change, not CI execution status. CI that is still
 running, failing, missing, or otherwise non-passing does not by itself block
 approval. A CI outcome matters only when it establishes a substantive correctness
 or security finding in the code change. This does not change the separate
@@ -740,9 +749,16 @@ requires an authorized maintainer's explicit request for that branch and change;
 otherwise the bot publishes a new non-conflicting `tau/` head. The broker's
 upstream `docs/collaboration.md` is the complete executable capability contract.
 
-An authorized update to an existing bot-owned `tau/` pull-request branch may
-rewrite scoped bot commits through configured Git SSH, not through the broker.
-The `github-cli` skill defines the required procedure: verify the open PR's bot
+Non-fast-forward updates to bot-owned `tau/` pull-request branches are currently
+unavailable: the installed broker has no supported sufficient effective
+branch-protection/ruleset evidence route. Its documented grammar establishes the
+blocker without probing forbidden endpoints. Preserve local work and report the
+rewrite as blocked; ask whether an in-scope fast-forward update or new PR is
+acceptable rather than silently substituting delivery. Do not drop the protection
+check, infer safety from a prefix or lease, or bypass the broker.
+
+The `fedimint-bot-github-cli` skill retains a dormant procedure, usable only after a
+sufficient protection-evidence route is supported and documented: verify the open PR's bot
 author identity, exact head repository/ref/OID, and branch protection; fetch and
 inspect the current head against the last verified bot-published state; preserve
 others' contributions; and complete normal checks and independent review.
@@ -765,7 +781,8 @@ remote and pull-request state before deciding whether a retry is safe, preventin
 duplicate branches or pull requests.
 
 After deciding how to handle each independently authenticated notification with
-an unambiguous repository and target, the coordinator reacts directly on the
+an unambiguous repository and target that has a supported exact-object reaction
+form, the coordinator reacts directly on the
 exact notified object rather than delegating the acknowledgement. `+1` means
 action is warranted, not that work is complete; `eyes` means seen but not
 actionable; and `-1` means ignored or prevented by policy. It may also add
@@ -783,6 +800,11 @@ The first route targets an issue or pull-request root, the second an issue or
 pull-request conversation comment, and the third a line-review comment. Each
 request has exactly one raw `content` field. Reaction listing, deletion, other
 reaction names, and other endpoint families remain denied.
+Submitted reviews (not inline review comments) and other non-reactable deliveries
+receive no reaction. Do not substitute the PR root or create a comment merely to
+acknowledge receipt. Substantive response obligations remain separate. Delegated
+engineers implement their scoped work rather than repeating coordinator-owned
+admission, acknowledgement, or implementation delegation.
 
 This acknowledgement is the sole exception to the ordinary fail-closed rule
 against external communication before requester authorization. It remains
@@ -813,8 +835,10 @@ and other compatibility requirements, including protocol and persistence
 compatibility, still apply. The coordinator also refuses to approve changes to
 Fedimint consensus in `fedimint/fedimint`, even when a maintainer requests approval.
 Every completed review must still publish
-substantive feedback. Passing reviews may approve only when those rules permit;
-all other completed reviews use comment-only feedback. A blocked publication
+substantive feedback naming the full inspected SHA. All completed reviews currently
+use comment-only feedback, including passing reviews, until supported SHA-bound
+approval exists; the safety rules above remain necessary but are not sufficient
+to enable approval today. A blocked publication
 remains pending and must not be reported as posted.
 
 The broker accepts review feedback only from a securely imported regular file,
@@ -863,11 +887,8 @@ line. Caller-typed `-F` fields, multiline ranges, file-level comments, deprecate
 positions, pending-review arrays, whole-review API writes, edits, and deletion
 remain denied.
 
-Permitted approvals retain their separate exact form and do not accept a body:
-
-```console
-gh pr review NUMBER -R OWNER/REPO --approve
-```
+The broker's unpinned approval form is not authorized for bot use. A supported
+SHA-bound mechanism is required before formal approval can be enabled.
 
 Pull requests opened by the bot must use a head in the exact `tau/` namespace,
 for example `tau/topic`. The trusted wrapper selects that namespace before the
