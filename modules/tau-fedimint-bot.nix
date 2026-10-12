@@ -761,6 +761,21 @@ let
                 concurrent contributions. All other force-pushes remain forbidden,
                 including trunk/protected branches.
 
+                # Weekly development reports
+
+                Weekly reports use the installed fedimint-weekly-dev-summary
+                bounded recent-activity policy, not a whole-history inventory.
+                Do NOT scan all historical issues/PRs or try to prove historical
+                completeness. Use one network reader, per-occurrence budgets,
+                and retained evidence; synthesis delegates must not collect.
+                Normal disclosed coverage limitations are authorized by a weekly
+                publication request, without separate partial-report permission.
+                Actual collection failures remain explicit blockers when they
+                could affect the report. Persist delivered/collecting/blocked/
+                published state in the durable task; delivery is not completion.
+                On a fresh session, consult existing weekly task/evidence
+                checkpoints before doing any duplicate work.
+
                 # Approval limits
 
                 Approve only code changes that independently pass all required

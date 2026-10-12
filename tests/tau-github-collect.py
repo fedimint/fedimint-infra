@@ -109,6 +109,30 @@ class Capture(unittest.TestCase):
         with self.assertRaisesRegex(collector.Incomplete, "deadline"):
             self.run_child("import time; time.sleep(5)", deadline=0.05)
 
+    def test_sanitized_causes(self):
+        for diagnostic, cause in (
+            ("exec-priv server is busy", "exec-priv admission busy"),
+            ("API rate limit exceeded", "GitHub API rate limit exceeded"),
+            ("secondary rate limit", "GitHub secondary rate limit"),
+            ("HTTP 401", "authentication rejected"),
+            ("HTTP 403", "cause unconfirmed"),
+            ("HTTP 404", "missing or inaccessible"),
+            ("operation denied", "access/policy denial"),
+            ("connection timed out", "timeout reported"),
+            ("mystery failure", "cause unavailable"),
+        ):
+            script = (
+                "import sys; "
+                f"sys.stderr.write({diagnostic + ' https://private/token=SECRET'!r}); "
+                "sys.exit(125)"
+            )
+            with self.assertRaises(collector.Incomplete) as raised:
+                self.run_child(script)
+            self.assertIn("exited 125", str(raised.exception))
+            self.assertIn(cause, str(raised.exception))
+            self.assertNotIn("SECRET", str(raised.exception))
+            self.assertNotIn("https://", str(raised.exception))
+
     def test_retained_bytes_permissions_and_cleanup(self):
         raw = page(b'[{"id":9007199254740993,"n":1.2300e-100}]')
         def fake_capture(command, output):

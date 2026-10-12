@@ -15,7 +15,7 @@ import time
 MAX_LINE = 8 * 1024 * 1024
 MAX_CAPTURE = 256 * 1024 * 1024
 MAX_STDERR = 1024 * 1024
-DEADLINE = 600
+DEADLINE = 120
 ENDPOINT = re.compile(
     r"repos/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/"
     r"(?:issues\?(?:state=all&per_page=100|per_page=100&state=all)"
@@ -28,6 +28,28 @@ HEADER = re.compile(rb"([!#$%&'*+.^_`|~0-9A-Za-z-]+):[ \t]*([^\x00-\x08\x0a-\x1f
 
 class Incomplete(ValueError):
     pass
+
+
+def failure_cause(stderr):
+    """Return only fixed labels, never remote prose, URLs, or credential bytes."""
+    text = stderr.lower()
+    if b"exec-priv server is busy" in text:
+        return "exec-priv admission busy (not an observed GitHub rate limit)"
+    if b"secondary rate limit" in text or b"abuse detection" in text:
+        return "GitHub secondary rate limit reported"
+    if b"api rate limit exceeded" in text:
+        return "GitHub API rate limit exceeded"
+    if b"http 401" in text or b"bad credentials" in text:
+        return "GitHub authentication rejected"
+    if b"http 403" in text:
+        return "GitHub HTTP 403 (cause unconfirmed)"
+    if b"http 404" in text:
+        return "GitHub HTTP 404 (missing or inaccessible resource)"
+    if b"denied" in text or b"unsupported api" in text:
+        return "access/policy denial reported"
+    if b"timed out" in text or b"timeout" in text:
+        return "upstream timeout reported"
+    return "cause unavailable; do not infer quota exhaustion from the exit code"
 
 
 def reject_constant(_):
@@ -129,6 +151,7 @@ def capture(command, output, *, max_capture=MAX_CAPTURE, max_stderr=MAX_STDERR, 
             selector.register(process.stdout, selectors.EVENT_READ, "stdout")
             selector.register(process.stderr, selectors.EVENT_READ, "stderr")
             sizes = {"stdout": 0, "stderr": 0}
+            stderr = bytearray()
             while selector.get_map():
                 remaining = expires - time.monotonic()
                 if remaining <= 0:
@@ -145,13 +168,15 @@ def capture(command, output, *, max_capture=MAX_CAPTURE, max_stderr=MAX_STDERR, 
                         raise Incomplete(f"{name} capture resource limit exceeded")
                     if name == "stdout":
                         output.write(chunk)
+                    else:
+                        stderr.extend(chunk)
                     # Never publish possibly sensitive stderr or a partial body.
             remaining = expires - time.monotonic()
             if remaining <= 0:
                 raise Incomplete("collection deadline exceeded")
             result = process.wait(timeout=remaining)
             if result != 0:
-                raise Incomplete(f"GitHub collection exited {result}")
+                raise Incomplete(f"GitHub collection exited {result}: {failure_cause(stderr)}")
             return sizes["stdout"]
     except BaseException:
         # Also stop descendants retaining inherited pipes on timeout/failure.
