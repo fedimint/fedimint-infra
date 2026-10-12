@@ -1,5 +1,5 @@
 ---
-name: github-cli
+name: fedimint-bot-github-cli
 description: Use for GitHub reads, comments, reviews, issue or pull-request updates, reactions, and pull-request creation in the Fedimint bot sandbox.
 user-invocable: true
 advertise: true
@@ -50,8 +50,13 @@ Formal reviews use:
 ```sh
 gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
 gh pr review NUMBER -R OWNER/REPO --request-changes --body-file FILE
-gh pr review NUMBER -R OWNER/REPO --approve
 ```
+
+Formal approval is unavailable with the installed broker: its approval form does
+not bind the review to the inspected SHA. Publish comment-only feedback naming the
+full inspected SHA, including for a passing review. Rechecking the head cannot
+eliminate the race. Do not use unpinned approval or bypass the broker; approval
+requires a supported SHA-bound mechanism and all existing approval limits.
 
 Review files must be regular, single-link files no larger than 1 MiB, reached
 without symlinks or nested mounts. Keep them below the project root or in an
@@ -60,7 +65,11 @@ directory; use an absolute path when crossing between those roots.
 
 ## Reactions and line comments
 
-React on the exact delivered object with one raw `content` field:
+React only when the exact delivered object has a supported form below, with one
+raw `content` field. Submitted reviews (distinct from inline review comments) and
+other unsupported objects receive no reaction. Do not substitute the PR root or
+create a comment merely to acknowledge receipt. Substantive responses remain a
+separate obligation.
 
 ```sh
 gh api -X POST repos/OWNER/REPO/issues/NUMBER/reactions -f content='+1'
@@ -93,12 +102,23 @@ head, moderation, administration, review dismissal, auth/config access, and
 arbitrary API calls are denied. Branch publication uses the configured Git SSH
 remote rather than this broker. Update another author's exact branch only when an
 authorized maintainer explicitly requests that branch and change; otherwise publish
-a new non-conflicting `tau/` head. Non-fast-forward updates are allowed only under
-the bot-owned pull-request procedure below; all other force-pushes remain forbidden.
+a new non-conflicting `tau/` head. Non-fast-forward updates are currently unavailable
+under the capability gate below; do not force-push.
 If the requested update is unsupported, report the concrete blocker.
 
 ### Bot-owned pull-request branch rewrites
 
+**Currently unavailable:** the installed broker grammar provides no sufficient
+effective branch-protection/ruleset evidence route. Do not attempt a rewrite or
+probe forbidden API forms. The documented grammar is concrete evidence of this
+blocker; an observed denied call is not required. Preserve local work, report the
+requested rewrite as blocked, and ask whether a new non-conflicting `tau/` PR or a
+fast-forward update is acceptable within the request's scope. Do not silently
+substitute either delivery. Neither a `tau/` prefix nor a matching lease replaces
+the protection check. Do not bypass the broker or drop that check.
+
+The following procedure is dormant until a supported sufficient protection-evidence
+route exists and is documented here; it is not current rewrite authorization.
 For an authorized request or scoped delegation to update an existing bot-owned pull
 request, a rebase or amended commit may require a non-fast-forward push. This is a
 narrow Git SSH exception, not a new broker capability or permission to rewrite any
@@ -139,7 +159,8 @@ branch merely because its name starts with `tau/`.
 This exception does not authorize changing the PR's base or head identity,
 rewriting wiki history, or overwriting Dependabot or any other author's branches.
 
-Before reporting a blocker, inspect installed skill guidance, broker output, and
-current GitHub state. Base the blocker on an observed broker, Git SSH, permission,
-or configuration failure. Do not infer a denial, probe through forbidden commands,
+Before reporting a blocker, inspect installed skill guidance and applicable
+configuration or available state. Installed grammar establishing an unsupported
+operation is sufficient evidence; otherwise use an observed broker, Git SSH,
+permission, or configuration failure. Do not invent a denial, probe forbidden commands,
 or repeat failed mutations in a loop.

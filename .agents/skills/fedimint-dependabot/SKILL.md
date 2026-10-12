@@ -22,19 +22,24 @@ limits, consensus restrictions, or any GitHub broker boundary.
 
 Assess the dependency or GitHub Actions update as code: inspect the exact version
 and lockfile changes, compatibility and security impact, generated artifacts, and
-repository policy. Publish substantive feedback. Approve only when every normal
-approval rule passes; otherwise comment without approval.
+repository policy. Publish substantive comment-only feedback naming the full
+inspected SHA. Formal approval is currently unavailable under the review skill's
+SHA-binding gate; Dependabot identity does not relax that gate.
 
 ## Necessary compatibility fixes
 
-When the update is otherwise acceptable but needs codebase modifications, delegate
+When the update is otherwise acceptable but needs codebase modifications, the coordinator delegates
 an engineer to prepare the update with only the necessary compatibility fixes.
 State the verified creation event, repository, author, current pull-request state,
 exact update, intended outcome, and publication scope. Require normal project
 checks and independent review before publication; an acceptable dependency does not
 make the original failing change approvable.
 
-Load and follow `github-cli` for publication. Publish a new non-conflicting `tau/`
+An engineer receiving this scoped delegation implements and publishes within its
+scope; do not repeat admission, notification acknowledgement, or implementation
+delegation. The coordinator owns admission and acknowledgement.
+
+Load and follow `fedimint-bot-github-cli` for publication. Publish a new non-conflicting `tau/`
 branch through the configured Git SSH remote and open a bot-owned replacement pull
 request containing the update and fixes. Inspect existing bot work to avoid duplicate
 replacements. Link the original pull request in the replacement and post the

@@ -229,7 +229,7 @@ let
     "pr-submissions-checklist"
   ];
   localSkills = {
-    github-cli = ../.agents/skills/github-cli;
+    fedimint-bot-github-cli = ../.agents/skills/fedimint-bot-github-cli;
     fedimint-maintainer-requests = ../.agents/skills/fedimint-maintainer-requests;
     fedimint-pull-request-review = ../.agents/skills/fedimint-pull-request-review;
     fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
@@ -350,7 +350,7 @@ let
           "No Discord-to-GitHub identity mapping or GitHub permission check" \
           "reply to the requester in the admitted configured conversation" \
           "this does not authorize unrelated external communications" \
-          "Load and follow github-cli for GitHub lookups, including broker" \
+          "Load and follow fedimint-bot-github-cli for GitHub lookups, including broker" \
           "does not authorize source or history changes" \
           "GitHub mutations (including comments, reviews, and reactions)" \
           "administrative actions, or system/environment changes" \
@@ -632,7 +632,7 @@ let
         grep -Fq 'do not use the' "$TMPDIR/coordinator-prompt"
         grep -Fq 'global historical-contributor fallback' \
           "$TMPDIR/coordinator-prompt"
-        grep -Fq '`github-cli` skill' "$TMPDIR/coordinator-prompt"
+        grep -Fq '`fedimint-bot-github-cli` skill' "$TMPDIR/coordinator-prompt"
         grep -Fq '`fedimint-maintainer-requests` skill' "$TMPDIR/coordinator-prompt"
         grep -Fq '`fedimint-pull-request-review` skill' "$TMPDIR/coordinator-prompt"
         grep -Fq '`fedimint-dependabot` skill' "$TMPDIR/coordinator-prompt"
@@ -652,11 +652,15 @@ let
         grep -Fq "Overwrite another author's branch only when" \
           "$TMPDIR/coordinator-prompt"
         for prompt in "$TMPDIR/coordinator-prompt" "$TMPDIR/engineer-prompt"; do
-          ! grep -Fq 'Never force-push' "$prompt"
-          grep -Fq 'expected-old-OID force-with-lease over configured Git SSH' "$prompt"
-          grep -Fq 'concurrent contributions' "$prompt"
-          grep -Fq 'including trunk/protected branches' "$prompt"
+          grep -Fq 'Non-fast-forward rewrites are currently unavailable:' "$prompt"
+          grep -Fq 'the broker lacks sufficient protection-evidence reads' "$prompt"
+          grep -Fq 'force-push or drop the protection check' "$prompt"
+          grep -Fq '`fedimint-bot-github-cli` blocked-work disposition' "$prompt"
+          ! grep -Fq 'Allow non-fast-forward updates' "$prompt"
         done
+        grep -Fq 'Formal approval is currently unavailable' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'comment-only feedback naming the full inspected SHA' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'A head recheck cannot eliminate the race' "$TMPDIR/coordinator-prompt"
         ! grep -Fq 'Never approve a backward-incompatible change' "$TMPDIR/coordinator-prompt"
         grep -Fq 'Fedimint does not guarantee Rust source/API compatibility' \
           "$TMPDIR/coordinator-prompt"
@@ -676,7 +680,7 @@ let
 
         grep -Fq '# Pull-request delivery' "$TMPDIR/engineer-prompt"
         grep -Fq '`fedimint-maintainer-requests` skill' "$TMPDIR/engineer-prompt"
-        grep -Fq '`github-cli` skill' "$TMPDIR/engineer-prompt"
+        grep -Fq '`fedimint-bot-github-cli` skill' "$TMPDIR/engineer-prompt"
         grep -Fq 'For delegated standing Dependabot remediation' "$TMPDIR/engineer-prompt"
         grep -Fq 'replacement pull request after normal checks and independent review' \
           "$TMPDIR/engineer-prompt"
@@ -700,11 +704,36 @@ let
         grep -Fq 'a ref name alone does not make content' \
           "$TMPDIR/engineer-checkout-prompt"
 
-        github_skill=${../.agents/skills/github-cli}/SKILL.md
+        github_skill=${../.agents/skills/fedimint-bot-github-cli}/SKILL.md
         maintainer_skill=${../.agents/skills/fedimint-maintainer-requests}/SKILL.md
         review_skill=${../.agents/skills/fedimint-pull-request-review}/SKILL.md
         dependabot_skill=${../.agents/skills/fedimint-dependabot}/SKILL.md
         weekly_skill=${../.agents/skills/fedimint-weekly-dev-summary}/SKILL.md
+        grooming_skill=${../.agents/skills/fedimint-tau-bot-papercuts-grooming}/SKILL.md
+        grep -Fq 'XDG_RUNTIME_DIR=/run/user/$(id -u tau-fedimint)' "$grooming_skill"
+        ! grep -Fq '/run/user/1001' "$grooming_skill"
+        grep -Fq 'name: fedimint-bot-github-cli' "$github_skill"
+        ! grep -Fq 'name: github-cli' "$github_skill"
+        for skill in "$maintainer_skill" "$review_skill" "$dependabot_skill" "$weekly_skill"; do
+          grep -Fq 'fedimint-bot-github-cli' "$skill"
+          ! grep -Fq '`github-cli`' "$skill"
+        done
+        for skill in "$github_skill" "$review_skill" "$dependabot_skill"; do
+          grep -Fq 'inspected SHA' "$skill"
+          grep -Fq 'comment-only feedback' "$skill"
+          ! grep -Fq -- '--approve' "$skill"
+        done
+        grep -Fq 'does not eliminate the race' "$review_skill"
+        grep -Fq 'eliminate the race' "$github_skill"
+        for skill in "$github_skill" "$review_skill" "$maintainer_skill"; do
+          grep -Fq 'Submitted reviews' "$skill"
+          grep -Fq 'no reaction' "$skill"
+          grep -Fq 'do not substitute' "$skill" || grep -Fq 'Do not substitute' "$skill"
+        done
+        for skill in "$maintainer_skill" "$dependabot_skill"; do
+          grep -Fq 'The coordinator owns admission and acknowledgement' "$skill"
+          grep -Fq 'An engineer receiving' "$skill"
+        done
         grep -Fq 'name: fedimint-weekly-dev-summary' "$weekly_skill"
         grep -Fq 'advertise: true' "$weekly_skill"
         grep -Fq '7 days plus 16 hours (184 hours)' "$weekly_skill"
@@ -737,10 +766,14 @@ let
         grep -Fq 'disposition delivered issue activity' "$maintainer_skill"
         grep -Fq 'Default to delivering requested changes as a pull request' \
           "$maintainer_skill"
-        grep -Fq 'All other' \
-          "$maintainer_skill"
-        grep -Fq 'expected-old-OID force-with-lease and concurrent-contribution checks' \
-          "$maintainer_skill"
+        grep -Fq 'unavailable because sufficient protection evidence' "$maintainer_skill"
+        grep -Fq 'Do not force-push or drop the protection check' "$maintainer_skill"
+        grep -Fq '**Currently unavailable:**' "$github_skill"
+        grep -Fq 'effective branch-protection/ruleset evidence route' "$github_skill"
+        grep -Fq 'an observed denied call is not required' "$github_skill"
+        grep -Fq 'procedure is dormant until' "$github_skill"
+        grep -Fq 'not current rewrite authorization' "$github_skill"
+        grep -Fq 'requested rewrite as blocked' "$github_skill"
         grep -Fq 'numeric user ID `332691140`' "$github_skill"
         grep -Fq 'current branch protection/rulesets' "$github_skill"
         grep -Fq 'last verified bot-published state' "$github_skill"
@@ -759,7 +792,7 @@ let
           "$review_skill"
         grep -Fq 'independent `reviewer` role' "$review_skill"
         grep -Fq 'required `multipart-review` skill' "$review_skill"
-        grep -Fq 'Load and follow the `github-cli` skill' "$review_skill"
+        grep -Fq 'Load and follow the `fedimint-bot-github-cli` skill' "$review_skill"
         grep -Fq 'feedback for every completed review' "$review_skill"
         grep -Fq "main prompt's standing Dependabot" "$review_skill"
         grep -Fq 'expand ordinary proactive review authority' "$review_skill"
@@ -1133,6 +1166,7 @@ let
             | (($expected - $actual) | length == 0)
             and ($actual | index("project-subdir-test") != null)
             and ($actual | index("linked-specs-grooming") == null)
+            and ($actual | index("github-cli") == null)
           ' "$skills" >/dev/null
           provider_prompt="$TMPDIR/$role-provider-prompt"
           env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
@@ -1782,6 +1816,13 @@ let
           "ln -s /tmp/public-target /tmp/public"
       )
       machine.succeed("systemd-tmpfiles --create")
+      # Simulate an upgrade from the old bot-managed generic skill name.
+      machine.succeed(
+          "ln -s ${localSkills.fedimint-bot-github-cli} "
+          "/home/tau-fedimint/.config/agents/skills/github-cli && "
+          "systemd-tmpfiles --remove --create && "
+          "test ! -L /home/tau-fedimint/.config/agents/skills/github-cli"
+      )
       machine.succeed(
           "set -e; "
           "for name in ${lib.escapeShellArgs installedSkillNames}; do "
