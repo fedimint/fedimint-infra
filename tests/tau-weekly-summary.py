@@ -138,6 +138,22 @@ class WeeklySummaryTests(unittest.TestCase):
         self.assertIn("uncertain-send/no-blind-retry policy", message)
         self.assertIn("without claiming the notification succeeded", message)
 
+    def test_bounded_collection_authorized_without_historical_scan(self):
+        start, end = weekly.reporting_window(
+            datetime.fromisoformat("2026-10-12T13:00:58+00:00")
+        )
+        message = weekly.instruction(start, end)
+        for phrase in (
+            "Do NOT scan the whole repository history",
+            "no upper updated cutoff",
+            "one network reader",
+            "without asking for partial-publication permission",
+            "Actual collection failures must remain explicit",
+            "delivered, collecting, blocked",
+            "Delivery is not completion",
+        ):
+            self.assertIn(phrase, message)
+
     def test_bad_window_never_sends(self):
         for end in ("bad", "2026-10-06", "2026-10-05T09:00:00+01:00"):
             result = subprocess.run(

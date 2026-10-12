@@ -14,6 +14,31 @@ EXAMPLE = SKILL.split("```markdown\n", 1)[1].split("\n```", 1)[0]
 
 
 class WeeklySummarySkillTests(unittest.TestCase):
+    def test_bounded_collection_contract(self):
+        text = SKILL.replace("\n", " ")
+        for phrase in (
+            "Do NOT scan the whole repository history",
+            "no upper updated cutoff",
+            "**one network reader**",
+            "**300 candidates total**",
+            "**1,000 estimated API requests**",
+            "**1,000 remaining core requests**",
+            "**30 minutes of collection elapsed time**",
+            "**one retry per failed read**",
+            "**five retry requests total**",
+            "do not ask for partial-publication permission",
+            "Never relabel a failed request as an expected budget stop",
+            "Do not redo discovery or successful evidence requests merely to resume",
+            "**delivered**",
+            "**collecting**",
+            "**blocked**",
+            "**published**",
+        ):
+            self.assertIn(phrase, text)
+        self.assertEqual(SKILL.count("--limit 150 --json"), 2)
+        self.assertNotIn("Build an inventory of issues and PRs in every state", SKILL)
+        self.assertNotIn("all collection pages read", EXAMPLE)
+
     def test_each_section_has_all_categories_in_order(self):
         for section in ("Pull requests", "Issues"):
             body = EXAMPLE.split(f"## {section}\n", 1)[1].split("\n## ", 1)[0]

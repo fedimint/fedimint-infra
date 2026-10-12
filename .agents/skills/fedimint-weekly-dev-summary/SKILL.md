@@ -60,85 +60,147 @@ filename in the same commit, preserving content outside the generated report.
 If a different window already occupies this date's filename, stop and ask rather
 than overwrite it or invent a new naming scheme.
 
-## Collect all observable issue and PR activity
+## Collect bounded recent activity efficiently
 
-Include older items that had activity during the window, not just newly opened
-items. Cover creation, discussion/comment edits, reviews and review comments,
-PR commits/updates, and state or metadata changes (including close, reopen,
-merge, draft/ready, labels, assignments, and review requests). Do not count
-an item's current state alone as proof of activity within the window.
+This is a recent-development report, **not an exhaustive activity ledger**.
+Do NOT scan the whole repository history, enumerate all historical issues/PRs,
+collect evidence for old unaffected items, or try to prove historical completeness.
+Do not delegate such a scan or expand discovery to repair this coverage boundary.
+Older items are eligible when recently updated; creation date is not the filter.
+Reference-only events on old, non-updated items may be missed deliberately.
+Search indexing delays, deleted/inaccessible events, and unavailable edit/push
+history are normal disclosed limitations, not weekly permission requests.
 
-1. Build an inventory of issues and PRs in every state. A conservative starting
-   point is the fully paginated repository issues endpoint, which includes PRs:
+### Budget and durable ownership
+
+Use one coordinator-owned ledger and **one network reader** for the entire
+occurrence, including delegated work. Synthesis agents may use retained evidence
+only; do not start parallel collectors, quota timers, or background resumers.
+Run from the project container root so the managed broker's `gh` is selected.
+Never bypass a denial with another client, credentials, or API shape.
+
+Before collection, persist the occurrence, exact window, page title, evidence
+directory, and lifecycle in the existing durable task. Use an owner-private
+directory below the persistent checkout (`umask 077; mktemp -d weekly-XXXXXXXX`),
+not a session directory or ephemeral `/tmp`. Keep the ledger and draft there;
+record their paths in the task. Reuse completed captures for this same window
+after interruption, validating them before reuse; never overwrite a capture.
+Do not redo discovery or successful evidence requests merely to resume.
+
+Per occurrence, including retries/resumes:
+
+- At most **300 candidates total**, with at most 150 issues and 150 PRs.
+- At most **1,000 estimated API requests**, including pagination, discovery,
+  status reads, and retries. Reserve 100 of these for current-state verification.
+  Before each command reserve its expected pages plus headroom; charge at least
+  10 requests per paginated evidence call unless a higher count is known, then
+  reconcile with returned page counts. Count unsuccessful calls conservatively.
+  These are planning budgets, not broker-enforced request counters.
+- Preserve **1,000 remaining core requests** for normal bot work. Inspect
+  `X-RateLimit-Remaining` and `X-RateLimit-Reset` in retained REST headers after
+  each call; stop new collection when remaining is at/below the reserve.
+  Missing quota metadata means quota is unknown, not unlimited: use the request
+  budget, and stop immediately on a reported rate limit. Search/GraphQL can have
+  separate quotas; do not infer their capacity from core headers.
+- At most **30 minutes of collection elapsed time**, accumulated across resumes;
+  no automatic wait across quota reset. At most **one retry per failed read**
+  and **five retry requests total**, within the same budgets. Retry only a
+  confirmed transient timeout/service-busy error after other execution work
+  finishes. Do not retry access denials, malformed evidence, or rate limits.
+
+Do not reset budgets, increase limits, split searches, or launch another agent
+to evade them. A planned stop before another request is a bounded-coverage
+limitation; a failed attempted request is a collection failure (see below).
+The helper also imposes a 120-second deadline per call. Pagination can consume
+requests before returning; the estimates and deadline are not a hard quota
+guarantee. Avoid fetching long histories unless needed for a specific claim.
+
+### Discover once, then collect selectively
+
+1. Use two bounded recent-updated searches in all states. Substitute the exact
+   UTC start for `START`, with **no upper updated cutoff**: an item can have
+   activity both during and after the reporting window.
 
    ```sh
-   tau-github-collect 'repos/fedimint/fedimint/issues?state=all&per_page=100' NEW_PRIVATE_CAPTURE.http
-   tau-github-collect 'repos/fedimint/fedimint/issues/NUMBER/timeline?per_page=100' NEW_PRIVATE_TIMELINE.http
-   tau-github-collect 'repos/fedimint/fedimint/issues/NUMBER/comments?per_page=100' NEW_PRIVATE_COMMENTS.http
+   gh issue list -R fedimint/fedimint --state all --search 'updated:>=START sort:updated-desc' --limit 150 --json number,title,url,createdAt,updatedAt,state
+   gh pr list -R fedimint/fedimint --state all --search 'updated:>=START sort:updated-desc' --limit 150 --json number,title,url,createdAt,updatedAt,state
    ```
 
-   Run from the project container root, not a nested development shell that can
-   shadow the broker's `gh`. Use a fresh owner-private temporary directory
-   (`mktemp -d`) and new filenames within it; never reuse an existing capture.
-   The helper invokes the existing brokered `gh api --paginate --include`
-   command, captures its actual exit and complete stdout privately, and validates
-   HTTP status, JSON content type, complete compact array bodies, and previous/
-   next-page continuity before returning counts. It retains the exact raw
-   response pages (including every field and numeric spelling), without jq,
-   templates, slurp, projection, truncation, or deduplication. Never use the
-   unframed raw inventory command: pinned gh combines all pages on one line,
-   which can exceed the broker's 8 MiB physical-line limit.
-
-   Read the retained raw body arrays only after the helper exits successfully;
-   do not parse its small count summary as the inventory. Decode numbers exactly
-   (Python integers and `decimal.Decimal`, not floating-point decode/re-encode).
-   The helper enforces a 600-second deadline, 256 MiB stdout capture, 1 MiB stderr,
-   8 MiB physical lines, and 64 KiB / 256 response-header lines per page.
-   A nonzero exit, missing/redacted/malformed/multiline page, missing required
-   headers or pagination metadata, or resource limit means incomplete evidence.
-   It removes failed captures; stop collection and report the gap, never increase
-   bounds or bypass the broker. The broker still caps each individual raw page
-   at 8 MiB. This section contains the installed collection contract; infrastructure
-   operators can also consult `fedimint-infra/docs/tau-github-collection.md`.
-
-   Replace `NUMBER` with each actual number. Classify entries with a
-   `pull_request` field as PRs and deduplicate by repository + number. Search
-   `updated:` or REST `since` can accelerate discovery, but are not a complete
-   activity ledger. Never impose an upper `updated:` cutoff: an item may have
-   activity both during and after the window. Do not silently omit inventory
-   items without evidence that they had no in-window activity.
-2. Inspect each item's timestamped timeline and discussion. For PRs, also read
-   the PR details, reviews, review comments, and commits, paging every collection:
+   Capture each command's complete JSON and actual exit privately. No jq,
+   templates, or truncated tool renderings as evidence. Treat a result of 150
+   as possibly capped and disclose it; do not split it into unbounded searches.
+   Deduplicate by repository + number, retaining type. The bounded search is
+   discovery, not proof of in-window activity or historical completeness.
+   Do not use the all-history `repos/.../issues?state=all&per_page=100` inventory.
+   REST `since` is not an approved query in the installed broker; do not invent
+   a new endpoint or loosen broker permissions for this report.
+2. For each candidate, start with its timestamped timeline and current detail.
+   Fetch discussion/reviews only where needed to establish meaningful activity,
+   outcome, or next steps. Do not mechanically fetch six endpoints for every PR.
+   Reuse already collected evidence; do not fetch commits or checks if no claim
+   needs them. Representative approved reads (replace `NUMBER`):
 
    ```sh
+   tau-github-collect 'repos/fedimint/fedimint/issues/NUMBER/timeline?per_page=100' NEW_TIMELINE.http
+   tau-github-collect 'repos/fedimint/fedimint/issues/NUMBER/comments?per_page=100' NEW_COMMENTS.http
    gh api repos/fedimint/fedimint/pulls/NUMBER
-   tau-github-collect 'repos/fedimint/fedimint/pulls/NUMBER/reviews?per_page=100' NEW_PRIVATE_REVIEWS.http
-   tau-github-collect 'repos/fedimint/fedimint/pulls/NUMBER/comments?per_page=100' NEW_PRIVATE_REVIEW_COMMENTS.http
-   tau-github-collect 'repos/fedimint/fedimint/pulls/NUMBER/commits?per_page=100' NEW_PRIVATE_COMMITS.http
+   tau-github-collect 'repos/fedimint/fedimint/pulls/NUMBER/reviews?per_page=100' NEW_REVIEWS.http
+   tau-github-collect 'repos/fedimint/fedimint/pulls/NUMBER/comments?per_page=100' NEW_REVIEW_COMMENTS.http
+   tau-github-collect 'repos/fedimint/fedimint/pulls/NUMBER/commits?per_page=100' NEW_COMMITS.http
    ```
 
-   Filter evidence by its relevant event timestamp, including comment
-   `updated_at` for edits and review `submitted_at`. Commit author/committer
-   dates are not push times: corroborate when a change reached the PR with
-   timeline/update evidence. Do not invent old comment text or force-pushed-away
-   commits that GitHub no longer exposes.
-3. Keep a small collection ledger: inventory count, included issue/PR numbers,
-   evidence links/timestamps, completed pagination, and missing evidence.
-   Follow every next page/cursor; split capped search ranges if using search.
-   A CLI default limit, search cap, rate limit, failed request, or truncated
-   response is not completion. Retry safely or report the blocker.
-4. Refresh each included item's current state and latest discussion before
-   drafting. For PRs, check draft/open/closed/merged state, review outcome,
-   checks, conflicts, and explicit blockers where available. Distinguish
-   historical review feedback from feedback still applicable to the current
-   head. Do not infer merge readiness merely from an approval.
+   The helper uses brokered `gh api --paginate --include`, retains exact raw
+   response pages, and validates the exit, HTTP/JSON framing and pagination.
+   Read saved arrays only after success, using Python integers and
+   `decimal.Decimal`, not floating-point decode/re-encode. Its small stdout
+   summary is not evidence. Follow every next page/cursor for any collection
+   used as complete evidence; never treat a truncated capture as complete.
+   The helper deletes failed captures. It bounds stdout at 256 MiB, stderr at
+   1 MiB, physical lines at 8 MiB, and response headers at 64 KiB / 256 lines.
+   Infrastructure contract: `fedimint-infra/docs/tau-github-collection.md`.
+3. Filter by the relevant event timestamp, including comment `updated_at`
+   and review `submitted_at`. Current state alone is not proof of activity.
+   Commit author/committer dates are not push times; corroborate PR update
+   timing. Do not invent previous comment text or force-pushed-away commits.
+   Record each candidate as included, no observed in-window activity in the
+   consulted sources, not inspected due to a stated budget, or failed.
+   Record selected/skipped sources and why. No silent candidate omissions.
+4. Refresh included items' current state before drafting, reusing a recent
+   detail read from this run when sufficient. Read latest relevant discussion
+   for supported next steps, and inspect reviews/checks/current head only for
+   claims that need them. Label unavailable status unknown; do not infer merge
+   readiness from approval or treat old review feedback as current.
 
-Summarize only observable evidence. Disclose collection limitations, including
-deleted/inaccessible activity or unavailable edit/push history. If a gap could
-omit items or misrepresent their progress, stop publication and return the
-draft plus the blocker; publish an explicitly partial report only if requested.
-Do not claim exhaustive historical recovery. Do not silently truncate the report
-to fit a response or tool limit.
+### Publication gate and lifecycle
+
+Publish the evidence-supported bounded report with explicit coverage:
+discovery method/caps, candidate and included counts by type, uninspected counts,
+consulted sources, budget stops, and the normal limitations above. This scope
+is authorized by the ordinary weekly publication request: **do not ask for
+partial-publication permission for normal bounded-coverage limitations**.
+Do not claim exhaustive coverage, that every collection was read, or that an
+uninspected item had no activity. If existing evidence reveals extra items,
+account for them in the ledger/report without expanding discovery.
+
+Actual failures are different: a nonzero read, missing/redacted/malformed page,
+denied access, rate-limit response, or truncated capture must be recorded with
+the endpoint, sanitized cause, attempt count, and retained successful evidence.
+Never relabel a failed request as an expected budget stop. If unresolved failures
+could omit selected activity or misrepresent a claim, stop publication and return the
+draft plus the precise blocker. Do not request permission to hide that failure.
+Resolve it within the retry budget, or wait for an authorized recovery decision.
+An exit code alone does not diagnose quota exhaustion or execution congestion.
+Do not expose raw stderr, credentials, private paths, or private task details in
+the public page or maintainer announcement.
+
+Maintain durable lifecycle: **delivered** (request accepted), **collecting**
+(active work), **blocked** (specific cause and next action), **published**
+(remote commit/page verified). Keep announcement delivery separate, including
+uncertainty. A scheduler exit-zero or running service is not report completion.
+Before ending work, persist evidence paths, draft, counters, completed/remaining
+work, and status. A service restart clears the live session, not these checkout
+files/task records; a fresh coordinator must consult them rather than start over.
+Do not silently truncate the report to fit a response or tool limit.
 
 ## Classify activity by significance and outcome
 
@@ -212,8 +274,13 @@ a closed issue or PR can still have an explicit follow-up.
 - Lookback: 184 hours (7 days plus 16 hours); overlap with prior reports is intentional.
 - Generated (UTC): 2026-10-05T13:15:00Z
 - Current status checked (UTC): 2026-10-05T13:10:00Z
-- Coverage: 1 issue and 1 PR with observed activity; all collection pages read.
-  Limitation: deleted activity and unavailable edit history cannot be recovered.
+- Coverage: 1 issue and 1 PR with observed activity from 1 issue and 1 PR
+  discovered by bounded recent-updated search; neither search reached its
+  150-item cap. All 2 candidates inspected; no failed requests or budget stops.
+  Sources: selected timelines, discussion, and current details.
+  Limitations: this is not an exhaustive activity ledger; old non-updated
+  reference-only events, indexing delays, deleted activity, and unavailable
+  edit/push history may be missed.
 
 ## Overview
 
