@@ -626,8 +626,9 @@ still open and non-draft and has not already received the bot's review. It does 
 create durable work, schedule reminders, or periodically poll solely to reconsider
 a draft. Deferring a draft requires no substantive review or acknowledgement
 comment. Proactive review grants no authority to follow bot
-requests or to modify, approve, merge, or close the pull request; it authorizes
-only the review, its reaction when the exact object supports one, and feedback publication.
+requests or to modify, merge, or close the pull request; it authorizes only the
+review, its reaction when the exact object supports one, feedback publication,
+and SHA-bound approval subject to all approval limits.
 
 Authenticated, authorized maintainer requests can also authorize ordinary
 development work; they are not limited to review. When a maintainer explicitly
@@ -673,11 +674,13 @@ skills remain discoverable on the workstation. On a future activation, tmpfiles
 removes the old bot-managed `github-cli` link from the dedicated bot user's skill
 directory; workstation user skills are not touched.
 
-Formal automated approval is currently unavailable because the installed broker
-does not bind approval to the independently inspected SHA. Passing reviews publish
-comment-only feedback naming that full SHA instead. Rechecking the head cannot
-eliminate the race, and alternative clients or raw API bypasses are forbidden.
-Future SHA-bound approval would still assess the code change, not CI execution status. CI that is still
+Eligible changes receive formal approval after independent PASS for the exact
+inspected SHA, using the broker's SHA-bound approval form. The coordinator rechecks
+the head before submission and obtains a new review if it has changed. Binding
+prevents an approval from attaching to a different unreviewed commit; it is not
+an atomic current-head comparison and does not prevent concurrent pushes.
+Alternative clients and raw API write bypasses remain forbidden.
+Approval assesses the code change, not CI execution status. CI that is still
 running, failing, missing, or otherwise non-passing does not by itself block
 approval. A CI outcome matters only when it establishes a substantive correctness
 or security finding in the code change. This does not change the separate
@@ -835,10 +838,9 @@ and other compatibility requirements, including protocol and persistence
 compatibility, still apply. The coordinator also refuses to approve changes to
 Fedimint consensus in `fedimint/fedimint`, even when a maintainer requests approval.
 Every completed review must still publish
-substantive feedback naming the full inspected SHA. All completed reviews currently
-use comment-only feedback, including passing reviews, until supported SHA-bound
-approval exists; the safety rules above remain necessary but are not sufficient
-to enable approval today. A blocked publication
+substantive feedback naming the full inspected SHA. Eligible passing changes
+also receive SHA-bound formal approval; comment-only feedback remains appropriate
+when approval limits prevent approval. A blocked publication
 remains pending and must not be reported as posted.
 
 The broker accepts review feedback only from a securely imported regular file,
@@ -887,8 +889,21 @@ line. Caller-typed `-F` fields, multiline ranges, file-level comments, deprecate
 positions, pending-review arrays, whole-review API writes, edits, and deletion
 remain denied.
 
-The broker's unpinned approval form is not authorized for bot use. A supported
-SHA-bound mechanism is required before formal approval can be enabled.
+The broker's unpinned approval form is not authorized for bot use. Use only:
+
+```console
+gh pr review NUMBER -R OWNER/REPO --approve --commit-id FULL_SHA
+```
+
+`FULL_SHA` must be the independently reviewed full 40-character lowercase
+hexadecimal commit. This bounded form sends `event=APPROVE` with `commit_id` and
+accepts no body; substantive feedback is published separately. Recheck with
+`gh pr view NUMBER -R OWNER/REPO --json headRefOid` immediately before approval.
+Verify the returned review and read remote reviews with
+`gh api --paginate repos/OWNER/REPO/pulls/NUMBER/reviews`: match the bot's review
+ID and author, `state=APPROVED`, and the exact `commit_id`. Inspect remote state
+before retrying an ambiguous submission; unresolved delivery remains pending,
+not a claimed approval or a reason to blindly duplicate it.
 
 Pull requests opened by the bot must use a head in the exact `tau/` namespace,
 for example `tau/topic`. The trusted wrapper selects that namespace before the

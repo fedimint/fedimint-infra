@@ -50,13 +50,34 @@ Formal reviews use:
 ```sh
 gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
 gh pr review NUMBER -R OWNER/REPO --request-changes --body-file FILE
+gh pr review NUMBER -R OWNER/REPO --approve --commit-id FULL_SHA
 ```
 
-Formal approval is unavailable with the installed broker: its approval form does
-not bind the review to the inspected SHA. Publish comment-only feedback naming the
-full inspected SHA, including for a passing review. Rechecking the head cannot
-eliminate the race. Do not use unpinned approval or bypass the broker; approval
-requires a supported SHA-bound mechanism and all existing approval limits.
+Formally approve eligible changes only after independent PASS for the exact
+inspected SHA and all main-prompt approval limits. `FULL_SHA` is that full
+40-character lowercase hexadecimal commit. This broker-specific form submits
+`event=APPROVE` and `commit_id=FULL_SHA`; it accepts no body or extra flags.
+Never use unpinned approval or a raw API write. Publish substantive feedback
+separately, naming the full inspected SHA; use comment-only feedback when approval
+limits prevent approval.
+
+Immediately before approval, recheck the head with
+`gh pr view NUMBER -R OWNER/REPO --json headRefOid`. If it changed, obtain independent
+review of the new SHA first. Binding prevents approval attaching to a different
+unreviewed commit; it is not an atomic current-head comparison and does not prevent
+concurrent pushes or replace stale-review protection.
+
+Verify the submitted review's `state` is `APPROVED` and `commit_id` equals the
+inspected SHA. Inspect the returned review and confirm remote state using:
+
+```sh
+gh api --paginate repos/OWNER/REPO/pulls/NUMBER/reviews
+```
+
+Identify the bot's review by its returned review ID and author, not another
+reviewer's approval. After an ambiguous result, use that read before retrying;
+if delivery cannot be established, preserve the uncertainty and do not claim
+approval or blindly submit a duplicate.
 
 Review files must be regular, single-link files no larger than 1 MiB, reached
 without symlinks or nested mounts. Keep them below the project root or in an

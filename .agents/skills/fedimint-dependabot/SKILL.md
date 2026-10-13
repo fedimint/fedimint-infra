@@ -22,9 +22,9 @@ limits, consensus restrictions, or any GitHub broker boundary.
 
 Assess the dependency or GitHub Actions update as code: inspect the exact version
 and lockfile changes, compatibility and security impact, generated artifacts, and
-repository policy. Publish substantive comment-only feedback naming the full
-inspected SHA. Formal approval is currently unavailable under the review skill's
-SHA-binding gate; Dependabot identity does not relax that gate.
+repository policy. Publish substantive feedback naming the full inspected SHA.
+Formally approve eligible passing changes using the review skill's SHA-bound
+workflow; Dependabot identity does not relax independent review or approval limits.
 
 ## Necessary compatibility fixes
 

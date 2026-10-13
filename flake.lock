@@ -5553,16 +5553,16 @@
         "nixpkgs": "nixpkgs_10"
       },
       "locked": {
-        "lastModified": 1791247933,
-        "narHash": "sha256-2ro1vs/gXdKhWJ9wFQ9oktUSuvhtN9fNllbpAwqtvlU=",
+        "lastModified": 1791923485,
+        "narHash": "sha256-GUTVmrQhxTMCyXZddA7lR2tFxv5eHP33Rn9+pYBvATA=",
         "ref": "refs/heads/master",
-        "rev": "87fb282f493bcf32b0ffc28b5738fefda9188618",
-        "revCount": 39,
+        "rev": "d740efce29b89f914e414a0d95d3c2917dece3b3",
+        "revCount": 41,
         "type": "git",
         "url": "https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git"
       },
       "original": {
-        "rev": "87fb282f493bcf32b0ffc28b5738fefda9188618",
+        "rev": "d740efce29b89f914e414a0d95d3c2917dece3b3",
         "type": "git",
         "url": "https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git"
       }
