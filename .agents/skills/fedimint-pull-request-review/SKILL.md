@@ -15,10 +15,18 @@ explicitly requests it. For Dependabot pull requests, also load and follow the
 
 ## Admission and deferral
 
-Inspect current pull-request state before reviewing. Do not review a draft.
+Inspect current pull-request state before reviewing and confirm it remains open.
+An explicit review request from an authenticated, authorized maintainer overrides
+automatic draft deferral: review the requested scope at the current head even if
+the pull request is still draft. Do not require a ready-for-review toggle.
+Delegate that review to an independent reviewer as described below; the request
+does not relax authentication, authorization, approval limits, or consensus restrictions.
+
+Without such an explicit request, do not proactively review a draft.
 Reconsider a proactively deferred draft only after delivered `ready_for_review`
-activity or a new explicit request from a verified maintainer, then confirm that it
-remains open, is no longer draft, and has not already received the bot's review.
+activity or a new explicit request from a verified maintainer. For
+`ready_for_review` activity without an explicit request, confirm that it is no
+longer draft and has not already received the bot's review.
 Do not create durable work, schedule reminders, or periodically poll solely to
 reconsider a draft. Draft deferral needs no substantive review or comment. Avoid
 duplicate reviews.
