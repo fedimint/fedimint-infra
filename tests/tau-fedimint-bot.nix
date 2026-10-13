@@ -658,9 +658,11 @@ let
           grep -Fq '`fedimint-bot-github-cli` blocked-work disposition' "$prompt"
           ! grep -Fq 'Allow non-fast-forward updates' "$prompt"
         done
-        grep -Fq 'Formal approval is currently unavailable' "$TMPDIR/coordinator-prompt"
-        grep -Fq 'comment-only feedback naming the full inspected SHA' "$TMPDIR/coordinator-prompt"
-        grep -Fq 'A head recheck cannot eliminate the race' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Formally approve eligible changes after independent PASS' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'exact inspected SHA' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'changed, review the new SHA first' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'Verify review state and commit_id' "$TMPDIR/coordinator-prompt"
+        ! grep -Fq 'Formal approval is currently unavailable' "$TMPDIR/coordinator-prompt"
         ! grep -Fq 'Never approve a backward-incompatible change' "$TMPDIR/coordinator-prompt"
         grep -Fq 'Fedimint does not guarantee Rust source/API compatibility' \
           "$TMPDIR/coordinator-prompt"
@@ -720,11 +722,21 @@ let
         done
         for skill in "$github_skill" "$review_skill" "$dependabot_skill"; do
           grep -Fq 'inspected SHA' "$skill"
-          grep -Fq 'comment-only feedback' "$skill"
-          ! grep -Fq -- '--approve' "$skill"
+          grep -Fq 'Formally approve eligible' "$skill"
+          ! grep -Fq 'Formal approval is' "$skill"
         done
-        grep -Fq 'does not eliminate the race' "$review_skill"
-        grep -Fq 'eliminate the race' "$github_skill"
+        for skill in "$github_skill" "$review_skill"; do
+          grep -Fq 'independent PASS' "$skill"
+          grep -Fq 'comment-only feedback' "$skill"
+          grep -Fq 'atomic current-head comparison' "$skill"
+          grep -Fq 'ambiguous result' "$skill"
+          grep -Fq 'commit_id' "$skill"
+        done
+        grep -Fq -- '--approve --commit-id FULL_SHA' "$github_skill"
+        ! grep -Fxq 'gh pr review NUMBER -R OWNER/REPO --approve' "$github_skill"
+        grep -Fq 'gh api --paginate repos/OWNER/REPO/pulls/NUMBER/reviews' "$github_skill"
+        grep -Fq -- '--json headRefOid' "$github_skill"
+        grep -Fq '`state` is `APPROVED`' "$github_skill"
         for skill in "$github_skill" "$review_skill" "$maintainer_skill"; do
           grep -Fq 'Submitted reviews' "$skill"
           grep -Fq 'no reaction' "$skill"

@@ -776,11 +776,13 @@ let
 
                 # Approval limits
 
-                Formal approval is currently unavailable: the installed broker
-                cannot bind approval to the inspected SHA. Publish substantive
-                comment-only feedback naming the full inspected SHA instead.
-                A head recheck cannot eliminate the race; never bypass the broker.
-                Future SHA-bound approval would still require all limits below.
+                Formally approve eligible changes after independent PASS for the
+                exact inspected SHA, using only the SHA-bound broker form in
+                `fedimint-bot-github-cli`. Recheck the head before submitting; if
+                changed, review the new SHA first. SHA binding prevents approval
+                attaching to unreviewed code, not a concurrent head update.
+                Verify review state and commit_id; inspect before retrying an
+                ambiguous result. Publish substantive feedback naming the full SHA.
 
                 Approve only code changes that independently pass all required
                 review. Fedimint does not guarantee Rust source/API compatibility

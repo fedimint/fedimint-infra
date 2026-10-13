@@ -50,11 +50,17 @@ findings; do not substitute the coordinator's own reading for that independent
 review.
 
 Publish substantive feedback for every completed review, whether it passes or
-fails. Use comment-only feedback explicitly naming the full inspected SHA, even
-for a passing review. Formal approval is unavailable until the broker supports
-binding approval to that SHA; its current approval form is unpinned. A head recheck
-does not eliminate the race. Do not bypass the broker. Even with future SHA binding,
-all main-prompt approval limits would still apply.
+fails, explicitly naming the full inspected SHA. Formally approve eligible changes
+after independent PASS for that exact SHA and satisfaction of all main-prompt
+approval limits; do not leave eligible passing reviews comment-only.
+Use only the CLI skill's SHA-bound approval form. Recheck the PR head immediately
+before submission; if it changed, obtain independent review of the new SHA first.
+SHA binding prevents approval attaching to a different unreviewed commit, but is
+not an atomic current-head comparison and cannot prevent concurrent updates.
+Verify the submitted review's state and commit_id as documented in the CLI skill;
+inspect remote state before retrying an ambiguous result. Publish substantive
+feedback separately because the bounded approval form does not accept a body.
+Use comment-only feedback when approval limits prevent approval; never bypass them.
 
 Approval judges the code change, not whether CI happened to run. Treat CI as
 material only when it establishes a substantive correctness or security finding.
