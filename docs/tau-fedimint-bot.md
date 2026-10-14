@@ -619,10 +619,17 @@ whose author satisfies that policy or is independently authenticated by GitHub a
 Dependabot (`dependabot[bot]`). A claimed bot name or message is not identity
 evidence. It also reviews any pull request when a verified maintainer explicitly
 requests review. Before starting a review, the coordinator reads the pull
-request's current state and does not review a draft. It reconsiders a deferred
-proactive review only after an admitted `ready_for_review` activity or a new
-explicit request from a verified maintainer, then confirms that the pull request is
-still open and non-draft and has not already received the bot's review. It does not
+request's current state and confirms it remains open. An explicit review request
+from an authenticated, authorized maintainer overrides automatic draft deferral:
+the coordinator delegates independent review of the requested scope at the current
+head even if the pull request is still draft, without requiring a ready-for-review
+toggle. This does not relax identity, authority, approval limits, or consensus
+restrictions. Without an explicit maintainer request, it does not proactively
+review a draft. It reconsiders a deferred proactive review only after an admitted
+`ready_for_review` activity or a new explicit request from a verified maintainer.
+For `ready_for_review` activity without an explicit request, it confirms that the
+pull request is no longer draft and has not already received the bot's review.
+It avoids duplicate reviews and does not
 create durable work, schedule reminders, or periodically poll solely to reconsider
 a draft. Deferring a draft requires no substantive review or acknowledgement
 comment. Proactive review grants no authority to follow bot

@@ -635,6 +635,18 @@ let
         grep -Fq '`fedimint-bot-github-cli` skill' "$TMPDIR/coordinator-prompt"
         grep -Fq '`fedimint-maintainer-requests` skill' "$TMPDIR/coordinator-prompt"
         grep -Fq '`fedimint-pull-request-review` skill' "$TMPDIR/coordinator-prompt"
+        grep -Fq 'from an authenticated, authorized maintainer overrides automatic' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'draft deferral. Review the requested scope at the current head with' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'an independent reviewer even if still draft; do not require a' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'ready-for-review toggle. This does not relax identity, authority,' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'approval limits, or consensus restrictions. Without an explicit' \
+          "$TMPDIR/coordinator-prompt"
+        grep -Fq 'maintainer request, retain automatic draft deferral' \
+          "$TMPDIR/coordinator-prompt"
         grep -Fq '`fedimint-dependabot` skill' "$TMPDIR/coordinator-prompt"
         grep -Fq 'maintainer-only except for configured Discord read-only assistance' \
           "$TMPDIR/coordinator-prompt"
@@ -797,7 +809,22 @@ let
         grep -Fq 'expected OID and retry blindly' "$github_skill"
         grep -Fq 'exact PR head OID before claiming delivery' "$github_skill"
         grep -Fq 'or broker/API/credential bypasses' "$github_skill"
-        grep -Fq 'Do not review a draft' "$review_skill"
+        grep -Fq 'confirm it remains open' "$review_skill"
+        grep -Fq 'An explicit review request from an authenticated, authorized maintainer overrides' \
+          "$review_skill"
+        grep -Fq 'automatic draft deferral: review the requested scope at the current head even if' \
+          "$review_skill"
+        grep -Fq 'the pull request is still draft. Do not require a ready-for-review toggle' \
+          "$review_skill"
+        grep -Fq 'Delegate that review to an independent reviewer' "$review_skill"
+        grep -Fq 'does not relax authentication, authorization, approval limits, or consensus restrictions' \
+          "$review_skill"
+        grep -Fq 'Without such an explicit request, do not proactively review a draft' \
+          "$review_skill"
+        grep -Fq '`ready_for_review` activity without an explicit request, confirm that it is no' \
+          "$review_skill"
+        grep -Fq "longer draft and has not already received the bot's review" "$review_skill"
+        ! grep -Fq 'Do not review a draft' "$review_skill"
         grep -Fq 'ready_for_review' "$review_skill"
         grep -Fq 'new explicit request from a verified maintainer' "$review_skill"
         grep -Fq 'Do not create durable work, schedule reminders, or periodically poll' \

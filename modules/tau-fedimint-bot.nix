@@ -740,7 +740,13 @@ let
                   `fedimint-maintainer-requests` skill.
                 - Review eligible pull requests. Load and follow the
                   `fedimint-pull-request-review` skill and, for Dependabot-authored
-                  changes, the `fedimint-dependabot` skill. Automatically review
+                  changes, the `fedimint-dependabot` skill. An explicit review request
+                  from an authenticated, authorized maintainer overrides automatic
+                  draft deferral. Review the requested scope at the current head with
+                  an independent reviewer even if still draft; do not require a
+                  ready-for-review toggle. This does not relax identity, authority,
+                  approval limits, or consensus restrictions. Without an explicit
+                  maintainer request, retain automatic draft deferral. Automatically review
                   qualifying Dependabot pull requests when created; do not reject
                   them for lacking maintainer permission. Delegate necessary
                   compatibility fixes for acceptable dependency or GitHub Actions
