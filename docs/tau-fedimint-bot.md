@@ -693,6 +693,23 @@ approval. A CI outcome matters only when it establishes a substantive correctnes
 or security finding in the code change. This does not change the separate
 implementation-check or merge-policy requirements.
 
+Security findings in a PR must be compared with the project's current trunk,
+using the actual vulnerable behavior rather than only changed lines or the PR's
+base commit. The independent review records both inspected SHAs and the comparison
+reasoning; the coordinator helps obtain missing trunk evidence through supported
+reads. A bounded source comparison can establish applicability without an
+exploit or exhaustive absence proof.
+When the PR introduces a vulnerability confirmed absent from trunk, the bot
+discloses it normally in the PR, including trigger conditions, impact, and fix
+guidance. It must not withhold the finding, make it vague, or insist on private
+disclosure solely because it is security-related or theoretically sensitive.
+There is no additional release-status gate. Findings already present on trunk,
+or whose trunk applicability remains unresolved, retain existing security
+handling. Publication authority and the ban on exposing credentials or private
+data remain in force, but do not turn a confirmed PR-only defect explanation into
+private data. The main security prompt applies this rule across roles, and
+`fedimint-pull-request-review` supplies the comparison and delegation workflow.
+
 For every authorized request delivered through an independently authenticated
 GitHub notification, the coordinator publishes its substantive response as a
 comment on the originating issue or pull request, or on the relevant comment
