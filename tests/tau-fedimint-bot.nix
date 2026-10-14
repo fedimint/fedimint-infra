@@ -1205,6 +1205,8 @@ let
     name = "tau-fedimint-bot-tmpfiles";
     nodes.machine = {
       system.stateVersion = "26.05";
+      virtualisation.memorySize = 4096;
+      services.resolved.enable = true;
       nix.settings.experimental-features = [
         "nix-command"
         "flakes"
@@ -1221,6 +1223,9 @@ let
       };
       systemd.tmpfiles.rules = disabled.config.systemd.tmpfiles.rules;
       environment.systemPackages = [
+        (lib.findFirst (
+          p: (p.name or "") == "agent-browser"
+        ) (throw "missing agent-browser") disabled.config.environment.systemPackages)
         isolatePackage
         direnvDpcPackage
         pkgs.bubblewrap
@@ -1228,7 +1233,10 @@ let
         pkgs.gnupg
         pkgs.jq
         pkgs.just
-        (pkgs.python3.withPackages (python: [ python.cbor2 ]))
+        (pkgs.python3.withPackages (python: [
+          python.cbor2
+          python.pillow
+        ]))
         pkgs.ripgrep
         githubNotificationsPackage
       ];
@@ -1416,6 +1424,20 @@ let
           "/home/tau-fedimint/fedimint/fedimint-sdk "
           "config --local --get core.sshCommand)\" = "
           "'${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config'"
+      )
+      # Use the unmodified generated production profile, the real isolate, and
+      # the bot UID. Supply only a credential-free SSH socket for its required
+      # mount; browser commands never leave the sandbox.
+      machine.succeed(
+          "install -d -m 0700 -o tau-fedimint -g tau-fedimint /run/user/1001\n"
+          "runuser -u tau-fedimint -- ${pkgs.openssh}/bin/ssh-agent "
+          "-a /run/user/1001/tau-fedimint-ssh-agent.sock\n"
+          "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+          "XDG_RUNTIME_DIR=/run/user/1001 "
+          "timeout -k 5 120 isolate -c /home/tau-fedimint/fedimint "
+          "exec --profile fedimint-bot -- "
+          "bash ${./tau-agent-browser-smoke.sh}",
+          timeout=150,
       )
       machine.succeed(
           "set -e\n"

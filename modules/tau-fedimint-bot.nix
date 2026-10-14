@@ -22,6 +22,7 @@ let
   clankState = "${home}/.local/state/clank";
   direnvData = "${home}/.local/share/direnv";
   userSkillsDir = "${home}/.config/agents/skills";
+  agentBrowser = import ../nix/pkgs/tau-agent-browser.nix { inherit pkgs; };
   upstreamSkillNames = [
     "linked-specs"
     "linked-specs-updating"
@@ -534,6 +535,13 @@ let
             may be inaccessible or read-only. `/tmp/public` is a shared mode-1733
             non-listable dropbox: create artifacts at unpredictable paths with
             `mktemp` and pass other agents the exact paths.
+
+            `agent-browser` is installed with Chromium for web navigation and
+            screenshots. Use a distinct `--session NAME` per task, `snapshot -i`
+            to inspect a page, `screenshot PATH` to capture it, and `close` when
+            done. No browser download is needed. Keep Chromium's sandbox enabled;
+            report launch failures rather than bypassing it. Use only fresh
+            browser sessions, not host authentication profiles or credentials.
           '';
         }
         {
@@ -1510,6 +1518,8 @@ in
     ++ map (skill: "L+ ${userSkillsDir}/${skill.name} - - - - ${skill.source}") installedSkills;
 
     environment.systemPackages = [
+      # Isolate resets PATH to the system profile, not the bot's user profile.
+      agentBrowser
       cfg.tauPackage
       cfg.isolatePackage
       cfg.clankPackage

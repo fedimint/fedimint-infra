@@ -1,5 +1,46 @@
 # Tau Fedimint bot
 
+## Browser navigation and screenshots
+
+`agent-browser` and Chromium come from the locked nixpkgs input; no npm install
+or `agent-browser install` is needed. The system-profile wrapper is available
+both to the bot user and inside its isolate sandbox (which resets `PATH`).
+It selects the packaged Chromium and puts daemon sockets under
+`$XDG_RUNTIME_DIR/tau/agent-browser`, using the existing writable runtime mount.
+No host browser profile, credentials, new broker permission, or extra mount is
+provided.
+
+Run browser commands inside the bot sandbox, with a distinct `--session` name
+for each independent task:
+
+```sh
+agent-browser --session web-check open https://example.com
+agent-browser --session web-check snapshot -i
+shot=$(mktemp /tmp/public/web-check-XXXXXX.png)
+agent-browser --session web-check screenshot "$shot"
+agent-browser --session web-check close
+```
+
+The wrapper refuses Chromium sandbox-disabling flags, including the automatic
+`--no-sandbox` fallback in agent-browser 0.27.0's CI/container detection. If launch
+fails, diagnose the environment rather than bypassing the browser sandbox.
+This guard prevents accidental fallback; it is not a security boundary against
+arbitrary code run by the bot, which remains confined by isolate.
+
+Agent-browser's native Chromium connection uses an unauthenticated CDP port on
+host loopback. Other local users or workloads could discover that port and
+control the browser, including accessing files visible inside its isolate.
+The operator explicitly accepts this as a non-issue for this deployment's
+trusted, single-user machine. This is not safe by default on a shared or
+untrusted host: revisit the transport/network boundary before introducing
+untrusted local users or workloads. Chromium's sandbox remains enabled; it
+does not authenticate CDP clients.
+
+The NixOS bot check runs navigation, a DOM interaction, PNG decoding, and
+Chromium's sandbox-status check as the bot UID inside the real, unmodified
+isolate profile. It uses a local fixture and a credential-free SSH agent socket;
+it neither sends a bot prompt nor contacts a website.
+
 ## Private Discord maintainer channel
 
 Runner-01 enables the operator-approved private channel using the independently
