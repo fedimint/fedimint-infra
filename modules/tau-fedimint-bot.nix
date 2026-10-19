@@ -10,6 +10,10 @@ let
   user = "tau-fedimint";
   home = "/home/${user}";
   projectRoot = "${home}/fedimint";
+  # Pinned isolate derives its private /tmp backing from the canonical cwd.
+  # Protect only the child mountpoint, not ordinary scratch files or other
+  # isolate instances. The VM test checks this against the real runtime path.
+  isolateTmp = "/tmp/isolate-${builtins.substring 0 16 (builtins.hashString "sha256" projectRoot)}";
   fedimintCheckout = "${projectRoot}/fedimint";
   fedimintSdkCheckout = "${projectRoot}/fedimint-sdk";
   runtimeDir = "/run/user/${toString cfg.uid}";
@@ -1497,6 +1501,7 @@ in
 
     systemd.tmpfiles.rules = [
       "d /tmp/public 1733 nobody nogroup -"
+      "x ${isolateTmp}/public - - - -"
       "d ${projectRoot} 0700 ${user} ${user} -"
       "d ${home}/.config 0700 ${user} ${user} -"
       "d ${home}/.config/agents 0700 ${user} ${user} -"

@@ -16,7 +16,7 @@ for each independent task:
 ```sh
 agent-browser --session web-check open https://example.com
 agent-browser --session web-check snapshot -i
-shot=$(mktemp /tmp/public/web-check-XXXXXX.png)
+shot=$(mktemp /tmp/public/web-check-XXXXXX.png) || exit 1
 agent-browser --session web-check screenshot "$shot"
 agent-browser --session web-check close
 ```
@@ -370,6 +370,31 @@ requires the bind source to be a directory. The sticky bit prevents users from
 removing files they do not own, while the missing read bit prevents directory
 listing. Artifact names are still capabilities: use unpredictable `mktemp`
 names, do not store secrets there, and send collaborators the exact path.
+
+The private `/tmp` backing used by the pinned isolate is
+`/tmp/isolate-<first 16 hex digits of SHA-256(canonical cwd)>`. The module
+excludes **only its `public` mountpoint** for the bot's fixed project directory
+from tmpfiles aging. Removing that otherwise-empty host-side directory detaches
+the child bind in a running namespace; a fresh sandbox working correctly does
+not prove a long-lived daemon still has the bind. Ordinary private scratch and
+other isolate instances remain subject to normal cleanup. The empty mountpoint
+persists until reboot or explicit removal while the bot is stopped.
+
+This is an integration workaround for isolate's backing-directory lifetime,
+not a change to sandbox authority. The VM regression runs the real managed
+profile, reproduces mount loss without protection, then checks that the module's
+rules preserve the live bind and host-visible file writes through cleanup while
+still deleting ordinary scratch. It also checks the real backing path, so an
+isolate upgrade that changes the naming scheme cannot silently invalidate the
+exclusion. Keep the managed project root a real directory, not a symlink.
+
+Always stop if temporary allocation fails; never continue with an empty output
+directory (which can turn `"$dir/file"` into `/file`). After deployment, verify
+`/tmp/public` is a mount in the **inner Tau daemon's** mount namespace and has the
+same device/inode as the host dropbox, not merely that the directory exists.
+Adding the exclusion does not restore a bind already lost by a live daemon.
+The normal service restart restores it but also clears the bot session, so first
+arrange a safe boundary for ongoing work.
 
 The GitHub broker explicitly authorizes this dropbox and the project root as
 separate review-body import roots. That authority applies only to the exact

@@ -1440,6 +1440,11 @@ let
           timeout=150,
       )
       machine.succeed(
+          "timeout -k 5 60 python ${./tau-scratch-cleanup.py} "
+          "${pkgs.writeText "tau-scratch-tmpfiles.conf" (lib.concatStringsSep "\n" disabled.config.systemd.tmpfiles.rules)}",
+          timeout=75,
+      )
+      machine.succeed(
           "set -e\n"
           "cp /home/tau-fedimint/.config/isolate/isolate.yaml "
           "/home/tau-fedimint/.config/isolate/isolate.yaml.saved\n"
