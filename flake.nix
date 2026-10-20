@@ -81,6 +81,15 @@
       ];
 
       topLevelModule = {
+        # Match NixOS/nixpkgs#576401, including the Comodo cross-sign path.
+        # This affects system trust only, not applications' independent bundles.
+        security.pki.caCertificateBlacklist = [
+          "Comodo AAA Services root"
+          "emSign ECC Root CA - G3"
+          "emSign Root CA - C1"
+          "emSign ECC Root CA - C3"
+        ];
+
         nixpkgs = {
           inherit overlays;
         };
