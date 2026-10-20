@@ -1,5 +1,46 @@
 # Tau Fedimint bot
 
+## Browser navigation and screenshots
+
+`agent-browser` and Chromium come from the locked nixpkgs input; no npm install
+or `agent-browser install` is needed. The system-profile wrapper is available
+both to the bot user and inside its isolate sandbox (which resets `PATH`).
+It selects the packaged Chromium and puts daemon sockets under
+`$XDG_RUNTIME_DIR/tau/agent-browser`, using the existing writable runtime mount.
+No host browser profile, credentials, new broker permission, or extra mount is
+provided.
+
+Run browser commands inside the bot sandbox, with a distinct `--session` name
+for each independent task:
+
+```sh
+agent-browser --session web-check open https://example.com
+agent-browser --session web-check snapshot -i
+shot=$(mktemp /tmp/public/web-check-XXXXXX.png) || exit 1
+agent-browser --session web-check screenshot "$shot"
+agent-browser --session web-check close
+```
+
+The wrapper refuses Chromium sandbox-disabling flags, including the automatic
+`--no-sandbox` fallback in agent-browser 0.27.0's CI/container detection. If launch
+fails, diagnose the environment rather than bypassing the browser sandbox.
+This guard prevents accidental fallback; it is not a security boundary against
+arbitrary code run by the bot, which remains confined by isolate.
+
+Agent-browser's native Chromium connection uses an unauthenticated CDP port on
+host loopback. Other local users or workloads could discover that port and
+control the browser, including accessing files visible inside its isolate.
+The operator explicitly accepts this as a non-issue for this deployment's
+trusted, single-user machine. This is not safe by default on a shared or
+untrusted host: revisit the transport/network boundary before introducing
+untrusted local users or workloads. Chromium's sandbox remains enabled; it
+does not authenticate CDP clients.
+
+The NixOS bot check runs navigation, a DOM interaction, PNG decoding, and
+Chromium's sandbox-status check as the bot UID inside the real, unmodified
+isolate profile. It uses a local fixture and a credential-free SSH agent socket;
+it neither sends a bot prompt nor contacts a website.
+
 ## Private Discord maintainer channel
 
 Runner-01 enables the operator-approved private channel using the independently
@@ -329,6 +370,31 @@ requires the bind source to be a directory. The sticky bit prevents users from
 removing files they do not own, while the missing read bit prevents directory
 listing. Artifact names are still capabilities: use unpredictable `mktemp`
 names, do not store secrets there, and send collaborators the exact path.
+
+The private `/tmp` backing used by the pinned isolate is
+`/tmp/isolate-<first 16 hex digits of SHA-256(canonical cwd)>`. The module
+excludes **only its `public` mountpoint** for the bot's fixed project directory
+from tmpfiles aging. Removing that otherwise-empty host-side directory detaches
+the child bind in a running namespace; a fresh sandbox working correctly does
+not prove a long-lived daemon still has the bind. Ordinary private scratch and
+other isolate instances remain subject to normal cleanup. The empty mountpoint
+persists until reboot or explicit removal while the bot is stopped.
+
+This is an integration workaround for isolate's backing-directory lifetime,
+not a change to sandbox authority. The VM regression runs the real managed
+profile, reproduces mount loss without protection, then checks that the module's
+rules preserve the live bind and host-visible file writes through cleanup while
+still deleting ordinary scratch. It also checks the real backing path, so an
+isolate upgrade that changes the naming scheme cannot silently invalidate the
+exclusion. Keep the managed project root a real directory, not a symlink.
+
+Always stop if temporary allocation fails; never continue with an empty output
+directory (which can turn `"$dir/file"` into `/file`). After deployment, verify
+`/tmp/public` is a mount in the **inner Tau daemon's** mount namespace and has the
+same device/inode as the host dropbox, not merely that the directory exists.
+Adding the exclusion does not restore a bind already lost by a live daemon.
+The normal service restart restores it but also clears the bot session, so first
+arrange a safe boundary for ongoing work.
 
 The GitHub broker explicitly authorizes this dropbox and the project root as
 separate review-body import roots. That authority applies only to the exact
@@ -692,6 +758,23 @@ running, failing, missing, or otherwise non-passing does not by itself block
 approval. A CI outcome matters only when it establishes a substantive correctness
 or security finding in the code change. This does not change the separate
 implementation-check or merge-policy requirements.
+
+Security findings in a PR must be compared with the project's current trunk,
+using the actual vulnerable behavior rather than only changed lines or the PR's
+base commit. The independent review records both inspected SHAs and the comparison
+reasoning; the coordinator helps obtain missing trunk evidence through supported
+reads. A bounded source comparison can establish applicability without an
+exploit or exhaustive absence proof.
+When the PR introduces a vulnerability confirmed absent from trunk, the bot
+discloses it normally in the PR, including trigger conditions, impact, and fix
+guidance. It must not withhold the finding, make it vague, or insist on private
+disclosure solely because it is security-related or theoretically sensitive.
+There is no additional release-status gate. Findings already present on trunk,
+or whose trunk applicability remains unresolved, retain existing security
+handling. Publication authority and the ban on exposing credentials or private
+data remain in force, but do not turn a confirmed PR-only defect explanation into
+private data. The main security prompt applies this rule across roles, and
+`fedimint-pull-request-review` supplies the comparison and delegation workflow.
 
 For every authorized request delivered through an independently authenticated
 GitHub notification, the coordinator publishes its substantive response as a

@@ -266,6 +266,31 @@ such; use `Unknown — needs maintainer clarification` when evidence is insuffic
 For completed work use `None — merged` or `None — resolved` only when justified;
 a closed issue or PR can still have an explicit follow-up.
 
+For **every PR entry**, including unimportant PRs, record **Author**,
+**Reviewers**, and **Approved by** where applicable, using GitHub handles.
+Omit empty/inapplicable fields; do not write `None` for them. These credits cover
+the observed PR history as of the status check, not only this week's activity:
+
+- **Author:** Use `user.login` from the already collected PR detail.
+- **Reviewers:** Deduplicate `user.login` from submitted reviews (with
+  `submitted_at`), including commented, changes-requested, approved, and dismissed
+  reviews. Requested reviewers, assignees, pending reviews, and ordinary discussion
+  commenters are not evidence of a submitted review.
+- **Approved by:** Deduplicate reviewers with a recorded `APPROVED` review
+  (`approved` in timeline events). Exclude dismissed reviews. Label these as
+  **recorded approvals**, not a claim that approval still applies to the current
+  head or that the PR is merge-ready; explain later changes-requested feedback
+  in Current status when relevant. An approver also belongs in Reviewers.
+
+Reuse retained PR details and submitted-review timeline events or reviews first.
+Only for included PRs whose retained evidence is insufficient, use the already
+approved paginated reviews read above, within the same collection budgets.
+Do not add a detail/reviews request when retained evidence already supports the
+credits. Missing identities or uninspected review history are unknown, not proof
+of no author/reviewers/approvers: disclose that attribution limitation rather than
+invent handles or silently imply no reviews. Actual read failures still follow
+the publication gate above.
+
 ```markdown
 # Week summary: 5 October, 2026
 
@@ -297,6 +322,9 @@ None.
 
 #### [#123 — Example implementation](https://github.com/fedimint/fedimint/pull/123)
 
+- **Author:** @example-author
+- **Reviewers:** @example-reviewer, @example-approver
+- **Approved by (recorded approvals):** @example-approver
 - **What was done this week:** Added the implementation and received review
   feedback requesting a regression test ([review](https://github.com/fedimint/fedimint/pull/123#pullrequestreview-456)).
 - **Current status:** Open, not draft; changes requested. CI passes on the

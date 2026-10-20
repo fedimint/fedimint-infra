@@ -82,3 +82,40 @@ claim it was posted.
 
 Load and follow the `fedimint-bot-github-cli` skill for exact review and line-comment forms.
 Pin line comments to the full inspected commit and canonical diff line.
+
+## Security findings: compare with trunk, then disclose PR-only defects
+
+For each security finding in the PR, compare the inspected PR head with the
+project's current trunk, not just the PR's base commit or changed lines. Resolve
+the upstream trunk and its current full SHA using supported read-only repository
+or GitHub access. Inspect the relevant behavior and call paths in both revisions:
+renamed or moved code, an equivalent vulnerable path, or a pre-existing defect
+newly noticed during review can mean the vulnerability already exists on trunk.
+A bounded source comparison is sufficient when it establishes the finding's
+applicability; do not demand an exploit, exhaustive proof of absence, or a release
+audit. Record the compared SHAs and reasoning in the review evidence.
+
+The coordinator includes this policy in the independent review delegation. The
+reviewer reports the trunk comparison with each security finding. If access or
+tools prevent the reviewer from checking trunk, ask the coordinator for the
+missing source or comparison evidence rather than silently classifying the
+finding as private. The coordinator resolves gaps through supported reads where
+possible; neither role may claim absence from trunk without evidence.
+
+When the comparison confirms that the PR introduces the vulnerability and it is
+absent from current trunk, publish it normally in the PR. Explain the affected
+code, trigger conditions, impact, and proposed fix with the same useful detail
+as any other substantive finding. Do not replace it with a vague warning, move
+it to a private channel, or withhold it merely because it is security-related
+or theoretically sensitive. Absence from trunk is the threshold: no additional
+unreleased/unpublished-status check or release-history investigation is required.
+For example, a new PR-only authorization bypass gets an ordinary actionable
+review comment; a renamed bypass that already exists on trunk does not qualify.
+
+If the vulnerability exists on trunk, or applicability remains unresolved, keep
+existing security handling and state the comparison limitation internally; this
+policy does not broaden disclosure for those findings. Normal publication
+authority, SHA binding, and approval limits remain unchanged. Never publish
+credentials or private data: omit those values, not the explanation of a
+confirmed PR-only code defect. A security label alone does not make that
+explanation private data.
