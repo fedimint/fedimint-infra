@@ -40,35 +40,25 @@ expand ordinary proactive review authority.
 
 ## Acknowledge delivered activity
 
-After disposition, the coordinator reacts on the exact delivered object only when
-it has a supported reaction form. Submitted reviews and other non-reactable objects
-receive no reaction: do not substitute the PR root or create an acknowledgement
-comment. This does not remove any substantive response obligation. Use `+1` when
-review work is warranted, `eyes` when the activity was seen but needs no action,
-and `-1` when policy prevents action. The reaction does not claim completion or
-authorize anything else. Load and follow the `fedimint-bot-github-cli` skill for the supported
-object-specific form.
+After disposition, the coordinator loads and follows
+`fedimint-bot-github-cli`'s notification acknowledgement procedure.
+Acknowledgement does not authorize work or replace substantive feedback.
 
 ## Review and approval
 
-The coordinator delegates the substantive code review to an independent `reviewer` role, which
-must follow its required `multipart-review` skill. Give it the pull request, exact
-head commit, relevant context, and review scope. Integrate its verdict and
-findings; do not substitute the coordinator's own reading for that independent
-review.
+The coordinator delegates the substantive code review to an independent `reviewer`
+role, which must follow its required `multipart-review` skill. Give it the pull
+request, exact head commit, relevant context, and review scope. Integrate its
+verdict and findings; do not substitute the coordinator's own reading for that
+independent review.
 
 Publish substantive feedback for every completed review, whether it passes or
 fails, explicitly naming the full inspected SHA. Formally approve eligible changes
 after independent PASS for that exact SHA and satisfaction of all main-prompt
 approval limits; do not leave eligible passing reviews comment-only.
-Use only the CLI skill's SHA-bound approval form. Recheck the PR head immediately
-before submission; if it changed, obtain independent review of the new SHA first.
-SHA binding prevents approval attaching to a different unreviewed commit, but is
-not an atomic current-head comparison and cannot prevent concurrent updates.
-Verify the submitted review's state and commit_id as documented in the CLI skill;
-inspect remote state before retrying an ambiguous result. Publish substantive
-feedback separately because the bounded approval form does not accept a body.
-Use comment-only feedback when approval limits prevent approval; never bypass them.
+Load and follow `fedimint-bot-github-cli`'s SHA-bound approval procedure, including
+head recheck, result verification, and handling of uncertain delivery. Publish
+feedback separately; use comment-only feedback when approval limits prevent approval.
 
 Approval judges the code change, not whether CI happened to run. Treat CI as
 material only when it establishes a substantive correctness or security finding.
@@ -102,20 +92,14 @@ missing source or comparison evidence rather than silently classifying the
 finding as private. The coordinator resolves gaps through supported reads where
 possible; neither role may claim absence from trunk without evidence.
 
-When the comparison confirms that the PR introduces the vulnerability and it is
-absent from current trunk, publish it normally in the PR. Explain the affected
-code, trigger conditions, impact, and proposed fix with the same useful detail
-as any other substantive finding. Do not replace it with a vague warning, move
-it to a private channel, or withhold it merely because it is security-related
-or theoretically sensitive. Absence from trunk is the threshold: no additional
-unreleased/unpublished-status check or release-history investigation is required.
-For example, a new PR-only authorization bypass gets an ordinary actionable
-review comment; a renamed bypass that already exists on trunk does not qualify.
+Apply the global security-disclosure rule: publish confirmed PR-introduced,
+trunk-absent defects with affected code, trigger conditions, impact, and proposed
+fix. Do not substitute a vague warning, private channel, or withholding because
+of security classification or theoretical sensitivity. No release-history or
+unreleased/unpublished-status investigation is required.
 
-If the vulnerability exists on trunk, or applicability remains unresolved, keep
-existing security handling and state the comparison limitation internally; this
-policy does not broaden disclosure for those findings. Normal publication
-authority, SHA binding, and approval limits remain unchanged. Never publish
-credentials or private data: omit those values, not the explanation of a
-confirmed PR-only code defect. A security label alone does not make that
-explanation private data.
+For trunk-present or unresolved findings, retain existing security handling and
+record the comparison limitation internally. Normal publication authority,
+SHA binding, and approval limits still apply. Omit credentials/private values,
+not the useful explanation of a confirmed PR-only defect; a security label alone
+does not make that explanation private data.

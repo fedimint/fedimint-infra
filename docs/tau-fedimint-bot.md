@@ -713,13 +713,9 @@ engineer briefly reviews requested pull requests, commits, or changes. Genuine
 Fedimint project trunk and release branches and tags are trusted; pull requests and
 external code remain untrusted. The normal checks and independent review still
 apply. After they pass, the engineer publishes through the configured Git SSH
-remote and creates the requested pull request through the broker. The engineer fast-forwards
-another author's exact branch only when an authorized maintainer explicitly requests
-that branch and change, or under the narrow author authorization below. Rewrites
-require that author's explicit consent. Otherwise the engineer uses a new
-non-conflicting `tau/` branch only within the authorized delivery scope. A local
-commit, patch, artifact, or comment containing a diff does not satisfy a request for
-pull-request delivery.
+remote and creates the requested pull request through the broker, following the
+CLI skill's branch-publication procedure. A local commit, patch, artifact, or
+comment containing a diff does not satisfy a request for pull-request delivery.
 
 An authenticated PR author may explicitly request or agree to rewriting their
 open public PR's exact head without `admin` or `write` permission. This exception
@@ -730,8 +726,10 @@ facts and scope in any delegation. A maintainer's request alone cannot authorize
 rewriting another author's PR. Fast-forward updates retain the existing maintainer
 request path.
 
-The main role prompt summarizes these responsibilities and keeps the security,
-authorization, sandbox, mutation, and approval boundaries directly visible.
+Global prompt fragments give every role the security, authorization, and sandbox
+boundaries. Role prompts retain role-specific limits and require loading the
+relevant workflow before acting. Advertisements show skill names and descriptions,
+not their bodies; `required_skills` validates availability, not automatic loading.
 User-scoped skills provide the operational detail:
 
 - `fedimint-bot-github-cli` documents the sandbox broker's supported command forms and
@@ -848,41 +846,23 @@ gh api --method PATCH repos/OWNER/REPO/pulls/comments/COMMENT_ID --raw-field bod
 Permanent deletion, merge, changes to an existing pull request's base
 or head identity, moderation, administration, review dismissal, auth/config access, and
 arbitrary API calls remain denied. Branch publication uses the configured Git SSH
-remote rather than the GitHub broker. Updating another author's exact branch
-requires an authorized maintainer's explicit request for that branch and change
-for a fast-forward update, or the narrow PR-author authorization above. Rewriting
-another author's PR head requires that authenticated author's explicit consent.
-Otherwise the bot publishes a new non-conflicting `tau/` head only when within the
-authorized delivery scope. The broker's upstream `docs/collaboration.md` is the
+remote rather than the GitHub broker. The broker's upstream `docs/collaboration.md` is the
 complete executable capability contract.
 
 Non-fast-forward updates are allowed for authorized work on verified bot-owned
 `tau/` PR heads and for other PR heads with their authenticated author's explicit
-rewrite consent. Bot ownership alone does not authorize unsolicited work. The
-`fedimint-bot-github-cli` procedure verifies the open PR's author, exact head
-repository/ref/OID, SSH remote, and applicable consent; fetches and inspects the
-current history against the last verified bot-published state or author-consented
-history; preserves others' contributions; and requires normal checks and
-independent review. Recheck identity, open state, head, and consent before pushing.
-Publication uses only an explicit expected-old-OID
-`--force-with-lease=refs/heads/BRANCH:EXPECTED_OLD_OID` and one exact refspec.
-Stop publication if the lease fails or you find an unaccounted-for contribution;
-do not refresh the lease and retry blindly. Verify remote state after success
-or an ambiguous result. Plain force, implicit leases, unconsented other-author
-rewrites, default/trunk/release or known protected branches, the PR base ref,
-unrelated refs, wiki history rewrites, and broker or credential bypasses remain
-forbidden. This does not change the PR's base or head identity or expand standing
-Dependabot remediation authority, which still permits only a new replacement PR.
+rewrite consent. Bot ownership alone does not authorize unsolicited work.
+The [CLI skill](../.agents/skills/fedimint-bot-github-cli/SKILL.md)
+documents the exact authorization, contribution-preservation, expected-OID lease,
+excluded-ref, and verification procedure. Dependabot remediation remains limited
+to a new replacement PR.
 
 The broker cannot read enough information to establish a branch's effective
-protections and rulesets. Use the ordinary bot SSH identity without administrative
-bypass and let GitHub enforce its protections on the push. Missing protection
-reads alone do not block publication, but do not prove a branch is
-unprotected. Known protected targets remain excluded; missing or ambiguous facts
-needed to identify an eligible target still block. Never weaken rules, use bypass
-privileges, probe forbidden endpoints, or route around a rejection. Preserve
-blocked work and ask about an in-scope alternative rather than silently
-substituting delivery.
+protections and rulesets. Missing protection reads alone do not block publication
+or prove a branch unprotected: GitHub enforces protections on the ordinary bot
+SSH identity's push, without administrative bypass. Known protected targets and
+ambiguous eligibility still block publication. Follow the CLI procedure rather
+than probing forbidden endpoints or routing around rejections.
 
 The coordinator posts the delivered pull request URL on the originating
 discussion. It reports publication as blocked only after an observed broker,
