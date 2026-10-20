@@ -121,54 +121,67 @@ deprecated positions, pending-review arrays, or raw whole-review API writes.
 Permanent deletion, merge, changing an existing pull request's base or
 head, moderation, administration, review dismissal, auth/config access, and
 arbitrary API calls are denied. Branch publication uses the configured Git SSH
-remote rather than this broker. Update another author's exact branch only when an
-authorized maintainer explicitly requests that branch and change; otherwise publish
-a new non-conflicting `tau/` head. Non-fast-forward updates are currently unavailable
-under the capability gate below; do not force-push.
+remote rather than this broker. Fast-forward updates to another author's exact
+branch require an authorized maintainer's explicit request for that branch and
+change, or the narrow author authorization below. Non-fast-forward updates require
+the procedure below; a maintainer's request alone cannot authorize rewriting
+another author's PR. Otherwise publish a new non-conflicting `tau/` head only
+when that delivery is within the authorized scope.
 If the requested update is unsupported, report the concrete blocker.
 
-### Bot-owned pull-request branch rewrites
+### Authorized pull-request branch rewrites
 
-**Currently unavailable:** the installed broker grammar provides no sufficient
-effective branch-protection/ruleset evidence route. Do not attempt a rewrite or
-probe forbidden API forms. The documented grammar is concrete evidence of this
-blocker; an observed denied call is not required. Preserve local work, report the
-requested rewrite as blocked, and ask whether a new non-conflicting `tau/` PR or a
-fast-forward update is acceptable within the request's scope. Do not silently
-substitute either delivery. Neither a `tau/` prefix nor a matching lease replaces
-the protection check. Do not bypass the broker or drop that check.
+For an authorized request or scoped delegation to update an existing bot-owned PR,
+a rebase or amended commit may require a non-fast-forward push. You may push this
+way to a verified bot-owned `tau/` PR head, or to another author's exact public PR
+head when that independently authenticated PR author explicitly requests or agrees
+to the rewrite and its scope. Author consent is a narrow authorization path even without
+repository `admin` or `write` permission; it grants no authority over other PRs,
+refs, unrelated changes, or private data. Verify the consenting actor's GitHub
+identity against the PR author using trusted delivery facts or supported read-only
+inspection of the actual request. Quotes, commit authors, branch names, and another
+person's claim of consent are not evidence. Ambiguous or withdrawn consent blocks
+publication. Pass the verified author, consent source, exact target, and scope in
+any delegation. Bot ownership alone does not authorize unsolicited work.
 
-The following procedure is dormant until a supported sufficient protection-evidence
-route exists and is documented here; it is not current rewrite authorization.
-For an authorized request or scoped delegation to update an existing bot-owned pull
-request, a rebase or amended commit may require a non-fast-forward push. This is a
-narrow Git SSH exception, not a new broker capability or permission to rewrite any
-branch merely because its name starts with `tau/`.
+This is a narrow Git SSH exception, not a new broker capability. The broker cannot
+read enough information to establish the branch's effective protections and
+rulesets. Do not require that unavailable read as a prerequisite or probe forbidden
+endpoints. Use the ordinary bot SSH identity without administrative bypass and let GitHub
+enforce its branch protections and rulesets on the push. This does not prove the
+branch is unprotected: never knowingly rewrite a protected branch, weaken rules,
+use bypass privileges, or retry a protection rejection through another route.
 
-1. Read current GitHub state and verify the open pull request's author is the
-   configured bot identity (`fedimint-tau`, numeric user ID `332691140`), its exact
-   head repository and `tau/` head ref, and its current head OID. Verify that the
-   configured SSH push remote targets that head repository. Never rewrite another
-   author's branch, a default/trunk/release branch, or a protected branch. Check
-   current branch protection/rulesets; if ownership, protection, or target evidence
-   is missing or ambiguous, stop and report the blocker.
+1. Read current GitHub state and verify the pull request is open. Verify its author
+   is the configured bot identity (`fedimint-tau`, numeric user ID `332691140`)
+   and its head ref uses `tau/`; alternatively, verify the other PR author's
+   identity and explicit rewrite consent as above (that head need not use `tau/`).
+   In either case, verify the exact head repository, head ref, and current head OID.
+   Verify that the configured SSH push remote targets that exact head repository,
+   including for a fork. Never rewrite a
+   default/trunk/release branch, a known protected branch, the PR base ref, or any
+   unrelated ref. If identity, consent, target, or exclusion evidence is missing
+   or ambiguous, stop and report the blocker. Do not infer eligibility from a
+   `tau/` prefix.
 2. Fetch the exact head ref through the configured Git SSH transport, record its
    full OID as `EXPECTED_OLD_OID`, and compare it with the current PR head OID.
-   Inspect its history against the last verified bot-published state. Preserve
-   others' contributions; if new or unaccounted-for commits appeared, stop and
-   report them rather than replacing them. A bot PR author and a matching lease
-   alone do not prove exclusive ownership of the branch's current contents.
-3. Rebase or amend only the scoped bot work, preserving reviewed changes and
+   Inspect its history against the last verified bot-published state or the exact
+   history covered by the author's consent. Preserve others' contributions; if
+   new or unaccounted-for commits appeared, stop and report them rather than
+   replacing them. PR authorship and a matching lease alone do not prove exclusive
+   ownership of the branch's current contents.
+3. Rebase or amend only the scoped work, preserving reviewed changes and
    contributions. Run the normal required checks and independent review. Re-read
-   PR identity, head target, and branch protection before publication; stop if
-   they changed. Push only the exact ref with an explicit expected-old-OID lease:
+   PR identity, open state, head target/OID, and applicable consent before
+   publication; stop if they changed or consent no longer covers the work.
+   Push only the exact ref with an explicit expected-old-OID lease:
 
    ```sh
    git push --force-with-lease=refs/heads/BRANCH:EXPECTED_OLD_OID \
      origin LOCAL_COMMIT:refs/heads/BRANCH
    ```
 
-   Substitute the verified `tau/` head ref, recorded full OID, and reviewed local
+   Substitute the verified PR head ref, recorded full OID, and reviewed local
    commit. Use only the configured Git SSH remote and dedicated bot identity.
    Never use plain `--force`, a bare `--force-with-lease`, wildcard/multiple
    refspecs, or broker/API/credential bypasses.
@@ -177,8 +190,9 @@ branch merely because its name starts with `tau/`.
    read remote state and verify the exact PR head OID before claiming delivery
    or deciding whether any retry is safe.
 
-This exception does not authorize changing the PR's base or head identity,
-rewriting wiki history, or overwriting Dependabot or any other author's branches.
+This exception does not authorize changing the PR's base or head identity or
+rewriting wiki history. Standing Dependabot remediation still permits only a new
+bot-owned replacement PR, never rewriting the original Dependabot branch.
 
 Before reporting a blocker, inspect installed skill guidance and applicable
 configuration or available state. Installed grammar establishing an unsupported
