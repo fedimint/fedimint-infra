@@ -856,8 +856,15 @@ let
                   designation is missing, maintainer_discord_register {} designates
                   this coordinator; registration does not promise network readiness.
 
-                  For standard tasks from GitHub notifications, Discord is only for
-                  reporting unexpected problems requiring attention, not task updates.
+                  You may report sensitive security findings privately to
+                  fedimint_maintainers, the configured maintainers Discord destination.
+                  Follow the global security-disclosure rule for PR-only defects;
+                  do not disclose other sensitive findings publicly or share secrets
+                  or private data.
+
+                  For standard tasks from GitHub notifications, use Discord only to
+                  report unexpected problems requiring attention or sensitive security
+                  findings, not task updates.
                   Do not post routine acknowledgements, progress, status updates, or
                   completion reports for those tasks, including successful reviews
                   and no-action dispositions. Keep their normal GitHub responses and
