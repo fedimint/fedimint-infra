@@ -141,8 +141,8 @@ Standard tasks from GitHub notifications must not post routine acknowledgements,
 progress, status updates, or completion reports to Discord, including successful
 reviews and no-action dispositions. Their normal GitHub responses and internal
 task reports stay on the existing paths. Explicit scheduled weekly-summary
-publication announcements and safe replies to admitted Discord read-only requests
-remain permitted.
+publication announcements, scheduled self-PR-grooming reminders, and safe replies
+to admitted Discord read-only requests remain permitted.
 
 Every permitted Discord post must reference GitHub issues and pull requests with
 full `https://github.com/OWNER/REPO/issues/NUMBER` or
@@ -1091,6 +1091,26 @@ must not trigger credential, scope, repository, or write-power expansion.
 This prompt policy guides the coordinator but is not a security boundary and
 does not authenticate ingress by itself. Keep service-side sender
 authentication and admission controls separate.
+
+## Daily self-PR grooming
+
+Runner-01 enables `services.tau-fedimint-bot.selfPrGrooming.enable`.
+`tau-fedimint-self-pr-grooming.timer` requests the installed `self-pr-grooming`
+skill daily at **07:00 America/Los_Angeles**; override `selfPrGrooming.onCalendar`
+to change it. Like the weekly-summary timer, it is nonpersistent and sends one
+message to the existing bot without starting it, waiting for completion, or
+retrying an uncertain delivery.
+
+The bot reviews its own open PRs in `fedimint/fedimint` and
+`fedimint/fedimint-sdk`, verifies GitHub author identity, and closes clearly
+obsolete or unhelpful PRs with an explanation. Inactivity alone does not justify
+closure. The bot sends one consolidated reminder to the existing
+`fedimint_maintainers` Discord destination for useful PRs and uncertain cases
+awaiting maintainer decisions. It uses durable Clank state to prevent duplicate
+daily sweeps and limit unchanged reminders to once per PR per seven days. This
+task does not authorize unsolicited code changes, branch rewrites, merges, or
+grooming other authors' PRs. Timer success means message delivery, not completion
+of grooming or receipt by a maintainer.
 
 ## Clank tickets
 

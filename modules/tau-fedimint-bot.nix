@@ -60,6 +60,7 @@ let
     fedimint-pull-request-review = ../.agents/skills/fedimint-pull-request-review;
     fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
     fedimint-weekly-dev-summary = ../.agents/skills/fedimint-weekly-dev-summary;
+    self-pr-grooming = ../.agents/skills/self-pr-grooming;
   };
   installedSkills =
     map (name: {
@@ -769,6 +770,11 @@ let
 
                 # Main responsibilities
 
+                Scheduled self-pr-grooming requests authorize reviewing the bot's
+                own PRs, closing obsolete ones, and reminding maintainers as scoped
+                by the installed self-pr-grooming skill. This is not authority for
+                unsolicited code changes or other authors' PRs.
+
                 - Disposition delivered issue activity and serve authorized
                   maintainer requests. Load and follow the
                   `fedimint-maintainer-requests` skill.
@@ -870,7 +876,8 @@ let
                   and no-action dispositions. Keep their normal GitHub responses and
                   internal task reporting on the existing paths instead.
                   This restriction does not change explicitly requested scheduled
-                  weekly-summary publication announcements or safe replies to admitted
+                  weekly-summary publication announcements, scheduled self-pr-grooming
+                  reminders to fedimint_maintainers, or safe replies to admitted
                   Discord read-only requests below.
 
                   In every permitted Discord post, reference GitHub issues and pull
@@ -1207,6 +1214,14 @@ in
         type = lib.types.str;
         default = "Mon *-*-* 06:00:00 America/Los_Angeles";
         description = "systemd calendar for delivery; reports cover the 184 hours preceding the captured invocation time.";
+      };
+    };
+    selfPrGrooming = {
+      enable = lib.mkEnableOption "daily grooming of the bot's own pull requests";
+      onCalendar = lib.mkOption {
+        type = lib.types.str;
+        default = "*-*-* 07:00:00 America/Los_Angeles";
+        description = "systemd calendar for self-PR grooming requests.";
       };
     };
     tauPackage = lib.mkOption {
@@ -1575,6 +1590,49 @@ in
       serviceConfig = {
         Type = "oneshot";
         ExecStart = "${pkgs.python3}/bin/python3 ${../bin/tau-weekly-summary.py} ${cfg.tauPackage}/bin/tau";
+        TimeoutStartSec = "90s";
+        Restart = "no";
+        WorkingDirectory = home;
+        UMask = "0077";
+      };
+    };
+
+    systemd.user.timers.tau-fedimint-self-pr-grooming = lib.mkIf cfg.selfPrGrooming.enable {
+      description = "Request daily grooming of the bot's own pull requests";
+      wantedBy = [ "timers.target" ];
+      unitConfig.ConditionUser = user;
+      timerConfig = {
+        OnCalendar = cfg.selfPrGrooming.onCalendar;
+        Persistent = false;
+        AccuracySec = "1min";
+        Unit = "tau-fedimint-self-pr-grooming.service";
+      };
+    };
+
+    systemd.user.services.tau-fedimint-self-pr-grooming = lib.mkIf cfg.selfPrGrooming.enable {
+      description = "Deliver one self-PR grooming instruction to the existing bot";
+      unitConfig.ConditionUser = user;
+      # Delivery must not start/restart the bot or retry uncertain sends.
+      after = [ "tau-fedimint-bot.service" ];
+      environment = {
+        HOME = home;
+        XDG_CONFIG_HOME = "${home}/.config";
+        XDG_STATE_HOME = "${home}/.local/state";
+        XDG_CACHE_HOME = "${home}/.cache";
+        XDG_RUNTIME_DIR = runtimeDir;
+      };
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writeShellScript "tau-self-pr-grooming" ''
+          exec ${cfg.tauPackage}/bin/tau message '&tau-fedimint-bot' <<'EOF'
+          Scheduled daily self-PR grooming. Load and execute the installed
+          self-pr-grooming skill: review the bot's own open PRs, close those that
+          are no longer useful or relevant, and remind maintainers of pending
+          dispositions through the configured maintainers Discord destination.
+          Use today's UTC date for the durable sweep record; resume existing work
+          rather than duplicate it. Delivery is not completion.
+          EOF
+        '';
         TimeoutStartSec = "90s";
         Restart = "no";
         WorkingDirectory = home;

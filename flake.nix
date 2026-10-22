@@ -294,6 +294,7 @@
               services.tau-fedimint-bot = {
                 enable = true;
                 weeklySummary.enable = true;
+                selfPrGrooming.enable = true;
                 # Operator-approved private channel, humans and encrypted
                 # credentials; the extension source is independently pinned.
                 discord = {
