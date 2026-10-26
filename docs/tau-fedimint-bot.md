@@ -339,10 +339,22 @@ later requires only a new alias target.
   shell rather than broadening the ambient toolchain.
 - Tau, `tau-ext-github`, `isolate`, `gh-isolate`, and `clank` packages pinned
   as flake inputs.
-  Tau and `tau-ext-github` use compatible protocol 10 revisions.
+  Tau, `tau-ext-github`, and `tau-ext-discord` use compatible protocol 14 revisions.
   `tau-ext-github` comes from its public Radicle repository through
   the Iris HTTPS gateway. The inputs come from public sources and are locked to
   explicit revisions.
+  Before activating this upgrade, stop all writers and preserve a verified,
+  private, consistent backup of the complete bot state. Include
+  `/home/tau-fedimint/.local/state/tau` (journals, Artifact objects and roots),
+  extension state, configuration, and repository/Clank recovery state. Retain
+  the old system closure. New readers accept legacy inline images, but old
+  binaries cannot read new reference-bearing journals. A journal-only backup
+  or NixOS generation rollback is not sufficient. To roll back, restore a copy
+  of the complete, consistent old state, retain both snapshots, and reconcile
+  any external side effects. The normal launcher clears the fixed session;
+  restarting does not resume it. Before deployment, pass a separate readiness
+  gate and obtain explicit authorization. Updating these pins alone does not
+  activate the new runtime.
 - A narrow writable Clank state directory at
   `/home/tau-fedimint/.local/state/clank`. The bot can keep project tickets
   without receiving write access to the rest of its home or state hierarchy.

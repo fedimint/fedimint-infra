@@ -954,7 +954,7 @@ let
         if isinstance(hello, BaseException):
             raise hello
         assert hello["message"] == "hello"
-        assert hello["payload"]["protocol_version"] == {"major": 10, "minor": 0}
+        assert hello["payload"]["protocol_version"] == {"major": 14, "minor": 0}
         config = {
             "token_secret": "github_token",
             "identity_key_secret": "github_identity_key",
@@ -979,9 +979,8 @@ let
             {
                 "message": "configure",
                 "payload": {
-                    # The pinned core sends these additive protocol 10.2 fields
-                    # to the independently pinned protocol 10.0 extension.
-                    "harness_protocol_version": {"major": 10, "minor": 2},
+                    # Match the pinned core and independently pinned extension.
+                    "harness_protocol_version": {"major": 14, "minor": 0},
                     "absent_optional_secrets": [],
                     "config": config,
                     "instance_name": "github-notifications",
