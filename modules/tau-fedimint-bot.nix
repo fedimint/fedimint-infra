@@ -36,6 +36,7 @@ let
     "multipart-review-coordination"
     "multipart-review-judgment"
     "multipart-review-maintainability"
+    "multipart-review-prose"
     "multipart-review-reliability"
     "multipart-review-rust-style"
     "multipart-review-skills"
