@@ -61,6 +61,8 @@ let
       githubNotifications,
       providerProfile ? null,
       weeklySummary ? { },
+      selfPrGrooming ? { },
+      workdirCleanup ? { },
       discord ? { },
     }:
     nixpkgs.lib.nixosSystem {
@@ -73,7 +75,13 @@ let
           services.tau-fedimint-bot =
             common
             // {
-              inherit githubNotifications weeklySummary discord;
+              inherit
+                githubNotifications
+                weeklySummary
+                selfPrGrooming
+                workdirCleanup
+                discord
+                ;
             }
             // lib.optionalAttrs (providerProfile != null) {
               inherit providerProfile;
@@ -99,6 +107,34 @@ let
     };
   };
   weeklyService = weekly.config.systemd.user.services.tau-fedimint-weekly-summary;
+  grooming = mkSystem {
+    githubNotifications = { };
+    selfPrGrooming.enable = true;
+  };
+  groomingAlternate = mkSystem {
+    githubNotifications = { };
+    selfPrGrooming = {
+      enable = true;
+      onCalendar = "*-*-* 12:00:00 UTC";
+    };
+  };
+  groomingService = grooming.config.systemd.user.services.tau-fedimint-self-pr-grooming;
+  groomingTimer = grooming.config.systemd.user.timers.tau-fedimint-self-pr-grooming;
+  groomingScript = builtins.readFile groomingService.serviceConfig.ExecStart;
+  cleanup = mkSystem {
+    githubNotifications = { };
+    workdirCleanup.enable = true;
+  };
+  cleanupAlternate = mkSystem {
+    githubNotifications = { };
+    workdirCleanup = {
+      enable = true;
+      onCalendar = "Sun *-*-* 01:00:00 UTC";
+    };
+  };
+  cleanupService = cleanup.config.systemd.user.services.tau-fedimint-workdir-cleanup;
+  cleanupTimer = cleanup.config.systemd.user.timers.tau-fedimint-workdir-cleanup;
+  cleanupScript = builtins.readFile cleanupService.serviceConfig.ExecStart;
   weeklyTimer = weekly.config.systemd.user.timers.tau-fedimint-weekly-summary;
   weeklyCheck =
     pkgs.runCommand "tau-weekly-summary-check"
@@ -218,6 +254,7 @@ let
     "multipart-review-coordination"
     "multipart-review-judgment"
     "multipart-review-maintainability"
+    "multipart-review-prose"
     "multipart-review-reliability"
     "multipart-review-rust-style"
     "multipart-review-skills"
@@ -233,6 +270,7 @@ let
     fedimint-pull-request-review = ../.agents/skills/fedimint-pull-request-review;
     fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
     fedimint-weekly-dev-summary = ../.agents/skills/fedimint-weekly-dev-summary;
+    self-pr-grooming = ../.agents/skills/self-pr-grooming;
   };
   localSkillNames = builtins.attrNames localSkills;
   installedSkillNames = upstreamSkillNames ++ fedimintSkillNames ++ localSkillNames;
@@ -933,7 +971,7 @@ let
         if isinstance(hello, BaseException):
             raise hello
         assert hello["message"] == "hello"
-        assert hello["payload"]["protocol_version"] == {"major": 10, "minor": 0}
+        assert hello["payload"]["protocol_version"] == {"major": 14, "minor": 0}
         config = {
             "token_secret": "github_token",
             "identity_key_secret": "github_identity_key",
@@ -958,9 +996,8 @@ let
             {
                 "message": "configure",
                 "payload": {
-                    # The pinned core sends these additive protocol 10.2 fields
-                    # to the independently pinned protocol 10.0 extension.
-                    "harness_protocol_version": {"major": 10, "minor": 2},
+                    # Match the pinned core and independently pinned extension.
+                    "harness_protocol_version": {"major": 14, "minor": 0},
                     "absent_optional_secrets": [],
                     "config": config,
                     "instance_name": "github-notifications",
@@ -1664,6 +1701,53 @@ assert !(disabled.config.age.secrets ? tau-fedimint-discord-token);
 assert discordEnabled.config.age.secrets.tau-fedimint-discord-token.mode == "0400";
 assert discordEnabled.config.age.secrets.tau-fedimint-discord-identity-key.owner == "tau-fedimint";
 assert !(disabled.config.systemd.user.timers ? tau-fedimint-weekly-summary);
+assert !(disabled.config.systemd.user.timers ? tau-fedimint-self-pr-grooming);
+assert !(disabled.config.systemd.user.timers ? tau-fedimint-workdir-cleanup);
+assert !(disabled.config.systemd.user.services ? tau-fedimint-workdir-cleanup);
+assert cleanupTimer.timerConfig.OnCalendar == "Sat *-*-* 23:00:00 UTC";
+assert
+  cleanupAlternate.config.systemd.user.timers.tau-fedimint-workdir-cleanup.timerConfig.OnCalendar
+  == "Sun *-*-* 01:00:00 UTC";
+assert cleanupTimer.timerConfig.Persistent == false;
+assert cleanupTimer.wantedBy == [ "timers.target" ];
+assert cleanupTimer.unitConfig.ConditionUser == "tau-fedimint";
+assert cleanupService.unitConfig.ConditionUser == "tau-fedimint";
+assert cleanupService.wantedBy == [ ];
+assert cleanupService.requires == [ ];
+assert cleanupService.wants == [ ];
+assert cleanupService.serviceConfig.Restart == "no";
+assert cleanupService.serviceConfig.TimeoutStartSec == "90s";
+assert cleanupService.environment.XDG_RUNTIME_DIR == "/run/user/1001";
+assert cleanupService.environment.HOME == "/home/tau-fedimint";
+assert lib.hasInfix
+  "exec ${builtins.unsafeDiscardStringContext tauPackage}/bin/tau message '&tau-fedimint-bot'"
+  cleanupScript;
+assert lib.hasInfix "nix run nixpkgs#dust -- -R /home/tau-fedimint/fedimint" cleanupScript;
+assert lib.hasInfix "/home/tau-fedimint/fedimint/fedimint-sdk" cleanupScript;
+assert lib.hasInfix "target/" cleanupScript;
+assert lib.hasInfix "target-nix/" cleanupScript;
+assert lib.hasInfix "ALL retained legacy task checkouts" cleanupScript;
+assert !(lib.hasInfix "--wait-response" cleanupScript);
+assert groomingTimer.timerConfig.OnCalendar == "*-*-* 07:00:00 America/Los_Angeles";
+assert
+  groomingAlternate.config.systemd.user.timers.tau-fedimint-self-pr-grooming.timerConfig.OnCalendar
+  == "*-*-* 12:00:00 UTC";
+assert groomingTimer.timerConfig.Persistent == false;
+assert groomingTimer.wantedBy == [ "timers.target" ];
+assert groomingTimer.unitConfig.ConditionUser == "tau-fedimint";
+assert groomingService.unitConfig.ConditionUser == "tau-fedimint";
+assert groomingService.wantedBy == [ ];
+assert groomingService.requires == [ ];
+assert groomingService.wants == [ ];
+assert groomingService.serviceConfig.Restart == "no";
+assert groomingService.serviceConfig.TimeoutStartSec == "90s";
+assert groomingService.environment.XDG_RUNTIME_DIR == "/run/user/1001";
+assert groomingService.environment.HOME == "/home/tau-fedimint";
+assert lib.hasInfix
+  "exec ${builtins.unsafeDiscardStringContext tauPackage}/bin/tau message '&tau-fedimint-bot'"
+  groomingScript;
+assert lib.hasInfix "self-pr-grooming skill" groomingScript;
+assert !(lib.hasInfix "--wait-response" groomingScript);
 assert weeklyTimer.timerConfig.OnCalendar == "Mon *-*-* 06:00:00 America/Los_Angeles";
 assert
   weeklyAlternate.config.systemd.user.timers.tau-fedimint-weekly-summary.timerConfig.OnCalendar

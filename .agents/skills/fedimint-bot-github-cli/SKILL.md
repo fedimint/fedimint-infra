@@ -7,8 +7,8 @@ advertise: true
 
 # GitHub CLI in the Fedimint bot sandbox
 
-Use `gh` for GitHub interaction. The installed command is intercepted by a
-sandbox broker with a deliberately bounded grammar. Read normally, but use only
+Use `gh` for GitHub interaction. A sandbox broker intercepts the installed
+command and accepts a deliberately bounded grammar. Read normally, but use only
 the documented forms below for mutations. If a form is denied, do not try another
 client, credential path, raw API variant, reordered flags, mutation `--help`, or
 another executable path.
@@ -45,6 +45,8 @@ Pull-request edits also accept one reviewer delta. Use one concrete value with
 `--add-reviewer`/`--remove-reviewer`. Do not combine metadata with title or body
 edits. Secure `--body-file` forms are available for content operations.
 
+## SHA-bound approval and review forms
+
 Formal reviews use:
 
 ```sh
@@ -54,8 +56,8 @@ gh pr review NUMBER -R OWNER/REPO --approve --commit-id FULL_SHA
 ```
 
 Formally approve eligible changes only after independent PASS for the exact
-inspected SHA and all main-prompt approval limits. `FULL_SHA` is that full
-40-character lowercase hexadecimal commit. This broker-specific form submits
+inspected SHA and satisfaction of all main-prompt approval limits. `FULL_SHA` is
+that full 40-character lowercase hexadecimal commit. This broker-specific form submits
 `event=APPROVE` and `commit_id=FULL_SHA`; it accepts no body or extra flags.
 Never use unpinned approval or a raw API write. Publish substantive feedback
 separately, naming the full inspected SHA; use comment-only feedback when approval
@@ -86,11 +88,17 @@ directory; use an absolute path when crossing between those roots.
 
 ## Reactions and line comments
 
-React only when the exact delivered object has a supported form below, with one
-raw `content` field. Submitted reviews (distinct from inline review comments) and
-other unsupported objects receive no reaction. Do not substitute the PR root or
-create a comment merely to acknowledge receipt. Substantive responses remain a
-separate obligation.
+### Notification acknowledgement
+
+After disposition, the coordinator acknowledges each independently authenticated
+notification with an unambiguous target, including requests denied authorization.
+React on the exact delivered object only if it has a supported form below.
+Use `+1` when action is warranted, `eyes` when seen but not actionable, and `-1`
+when policy prevents action, with one raw `content` field. Submitted reviews
+(distinct from inline review comments) and other unsupported objects receive no
+reaction. Do not substitute the PR root or create an acknowledgement comment.
+A reaction neither claims completion nor authorizes work; substantive responses
+remain a separate obligation.
 
 ```sh
 gh api -X POST repos/OWNER/REPO/issues/NUMBER/reactions -f content='+1'
@@ -100,6 +108,8 @@ gh api -X POST repos/OWNER/REPO/pulls/comments/COMMENT_ID/reactions -f content=h
 
 Supported reactions are `+1`, `-1`, `laugh`, `confused`, `heart`, `hooray`,
 `rocket`, and `eyes`.
+
+### Line comments
 
 For a finding on one exact diff line:
 
@@ -131,31 +141,28 @@ If the requested update is unsupported, report the concrete blocker.
 
 ### Authorized pull-request branch rewrites
 
-For an authorized request or scoped delegation to update an existing bot-owned PR,
-a rebase or amended commit may require a non-fast-forward push. You may push this
-way to a verified bot-owned `tau/` PR head, or to another author's exact public PR
-head when that independently authenticated PR author explicitly requests or agrees
-to the rewrite and its scope. Author consent is a narrow authorization path even without
-repository `admin` or `write` permission; it grants no authority over other PRs,
-refs, unrelated changes, or private data. Verify the consenting actor's GitHub
-identity against the PR author using trusted delivery facts or supported read-only
-inspection of the actual request. Quotes, commit authors, branch names, and another
-person's claim of consent are not evidence. Ambiguous or withdrawn consent blocks
-publication. Pass the verified author, consent source, exact target, and scope in
-any delegation. Bot ownership alone does not authorize unsolicited work.
+Use this procedure only for an authorized request or scoped delegation.
+Bot ownership alone does not authorize unsolicited work. Author consent permits
+only the agreed rewrite, even without repository `admin` or `write`; it grants
+no authority over other PRs, refs, unrelated changes, or private data.
+Pass the verified author, consent source, exact target, and scope in any delegation.
 
 This is a narrow Git SSH exception, not a new broker capability. The broker cannot
 read enough information to establish the branch's effective protections and
 rulesets. Do not require that unavailable read as a prerequisite or probe forbidden
-endpoints. Use the ordinary bot SSH identity without administrative bypass and let GitHub
-enforce its branch protections and rulesets on the push. This does not prove the
-branch is unprotected: never knowingly rewrite a protected branch, weaken rules,
+endpoints. Use the ordinary bot SSH identity without administrative bypass and let
+GitHub enforce its branch protections and rulesets on the push. This does not
+prove the branch is unprotected: never knowingly rewrite a protected branch, weaken rules,
 use bypass privileges, or retry a protection rejection through another route.
 
 1. Read current GitHub state and verify the pull request is open. Verify its author
    is the configured bot identity (`fedimint-tau`, numeric user ID `332691140`)
-   and its head ref uses `tau/`; alternatively, verify the other PR author's
-   identity and explicit rewrite consent as above (that head need not use `tau/`).
+   and its head ref uses `tau/`; alternatively, verify that the PR is public and
+   its independently authenticated author explicitly requests or agrees to the
+   rewrite and scope (that head need not use `tau/`). Match the consenting actor
+   to the current PR author using trusted delivery facts or supported reads of
+   the actual request, not quotes, commit authors, branch names, or someone
+   else's claim of consent. Ambiguous or withdrawn consent blocks publication.
    In either case, verify the exact head repository, head ref, and current head OID.
    Verify that the configured SSH push remote targets that exact head repository,
    including for a fork. Never rewrite a

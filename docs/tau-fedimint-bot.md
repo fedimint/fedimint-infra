@@ -141,8 +141,8 @@ Standard tasks from GitHub notifications must not post routine acknowledgements,
 progress, status updates, or completion reports to Discord, including successful
 reviews and no-action dispositions. Their normal GitHub responses and internal
 task reports stay on the existing paths. Explicit scheduled weekly-summary
-publication announcements and safe replies to admitted Discord read-only requests
-remain permitted.
+publication announcements, scheduled self-PR-grooming reminders, and safe replies
+to admitted Discord read-only requests remain permitted.
 
 Every permitted Discord post must reference GitHub issues and pull requests with
 full `https://github.com/OWNER/REPO/issues/NUMBER` or
@@ -339,10 +339,22 @@ later requires only a new alias target.
   shell rather than broadening the ambient toolchain.
 - Tau, `tau-ext-github`, `isolate`, `gh-isolate`, and `clank` packages pinned
   as flake inputs.
-  Tau and `tau-ext-github` use compatible protocol 10 revisions.
+  Tau, `tau-ext-github`, and `tau-ext-discord` use compatible protocol 14 revisions.
   `tau-ext-github` comes from its public Radicle repository through
   the Iris HTTPS gateway. The inputs come from public sources and are locked to
   explicit revisions.
+  Before activating this upgrade, stop all writers and preserve a verified,
+  private, consistent backup of the complete bot state. Include
+  `/home/tau-fedimint/.local/state/tau` (journals, Artifact objects and roots),
+  extension state, configuration, and repository/Clank recovery state. Retain
+  the old system closure. New readers accept legacy inline images, but old
+  binaries cannot read new reference-bearing journals. A journal-only backup
+  or NixOS generation rollback is not sufficient. To roll back, restore a copy
+  of the complete, consistent old state, retain both snapshots, and reconcile
+  any external side effects. The normal launcher clears the fixed session;
+  restarting does not resume it. Before deployment, pass a separate readiness
+  gate and obtain explicit authorization. Updating these pins alone does not
+  activate the new runtime.
 - A narrow writable Clank state directory at
   `/home/tau-fedimint/.local/state/clank`. The bot can keep project tickets
   without receiving write access to the rest of its home or state hierarchy.
@@ -713,13 +725,9 @@ engineer briefly reviews requested pull requests, commits, or changes. Genuine
 Fedimint project trunk and release branches and tags are trusted; pull requests and
 external code remain untrusted. The normal checks and independent review still
 apply. After they pass, the engineer publishes through the configured Git SSH
-remote and creates the requested pull request through the broker. The engineer fast-forwards
-another author's exact branch only when an authorized maintainer explicitly requests
-that branch and change, or under the narrow author authorization below. Rewrites
-require that author's explicit consent. Otherwise the engineer uses a new
-non-conflicting `tau/` branch only within the authorized delivery scope. A local
-commit, patch, artifact, or comment containing a diff does not satisfy a request for
-pull-request delivery.
+remote and creates the requested pull request through the broker, following the
+CLI skill's branch-publication procedure. A local commit, patch, artifact, or
+comment containing a diff does not satisfy a request for pull-request delivery.
 
 An authenticated PR author may explicitly request or agree to rewriting their
 open public PR's exact head without `admin` or `write` permission. This exception
@@ -730,8 +738,10 @@ facts and scope in any delegation. A maintainer's request alone cannot authorize
 rewriting another author's PR. Fast-forward updates retain the existing maintainer
 request path.
 
-The main role prompt summarizes these responsibilities and keeps the security,
-authorization, sandbox, mutation, and approval boundaries directly visible.
+Global prompt fragments give every role the security, authorization, and sandbox
+boundaries. Role prompts retain role-specific limits and require loading the
+relevant workflow before acting. Advertisements show skill names and descriptions,
+not their bodies; `required_skills` validates availability, not automatic loading.
 User-scoped skills provide the operational detail:
 
 - `fedimint-bot-github-cli` documents the sandbox broker's supported command forms and
@@ -848,41 +858,23 @@ gh api --method PATCH repos/OWNER/REPO/pulls/comments/COMMENT_ID --raw-field bod
 Permanent deletion, merge, changes to an existing pull request's base
 or head identity, moderation, administration, review dismissal, auth/config access, and
 arbitrary API calls remain denied. Branch publication uses the configured Git SSH
-remote rather than the GitHub broker. Updating another author's exact branch
-requires an authorized maintainer's explicit request for that branch and change
-for a fast-forward update, or the narrow PR-author authorization above. Rewriting
-another author's PR head requires that authenticated author's explicit consent.
-Otherwise the bot publishes a new non-conflicting `tau/` head only when within the
-authorized delivery scope. The broker's upstream `docs/collaboration.md` is the
+remote rather than the GitHub broker. The broker's upstream `docs/collaboration.md` is the
 complete executable capability contract.
 
 Non-fast-forward updates are allowed for authorized work on verified bot-owned
 `tau/` PR heads and for other PR heads with their authenticated author's explicit
-rewrite consent. Bot ownership alone does not authorize unsolicited work. The
-`fedimint-bot-github-cli` procedure verifies the open PR's author, exact head
-repository/ref/OID, SSH remote, and applicable consent; fetches and inspects the
-current history against the last verified bot-published state or author-consented
-history; preserves others' contributions; and requires normal checks and
-independent review. Recheck identity, open state, head, and consent before pushing.
-Publication uses only an explicit expected-old-OID
-`--force-with-lease=refs/heads/BRANCH:EXPECTED_OLD_OID` and one exact refspec.
-Stop publication if the lease fails or you find an unaccounted-for contribution;
-do not refresh the lease and retry blindly. Verify remote state after success
-or an ambiguous result. Plain force, implicit leases, unconsented other-author
-rewrites, default/trunk/release or known protected branches, the PR base ref,
-unrelated refs, wiki history rewrites, and broker or credential bypasses remain
-forbidden. This does not change the PR's base or head identity or expand standing
-Dependabot remediation authority, which still permits only a new replacement PR.
+rewrite consent. Bot ownership alone does not authorize unsolicited work.
+The [CLI skill](../.agents/skills/fedimint-bot-github-cli/SKILL.md)
+documents the exact authorization, contribution-preservation, expected-OID lease,
+excluded-ref, and verification procedure. Dependabot remediation remains limited
+to a new replacement PR.
 
 The broker cannot read enough information to establish a branch's effective
-protections and rulesets. Use the ordinary bot SSH identity without administrative
-bypass and let GitHub enforce its protections on the push. Missing protection
-reads alone do not block publication, but do not prove a branch is
-unprotected. Known protected targets remain excluded; missing or ambiguous facts
-needed to identify an eligible target still block. Never weaken rules, use bypass
-privileges, probe forbidden endpoints, or route around a rejection. Preserve
-blocked work and ask about an in-scope alternative rather than silently
-substituting delivery.
+protections and rulesets. Missing protection reads alone do not block publication
+or prove a branch unprotected: GitHub enforces protections on the ordinary bot
+SSH identity's push, without administrative bypass. Known protected targets and
+ambiguous eligibility still block publication. Follow the CLI procedure rather
+than probing forbidden endpoints or routing around rejections.
 
 The coordinator posts the delivered pull request URL on the originating
 discussion. It reports publication as blocked only after an observed broker,
@@ -1111,6 +1103,71 @@ must not trigger credential, scope, repository, or write-power expansion.
 This prompt policy guides the coordinator but is not a security boundary and
 does not authenticate ingress by itself. Keep service-side sender
 authentication and admission controls separate.
+
+## Daily self-PR grooming
+
+Runner-01 enables `services.tau-fedimint-bot.selfPrGrooming.enable`.
+`tau-fedimint-self-pr-grooming.timer` requests the installed `self-pr-grooming`
+skill daily at **07:00 America/Los_Angeles**; override `selfPrGrooming.onCalendar`
+to change it. Like the weekly-summary timer, it is nonpersistent and sends one
+message to the existing bot without starting it, waiting for completion, or
+retrying an uncertain delivery.
+
+The bot reviews its own open PRs in `fedimint/fedimint` and
+`fedimint/fedimint-sdk`, verifies GitHub author identity, and closes clearly
+obsolete or unhelpful PRs with an explanation. Inactivity alone does not justify
+closure. The bot sends one consolidated reminder to the existing
+`fedimint_maintainers` Discord destination for useful PRs and uncertain cases
+awaiting maintainer decisions. It uses durable Clank state to prevent duplicate
+daily sweeps and limit unchanged reminders to once per PR per seven days. This
+task does not authorize unsolicited code changes, branch rewrites, merges, or
+grooming other authors' PRs. Timer success means message delivery, not completion
+of grooming or receipt by a maintainer.
+
+## Weekly working directory cleanup
+
+Runner-01 enables `services.tau-fedimint-bot.workdirCleanup.enable`.
+`tau-fedimint-workdir-cleanup.timer` sends a cleanup request every Saturday at
+**23:00 UTC**; override `workdirCleanup.onCalendar` to change the schedule. Like
+the other scheduled messages, it is nonpersistent. The delivery service does not
+start the bot or retry uncertain delivery; it reports delivery, not task completion.
+
+The prompt tells the bot to finish all started work, including delegates and
+builds, and defer new tasks until cleanup completes. The bot must preserve the
+configured main repositories and unfinished source, and check that temporary
+clones and generated `target/` and `target-nix/` directories throughout the project
+root are disposable before deleting them. It then runs
+`nix run nixpkgs#dust -- -R <dir>` on the working directory to inspect other large
+non-essential items. The bot must protect unfinished or unpublished work, active
+repositories/builds, bookkeeping, credentials and Tau persistent state, and skip
+and report uncertain items. It reports removals, recovered space when measurable,
+total remaining usage, and the largest retained build directories with reasons,
+then resumes its normal queue.
+This is an agent instruction, not an automatic filesystem deletion service or
+a runtime-enforced task barrier.
+
+### Repository reuse
+
+Core and SDK tasks reuse their configured main checkouts. The coordinator queues
+modifying and building tasks per repository rather than creating per-task clones,
+Git worktrees or Jujutsu workspaces. One engineer holds the main repository's
+update lock from checkout through implementation, review fixes, final verification
+and history cleanup. Read-only agents may inspect immutable revisions concurrently
+without changing the checkout or running competing builds.
+
+Before switching tasks, preserve existing changes and unpublished commits. If
+blocked, the engineer leaves a recoverable WIP checkpoint and durable handoff
+before releasing the lock. Preserve source in existing auxiliary checkouts;
+do not reuse them for new tasks.
+
+The bot preserves source while removing rebuildable output. After finishing active
+work, it inventories generated `target/` and `target-nix/`
+directories across the entire project root, including retained legacy worktrees
+and clones. An unfinished source task is not itself a reason to retain rebuildable
+output. The bot protects specific non-rebuildable evidence and output that active
+processes still use.
+The report must include recovered space, total remaining usage, and the largest
+retained build directories with concrete reasons.
 
 ## Clank tickets
 
