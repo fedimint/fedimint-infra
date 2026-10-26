@@ -1124,6 +1124,26 @@ task does not authorize unsolicited code changes, branch rewrites, merges, or
 grooming other authors' PRs. Timer success means message delivery, not completion
 of grooming or receipt by a maintainer.
 
+## Weekly working directory cleanup
+
+Runner-01 enables `services.tau-fedimint-bot.workdirCleanup.enable`.
+`tau-fedimint-workdir-cleanup.timer` sends a cleanup request every Saturday at
+**23:00 UTC**; override `workdirCleanup.onCalendar` to change the schedule. Like
+the other scheduled messages, it is nonpersistent. The delivery service does not
+start the bot or retry uncertain delivery; it reports delivery, not task completion.
+
+The prompt tells the bot to finish all started work, including delegates and
+builds, and defer new tasks until cleanup completes. The bot must preserve the
+configured main repositories and check that temporary clones and main-repository
+`target/` directories are disposable before deleting them. It then runs
+`nix run nixpkgs#dust -- -R <dir>` on the working directory to inspect other large
+non-essential items. The bot must protect unfinished or unpublished work, active
+repositories/builds, bookkeeping, credentials and Tau persistent state, and skip
+and report uncertain items. It reports removals and recovered space when
+measurable, then resumes its normal queue.
+This is an agent instruction, not an automatic filesystem deletion service or
+a runtime-enforced task barrier.
+
 ## Clank tickets
 
 Use `clank` from inside a project checkout for durable local task state. The

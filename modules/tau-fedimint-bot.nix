@@ -1224,6 +1224,14 @@ in
         description = "systemd calendar for self-PR grooming requests.";
       };
     };
+    workdirCleanup = {
+      enable = lib.mkEnableOption "weekly bot working directory cleanup requests";
+      onCalendar = lib.mkOption {
+        type = lib.types.str;
+        default = "Sat *-*-* 23:00:00 UTC";
+        description = "systemd calendar for working directory cleanup requests.";
+      };
+    };
     tauPackage = lib.mkOption {
       type = lib.types.nullOr lib.types.package;
       default = null;
@@ -1631,6 +1639,70 @@ in
           dispositions through the configured maintainers Discord destination.
           Use today's UTC date for the durable sweep record; resume existing work
           rather than duplicate it. Delivery is not completion.
+          EOF
+        '';
+        TimeoutStartSec = "90s";
+        Restart = "no";
+        WorkingDirectory = home;
+        UMask = "0077";
+      };
+    };
+
+    systemd.user.timers.tau-fedimint-workdir-cleanup = lib.mkIf cfg.workdirCleanup.enable {
+      description = "Request weekly bot working directory cleanup";
+      wantedBy = [ "timers.target" ];
+      unitConfig.ConditionUser = user;
+      timerConfig = {
+        OnCalendar = cfg.workdirCleanup.onCalendar;
+        Persistent = false;
+        AccuracySec = "1min";
+        Unit = "tau-fedimint-workdir-cleanup.service";
+      };
+    };
+
+    systemd.user.services.tau-fedimint-workdir-cleanup = lib.mkIf cfg.workdirCleanup.enable {
+      description = "Deliver one working directory cleanup instruction to the existing bot";
+      unitConfig.ConditionUser = user;
+      # Delivery must not start/restart the bot or retry uncertain sends.
+      after = [ "tau-fedimint-bot.service" ];
+      environment = {
+        HOME = home;
+        XDG_CONFIG_HOME = "${home}/.config";
+        XDG_STATE_HOME = "${home}/.local/state";
+        XDG_CACHE_HOME = "${home}/.cache";
+        XDG_RUNTIME_DIR = runtimeDir;
+      };
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writeShellScript "tau-workdir-cleanup" ''
+          exec ${cfg.tauPackage}/bin/tau message '&tau-fedimint-bot' <<'EOF'
+          Scheduled weekly working directory cleanup. First finish all started
+          work, including delegates and builds. Do not start new tasks until
+          cleanup is complete; defer incoming tasks during cleanup. Wait until
+          cleanup cannot affect active work. Resume an existing cleanup rather than
+          duplicate it.
+
+          Clean only within ${projectRoot}. The configured main repositories are
+          ${fedimintCheckout} and ${fedimintSdkCheckout}; preserve them.
+          Delete disposable temporary repositories you cloned, but only after
+          checking for unfinished or unpublished work (including branches,
+          commits, working-copy changes and untracked files). Preserve uncertain
+          repositories. Then delete target/ directories in the main repositories
+          only after confirming they contain disposable build output and no
+          active work depends on them. Do not follow symlinks outside the cleanup
+          scope or delete shared Git/Jujutsu storage.
+
+          Run `nix run nixpkgs#dust -- -R ${projectRoot}` to inspect remaining
+          large items. Remove other items only after confirming they are
+          non-essential and disposable; skip uncertain items and report them.
+          Protect unfinished or unpublished work, active repositories/builds,
+          bookkeeping, credentials and Tau persistent state. This is not permission
+          for broad deletion or cleanup outside the working directory.
+
+          Report what you removed, what you skipped and why, and space recovered
+          if measurable. Resume the normal task queue after cleanup completes.
+          If cleanup is blocked, report the blocker and leave uncertain data intact.
+          Delivery is not completion.
           EOF
         '';
         TimeoutStartSec = "90s";
