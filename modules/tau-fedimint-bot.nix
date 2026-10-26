@@ -597,6 +597,32 @@ let
             `fedimint-development` before changing or reviewing code or using the
             project's development workflows. Load `pr-submissions-checklist`
             before creating or updating a Fedimint pull request.
+
+            # Repository reuse and change coordination
+
+            Reuse ${fedimintCheckout} for core work and ${fedimintSdkCheckout}
+            for SDK work. Do not create per-task clones, Git worktrees or Jujutsu
+            workspaces for these projects, including reviews, rebases and builds.
+            Queue work when the main checkout is busy.
+            If project skills suggest temporary review worktrees or clones, follow
+            this deployed repository-reuse policy and queue work in the main checkout instead.
+
+            Use one implementing engineer per repository. Acquire its main
+            workdir's `update` lock before switching revisions, changing shared
+            Git/Jujutsu metadata, implementing changes or building. Hold it through
+            review fixes, final verification and history cleanup; do not release it between
+            steps to let another task modify the checkout. Read-only agents may
+            inspect immutable revisions concurrently, but must not switch the
+            checkout, change source/history, or run competing builds.
+
+            Before switching tasks, inspect status and preserve all existing
+            changes, unpublished commits and branches. Never reset or clean
+            away another task's work. If blocked, leave a recoverable WIP
+            checkpoint, record its exact refs and remaining work in Clank, and
+            release the lock. Do not create a new worktree as a workaround.
+            On completion, leave a clean working copy and recorded history for
+            the next queued task. Existing auxiliary checkouts are legacy data,
+            not a pool for new tasks; preserve their source until safe to retire.
           '';
         }
       ];
@@ -769,6 +795,14 @@ let
                 arbitrary API calls.
 
                 # Main responsibilities
+
+                Queue modifying and building tasks per repository; dispatch only
+                one implementing engineer at a time to its configured main
+                workdir. Pass the repository-reuse and lock-through-completion
+                policy to delegates. Dispatch the next queued task only after
+                the prior engineer releases the lock and you verify its clean
+                handoff or recoverable blocked checkpoint. Read-only reviews and
+                research may run concurrently without creating task checkouts.
 
                 Scheduled self-pr-grooming requests authorize reviewing the bot's
                 own PRs, closing obsolete ones, and reminding maintainers as scoped
@@ -1679,18 +1713,28 @@ in
           Scheduled weekly working directory cleanup. First finish all started
           work, including delegates and builds. Do not start new tasks until
           cleanup is complete; defer incoming tasks during cleanup. Wait until
-          cleanup cannot affect active work. Resume an existing cleanup rather than
-          duplicate it.
+          cleanup cannot affect active work. Resume any existing cleanup instead
+          of starting another.
 
           Clean only within ${projectRoot}. The configured main repositories are
           ${fedimintCheckout} and ${fedimintSdkCheckout}; preserve them.
           Delete disposable temporary repositories you cloned, but only after
           checking for unfinished or unpublished work (including branches,
           commits, working-copy changes and untracked files). Preserve uncertain
-          repositories. Then delete target/ directories in the main repositories
-          only after confirming they contain disposable build output and no
-          active work depends on them. Do not follow symlinks outside the cleanup
-          scope or delete shared Git/Jujutsu storage.
+          repositories and worktrees with unfinished or unpublished source.
+
+          Inventory and remove generated target/ and target-nix/
+          directories throughout ${projectRoot}, including both main repositories
+          and ALL retained legacy task checkouts, clones and worktrees. Preserving
+          source does not require preserving rebuildable output. Check
+          that each directory contains generated output, not tracked source or
+          unique runtime data, and that no active build or process uses it.
+          Preserve any specific non-rebuildable evidence you identify; do not keep
+          an entire build tree merely because its source task is unfinished or
+          might need another build. If uncertain, name the exact retained path,
+          size and concrete dependency or unresolved question in the report.
+          Do not follow symlinks outside the cleanup scope or delete shared
+          Git/Jujutsu storage.
 
           Run `nix run nixpkgs#dust -- -R ${projectRoot}` to inspect remaining
           large items. Remove other items only after confirming they are
@@ -1699,8 +1743,11 @@ in
           bookkeeping, credentials and Tau persistent state. This is not permission
           for broad deletion or cleanup outside the working directory.
 
-          Report what you removed, what you skipped and why, and space recovered
-          if measurable. Resume the normal task queue after cleanup completes.
+          Report what you removed, space recovered, total remaining usage and the
+          largest retained build directories with reasons. Account for large
+          build trees before reporting cleanup complete.
+          Resume the normal task queue after cleanup completes, reusing the main
+          repositories under the one-engineer-per-repository locking policy.
           If cleanup is blocked, report the blocker and leave uncertain data intact.
           Delivery is not completion.
           EOF

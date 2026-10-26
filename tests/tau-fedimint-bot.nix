@@ -1724,6 +1724,8 @@ assert lib.hasInfix
 assert lib.hasInfix "nix run nixpkgs#dust -- -R /home/tau-fedimint/fedimint" cleanupScript;
 assert lib.hasInfix "/home/tau-fedimint/fedimint/fedimint-sdk" cleanupScript;
 assert lib.hasInfix "target/" cleanupScript;
+assert lib.hasInfix "target-nix/" cleanupScript;
+assert lib.hasInfix "ALL retained legacy task checkouts" cleanupScript;
 assert !(lib.hasInfix "--wait-response" cleanupScript);
 assert groomingTimer.timerConfig.OnCalendar == "*-*-* 07:00:00 America/Los_Angeles";
 assert

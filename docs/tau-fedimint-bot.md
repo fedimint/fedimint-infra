@@ -1134,15 +1134,40 @@ start the bot or retry uncertain delivery; it reports delivery, not task complet
 
 The prompt tells the bot to finish all started work, including delegates and
 builds, and defer new tasks until cleanup completes. The bot must preserve the
-configured main repositories and check that temporary clones and main-repository
-`target/` directories are disposable before deleting them. It then runs
+configured main repositories and unfinished source, and check that temporary
+clones and generated `target/` and `target-nix/` directories throughout the project
+root are disposable before deleting them. It then runs
 `nix run nixpkgs#dust -- -R <dir>` on the working directory to inspect other large
 non-essential items. The bot must protect unfinished or unpublished work, active
 repositories/builds, bookkeeping, credentials and Tau persistent state, and skip
-and report uncertain items. It reports removals and recovered space when
-measurable, then resumes its normal queue.
+and report uncertain items. It reports removals, recovered space when measurable,
+total remaining usage, and the largest retained build directories with reasons,
+then resumes its normal queue.
 This is an agent instruction, not an automatic filesystem deletion service or
 a runtime-enforced task barrier.
+
+### Repository reuse
+
+Core and SDK tasks reuse their configured main checkouts. The coordinator queues
+modifying and building tasks per repository rather than creating per-task clones,
+Git worktrees or Jujutsu workspaces. One engineer holds the main repository's
+update lock from checkout through implementation, review fixes, final verification
+and history cleanup. Read-only agents may inspect immutable revisions concurrently
+without changing the checkout or running competing builds.
+
+Before switching tasks, preserve existing changes and unpublished commits. If
+blocked, the engineer leaves a recoverable WIP checkpoint and durable handoff
+before releasing the lock. Preserve source in existing auxiliary checkouts;
+do not reuse them for new tasks.
+
+The bot preserves source while removing rebuildable output. After finishing active
+work, it inventories generated `target/` and `target-nix/`
+directories across the entire project root, including retained legacy worktrees
+and clones. An unfinished source task is not itself a reason to retain rebuildable
+output. The bot protects specific non-rebuildable evidence and output that active
+processes still use.
+The report must include recovered space, total remaining usage, and the largest
+retained build directories with concrete reasons.
 
 ## Clank tickets
 
