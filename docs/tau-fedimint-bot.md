@@ -885,12 +885,13 @@ repeat failed mutations in a loop. After an ambiguous result it inspects current
 remote and pull-request state before deciding whether a retry is safe, preventing
 duplicate branches or pull requests.
 
-After deciding how to handle each independently authenticated notification with
-an unambiguous repository and target that has a supported exact-object reaction
-form, the coordinator reacts directly on the
-exact notified object rather than delegating the acknowledgement. `+1` means
-action is warranted, not that work is complete; `eyes` means seen but not
-actionable; and `-1` means ignored or prevented by policy. It may also add
+The coordinator acknowledges each notification as soon as it verifies its
+provenance, repository, and exact target. It reacts on the exact notified object
+if that object supports a reaction, without delegating the acknowledgement or
+waiting for disposition or task completion. `+1` means
+action is warranted, not that work is complete; `eyes` is an “I've seen it”
+placeholder when no better reaction applies yet; and `-1` means ignored or
+prevented by policy. The coordinator may also add
 `laugh`, `confused`, `heart`, `hooray`, or `rocket` when appropriate, and may
 add multiple reactions. GitHub's sad-face reaction is not in the broker's
 supported enum. The corresponding exact forms are:

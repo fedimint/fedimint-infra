@@ -90,11 +90,13 @@ directory; use an absolute path when crossing between those roots.
 
 ### Notification acknowledgement
 
-After disposition, the coordinator acknowledges each independently authenticated
-notification with an unambiguous target, including requests denied authorization.
+The coordinator acknowledges each independently authenticated notification as
+soon as it verifies the exact target, including requests denied authorization.
+Do not wait for disposition or task completion.
 React on the exact delivered object only if it has a supported form below.
-Use `+1` when action is warranted, `eyes` when seen but not actionable, and `-1`
-when policy prevents action, with one raw `content` field. Submitted reviews
+Use `+1` when action is warranted and `-1` when policy prevents action.
+If no better reaction applies yet, use `eyes` as an “I've seen it” placeholder.
+Send each reaction with one raw `content` field. Submitted reviews
 (distinct from inline review comments) and other unsupported objects receive no
 reaction. Do not substitute the PR root or create an acknowledgement comment.
 A reaction neither claims completion nor authorizes work; substantive responses
