@@ -11,8 +11,9 @@ Use this scheduled task only for the grooming below. Do not make unsolicited cod
 changes, update branches, merge PRs, or groom other authors' PRs. Load
 `fedimint-bot-github-cli`; keep its broker and publication safeguards.
 
-1. Enumerate all open PRs authored by `fedimint-tau` in `fedimint/fedimint` and
-   `fedimint/fedimint-sdk`, including drafts. Use `gh pr list -R OWNER/REPO
+1. Enumerate all open PRs authored by `fedimint-tau` in `fedimint/fedimint`,
+   `fedimint/fedimint-sdk`, and `fedimint/fedimint-infra`, including drafts.
+   Use `gh pr list -R OWNER/REPO
    --state open --author fedimint-tau --limit 1000`; if you reach the limit,
    report incomplete coverage rather than claim a complete sweep. Verify each
    candidate's author with `gh api repos/OWNER/REPO/pulls/NUMBER`: login

@@ -62,6 +62,7 @@ let
       providerProfile ? null,
       weeklySummary ? { },
       selfPrGrooming ? { },
+      papercutGrooming ? { },
       workdirCleanup ? { },
       discord ? { },
     }:
@@ -79,6 +80,7 @@ let
                 githubNotifications
                 weeklySummary
                 selfPrGrooming
+                papercutGrooming
                 workdirCleanup
                 discord
                 ;
@@ -121,6 +123,20 @@ let
   groomingService = grooming.config.systemd.user.services.tau-fedimint-self-pr-grooming;
   groomingTimer = grooming.config.systemd.user.timers.tau-fedimint-self-pr-grooming;
   groomingScript = builtins.readFile groomingService.serviceConfig.ExecStart;
+  papercut = mkSystem {
+    githubNotifications = { };
+    papercutGrooming.enable = true;
+  };
+  papercutAlternate = mkSystem {
+    githubNotifications = { };
+    papercutGrooming = {
+      enable = true;
+      onCalendar = "*-*-* 09:00:00 UTC";
+    };
+  };
+  papercutService = papercut.config.systemd.user.services.tau-fedimint-papercut-grooming;
+  papercutTimer = papercut.config.systemd.user.timers.tau-fedimint-papercut-grooming;
+  papercutScript = builtins.readFile papercutService.serviceConfig.ExecStart;
   cleanup = mkSystem {
     githubNotifications = { };
     workdirCleanup.enable = true;
@@ -276,6 +292,7 @@ let
     fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
     fedimint-weekly-dev-summary = ../.agents/skills/fedimint-weekly-dev-summary;
     self-pr-grooming = ../.agents/skills/self-pr-grooming;
+    fedimint-bot-self-improvement = ../.agents/skills/fedimint-bot-self-improvement;
   };
   localSkillNames = builtins.attrNames localSkills;
   installedSkillNames = upstreamSkillNames ++ fedimintSkillNames ++ localSkillNames;
@@ -330,6 +347,20 @@ let
         test -n "$enabled_isolate"
         test -n "$git_config"
         test -n "$ssh_config"
+
+        papercut_harness=$(sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' \
+          ${papercut.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart})
+        jq -e '
+          .extensions["std-utils"].config.papercut_history.enable == true
+          and .agents.role_groups.coordinator.roles.coordinator.enable_tools == [
+            "papercut_list", "papercut_read", "papercut_archive"
+          ]
+          and ([.agents.role_groups | to_entries[]
+            | select(.key != "coordinator") | .value | .. | strings]
+            | all(test("papercut_(list|read|archive)") | not))
+        ' "$papercut_harness" >/dev/null
+        jq -e '.extensions["std-utils"].config.papercut_history.enable == false' \
+          "$disabled_harness" >/dev/null
 
         discord_harness=$(sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${discordStart})
         discord_isolate=$(sed -n 's#.*install -m 0600 \([^ ]*isolate.yaml\).*#\1#p' ${discordStart})
@@ -654,6 +685,7 @@ let
           "${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config"
         grep -Fxq '  /home/tau-fedimint/fedimint/fedimint \' ${disabledStart}
         grep -Fxq '  /home/tau-fedimint/fedimint/fedimint-sdk \' ${disabledStart}
+        grep -Fxq '  /home/tau-fedimint/fedimint/fedimint-infra \' ${disabledStart}
         unexpected="$TMPDIR/unexpected"
         ${pkgs.git}/bin/git init -q "$unexpected"
         ${pkgs.git}/bin/git -C "$unexpected" remote add origin \
@@ -804,6 +836,27 @@ let
               ;;
           esac
         done <"$TMPDIR/roles"
+        # Use the pinned harness's actual extension declarations and role policy.
+        # Tool previews do not invoke grooming or require provider credentials.
+        jq --arg workspace "$test_workspace" --arg workdir "$test_workdir" '
+          .extensions["core-shell"].config.working_directory = $workdir
+          | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
+        ' "$papercut_harness" >"$test_home/.config/tau/harness.yaml"
+        while IFS= read -r role; do
+          env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
+            HOME="$test_home" \
+            XDG_CONFIG_HOME="$test_home/.config" \
+            XDG_STATE_HOME="$test_home/.local/state" \
+            XDG_CACHE_HOME="$test_home/.cache" \
+            ${tauPackage}/bin/tau --role "$role" dev print-tools >"$TMPDIR/papercut-$role-tools"
+          if [ "$role" = coordinator ]; then
+            for tool in papercut_list papercut_read papercut_archive; do
+              grep -q "$tool" "$TMPDIR/papercut-$role-tools"
+            done
+          else
+            ! grep -Eq 'papercut_(list|read|archive)' "$TMPDIR/papercut-$role-tools"
+          fi
+        done <"$TMPDIR/roles"
         for reference in phrases structures examples; do
           test -s "$test_home/.config/agents/skills/stop-slop/references/$reference.md"
         done
@@ -866,7 +919,7 @@ let
             },
             "identity_key_secret": "github_identity_key",
             "register_on_start": true,
-            "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk"],
+            "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk", "fedimint/fedimint-infra"],
             "role": "coordinator",
             "token_secret": "github_token"
           })
@@ -1017,7 +1070,7 @@ let
         config = {
             "token_secret": "github_token",
             "identity_key_secret": "github_identity_key",
-            "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk"],
+            "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk", "fedimint/fedimint-infra"],
             "actors": {
                 "mode": "repository_maintainers",
                 "user_ids": [49699333],
@@ -1125,6 +1178,13 @@ let
       grep -Fq 'open GitHub token secret: No such file or directory' \
         "$TMPDIR/$name.err"
     }
+
+    # Infra uses the same scoped credential and PR namespace, not a new broker.
+    expect_supported infra-pr-create --pr-head-prefix tau/ \
+      gh pr create -R fedimint/fedimint-infra --base main \
+      --head tau/self-improvement --title title --body body
+    expect_supported infra-pr-list \
+      gh pr list -R fedimint/fedimint-infra --author fedimint-tau --state open
 
     expect_denied() {
       name=$1
@@ -1430,7 +1490,15 @@ let
       machine.succeed(
           "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
           "/home/tau-fedimint/fedimint/fedimint "
-          "/home/tau-fedimint/fedimint/fedimint-sdk\n"
+          "/home/tau-fedimint/fedimint/fedimint-sdk "
+          "/home/tau-fedimint/fedimint/fedimint-infra\n"
+          "runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-infra init -q\n"
+          "runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-infra remote add origin "
+          "https://github.com/fedimint/fedimint-infra.git\n"
+          "runuser -u tau-fedimint -- sh -c "
+          "'printf preserve > /home/tau-fedimint/fedimint/fedimint-infra/unfinished'\n"
           "runuser -u tau-fedimint -- git -C "
           "/home/tau-fedimint/fedimint/fedimint init -q\n"
           "runuser -u tau-fedimint -- git -C "
@@ -1450,6 +1518,15 @@ let
               "${disabledStart}"
           )
           assert status == 42
+      machine.succeed(
+          "test \"$(cat /home/tau-fedimint/fedimint/fedimint-infra/unfinished)\" = preserve\n"
+          "test \"$(runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-infra remote get-url origin)\" = "
+          "https://github.com/fedimint/fedimint-infra.git\n"
+          "test \"$(runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-infra remote get-url --push origin)\" = "
+          "git@github.com:fedimint/fedimint-infra.git"
+      )
       machine.fail("${tauSandboxPackage}/bin/tau-fedimint-sandbox --version")
       machine.succeed(
           "set -eu\n"
@@ -1744,6 +1821,28 @@ assert discordEnabled.config.age.secrets.tau-fedimint-discord-token.mode == "040
 assert discordEnabled.config.age.secrets.tau-fedimint-discord-identity-key.owner == "tau-fedimint";
 assert !(disabled.config.systemd.user.timers ? tau-fedimint-weekly-summary);
 assert !(disabled.config.systemd.user.timers ? tau-fedimint-self-pr-grooming);
+assert !(disabled.config.systemd.user.timers ? tau-fedimint-papercut-grooming);
+assert !(disabled.config.systemd.user.services ? tau-fedimint-papercut-grooming);
+assert papercutTimer.timerConfig.OnCalendar == "*-*-* 08:00:00 UTC";
+assert
+  papercutAlternate.config.systemd.user.timers.tau-fedimint-papercut-grooming.timerConfig.OnCalendar
+  == "*-*-* 09:00:00 UTC";
+assert papercutTimer.timerConfig.Persistent == true;
+assert papercutTimer.wantedBy == [ "timers.target" ];
+assert papercutTimer.unitConfig.ConditionUser == "tau-fedimint";
+assert papercutService.unitConfig.ConditionUser == "tau-fedimint";
+assert papercutService.wantedBy == [ ];
+assert papercutService.requires == [ ];
+assert papercutService.wants == [ ];
+assert papercutService.serviceConfig.Restart == "no";
+assert papercutService.serviceConfig.TimeoutStartSec == "90s";
+assert papercutService.serviceConfig.UMask == "0077";
+assert papercutService.environment.XDG_RUNTIME_DIR == "/run/user/1001";
+assert lib.hasInfix
+  "exec ${builtins.unsafeDiscardStringContext tauPackage}/bin/tau message '&tau-fedimint-bot'"
+  papercutScript;
+assert lib.hasInfix "fedimint-bot-self-improvement skill" papercutScript;
+assert !(lib.hasInfix "--wait-response" papercutScript);
 assert !(disabled.config.systemd.user.timers ? tau-fedimint-workdir-cleanup);
 assert !(disabled.config.systemd.user.services ? tau-fedimint-workdir-cleanup);
 assert cleanupTimer.timerConfig.OnCalendar == "Sat *-*-* 23:00:00 UTC";

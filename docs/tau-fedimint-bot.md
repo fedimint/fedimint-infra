@@ -312,8 +312,9 @@ later requires only a new alias target.
   `/home/tau-fedimint/.config/tau/harness.yaml` and
   `/home/tau-fedimint/.config/isolate/isolate.yaml`. They reference runtime and
   agenix paths but contain no secret values.
-- An isolate profile whose only writable project checkout is
-  `/home/tau-fedimint/fedimint`.
+- An isolate profile whose writable project root is
+  `/home/tau-fedimint/fedimint`, with the main core checkout at
+  `/home/tau-fedimint/fedimint/fedimint`.
 - A writable `/tmp/public` bind matching the operator sandbox: a shared
   `nobody:nogroup` mode-1733 dropbox for artifacts passed between agent sessions.
   Agents cannot list it, so they use `mktemp` names and pass exact paths.
@@ -399,7 +400,8 @@ later requires only a new alias target.
   `/home/tau-fedimint/.local/state/clank`. The bot can keep project tickets
   without receiving write access to the rest of its home or state hierarchy.
 - One enabled inbound GitHub notification extension. It watches
-  `fedimint/fedimint` and `fedimint/fedimint-sdk`, dynamically admits actors with
+  `fedimint/fedimint`, `fedimint/fedimint-sdk`, and `fedimint/fedimint-infra`,
+  dynamically admits actors with
   effective push access in the relevant repository plus the verified numeric
   user ID for `dependabot[bot]`, and follows GitHub's response headers for poll
   timing and rate-limit delays. It does not add action tools or provide a
@@ -565,6 +567,46 @@ defines no such configuration profiles. The systemd unit now removes ambient
 `TAU_PROFILE`, `TAU_PROVIDER_ALIASES`, and `TAU_MODEL_ALIASES` so the
 Nix-generated startup configuration is deterministic.
 
+## Daily papercut self-improvement
+
+Runner-01 enables `services.tau-fedimint-bot.papercutGrooming`. Its persistent
+systemd user timer sends one instruction at **08:00 UTC daily** to the existing
+coordinator. A missed calendar firing catches up when the user manager resumes;
+the oneshot never starts or restarts the bot and does not retry an uncertain
+send. Failed delivery waits for the next daily attempt or explicit operator
+recovery. Delivery is not completion: the installed
+`fedimint-bot-self-improvement` skill requires a durable UTC sweep record, recovery
+of unfinished work, and no overlapping sweeps or duplicate PRs/announcements.
+
+The pinned Tau supports `papercut_list`, `papercut_read`, and
+`papercut_archive`. The module enables history on `std-utils` and grants those
+tools only to the coordinator when this option is enabled. Other roles retain
+the ordinary secret-free `papercut` reporter, not history access. The coordinator
+keeps full snapshots and coverage ledgers in private Tau state and delegates
+only sanitized findings. The archive tool rereads the active batch; its internal
+generation check does not reserve an earlier reviewed snapshot. The workflow
+requires the coordinator to validate and reconcile the exact returned archive,
+accounting for late additions without deleting post-archive arrivals.
+
+Standing authority covers scoped, tested, independently reviewed PR proposals
+to `fedimint/fedimint-infra`, not self-merge, deployment, service restart,
+credential expansion, security-boundary weakening, or arbitrary upstream work.
+The coordinator keeps durable follow-ups for blocked and out-of-scope findings
+and announces only resulting PRs on Discord, reconciling sends before retries.
+Raw reports, session identifiers, private traces, and archive paths never enter
+public PRs or Discord.
+
+Infra joins the notifier repository list and its startup-managed native GitHub
+watch subscriptions. External requests for infra work require native `write` or
+`admin` on **infra itself**, without the historical-contributor fallback.
+The bot reuses `/home/tau-fedimint/fedimint/fedimint-infra`; it does not gain
+deployment secrets or a host shell. The action PAT, notifier PAT, and dedicated
+SSH key remain separate permission boundaries. Repository collaborator access
+does not prove that fine-grained tokens select infra or that notifier roster
+enumeration succeeds. Verify sanitized notifier startup results and actual
+read-only bot credential access after an authorized deployment; fix a concrete
+credential denial rather than widening scopes speculatively.
+
 ## Remaining setup and validation
 
 1. **GitHub authority:** the credentials belong to `fedimint-tau`, whose
@@ -581,12 +623,16 @@ Nix-generated startup configuration is deterministic.
    profile needs authentication. To change backing providers later, set
    `services.tau-fedimint-bot.providerProfile` to the new canonical profile
    name; roles remain on `codex/...`.
-3. **Checkout:** clone `fedimint/fedimint` directly at
-   `/home/tau-fedimint/fedimint`. Startup requires that exact managed checkout
-   and refuses unexpected fetch or push URLs.
+3. **Checkouts:** keep the core and SDK repositories at
+   `/home/tau-fedimint/fedimint/fedimint` and
+   `/home/tau-fedimint/fedimint/fedimint-sdk`. Startup provisions the public infra
+   repository at `/home/tau-fedimint/fedimint/fedimint-infra` only when absent.
+   Startup preserves existing checkouts and refuses unexpected fetch or push
+   URLs. All three use HTTPS fetch and the dedicated bot SSH agent for push.
 4. **Known users and services:** the inbound configuration watches
-   `fedimint/fedimint` and `fedimint/fedimint-sdk`. For each repository, it
-   admits actors from GitHub's complete collaborator roster when their effective
+   `fedimint/fedimint`, `fedimint/fedimint-sdk`, and `fedimint/fedimint-infra`.
+   For each repository, it admits actors from GitHub's complete collaborator
+   roster when their effective
    `permissions.push` is true, plus the explicitly configured GitHub numeric user
    ID `49699333` for `dependabot[bot]`. The explicit allowlist applies only to
    otherwise supported events in configured repositories; it does not require a
@@ -601,7 +647,9 @@ Nix-generated startup configuration is deterministic.
    prompt applies a separate authorization policy to those facts before acting on
    a GitHub request. The coordinator retains its narrower maintainer-only policy:
    outside the narrow exceptions below, it requires known native `admin` or `write` permission on
-   `fedimint/fedimint`; unknown, stale, denied, malformed, rate-limited, or
+   `fedimint/fedimint`. Infra requests instead require native `admin` or `write`
+   permission on `fedimint/fedimint-infra` itself, with no historical-contributor
+   fallback. Unknown, stale, denied, malformed, rate-limited, or
    unavailable facts remain denied.
 5. **Models:** confirm that `chatgpt-dpc` publishes the role models in the table
    above. Keep model references in provider-neutral `codex/...` form.
@@ -620,7 +668,7 @@ Nix-generated startup configuration is deterministic.
 `runner-01` enables one inbound-only `tau-ext-github` instance with this fixed
 policy:
 
-- repositories: `fedimint/fedimint` and `fedimint/fedimint-sdk`
+- repositories: `fedimint/fedimint`, `fedimint/fedimint-sdk`, and `fedimint/fedimint-infra`
 - actor admission: current collaborators with effective push access in each
   repository
 - poll timing: GitHub's `X-Poll-Interval` and `Retry-After` headers, plus
@@ -727,8 +775,10 @@ that inspection does not authorize requested work, mutation, non-public access,
 or external communication. Relevant activity is delivered to the coordinator
 automatically. It ordinarily acts only on an explicit request from a sender whose
 independently authenticated identity has known native `admin` or `write`
-permission on `fedimint/fedimint`. Fresh delivered actor facts can satisfy the
-policy for activity in that repository. Otherwise the coordinator calls
+permission on `fedimint/fedimint`. Infra requests instead require native `admin`
+or `write` permission on `fedimint/fedimint-infra` itself, with no
+historical-contributor fallback. Fresh delivered actor facts can satisfy the
+policy for activity in the required repository. Otherwise the coordinator calls
 `github_user_context` with exactly the authenticated username and requires a
 matching resolved identity and known repository result with an observation time.
 Custom `role_name` text is never interpreted as permission. Its one proactive
@@ -1119,7 +1169,9 @@ on that exact repository authorizes under the global policy. A known `read` or
 preserving the previous global `either` policy. Unknown or failed permission
 lookups never fall back, and custom `role_name` text cannot override native
 permission. The coordinator's role-specific GitHub work policy remains narrower
-and does not use the contributor fallback.
+and does not use the contributor fallback. Infra requests require native `admin`
+or `write` on `fedimint/fedimint-infra` itself under both policies; the
+historical-contributor fallback does not apply.
 
 `check USERNAME contributor` and `list contributors` have a deliberately
 different meaning: the username appears in GitHub's historical
@@ -1154,8 +1206,9 @@ to change it. Like the weekly-summary timer, it is nonpersistent and sends one
 message to the existing bot without starting it, waiting for completion, or
 retrying an uncertain delivery.
 
-The bot reviews its own open PRs in `fedimint/fedimint` and
-`fedimint/fedimint-sdk`, verifies GitHub author identity, and closes clearly
+The bot reviews its own open PRs in `fedimint/fedimint`,
+`fedimint/fedimint-sdk`, and `fedimint/fedimint-infra`, verifies GitHub author
+identity, and closes clearly
 obsolete or unhelpful PRs with an explanation. Inactivity alone does not justify
 closure. The bot sends one consolidated reminder to the existing
 `fedimint_maintainers` Discord destination for useful PRs and uncertain cases
@@ -1189,7 +1242,7 @@ a runtime-enforced task barrier.
 
 ### Repository reuse
 
-Core and SDK tasks reuse their configured main checkouts. The coordinator queues
+Core, SDK, and infra tasks reuse their configured main checkouts. The coordinator queues
 modifying and building tasks per repository rather than creating per-task clones,
 Git worktrees or Jujutsu workspaces. One engineer holds the main repository's
 update lock from checkout through implementation, review fixes, final verification
