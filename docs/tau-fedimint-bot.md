@@ -1,5 +1,15 @@
 # Tau Fedimint bot
 
+## Communicate with the running bot
+
+For authorized operator requests, prefer `tau message --wait-response` on
+runner-01 as the bot account. Target the freshly discovered session and
+coordinator. The CLI sends literal stdin to the existing agent and returns
+one final reply without creating a sender agent or session. Follow the
+[debugging skill](../.agents/skills/fedimint-tau-bot-papercuts-debugging/SKILL.md#communicate-with-the-existing-coordinator)
+for runtime discovery, the exact command, and delivery/timeout precautions.
+Sending a request requires authorization; it is not a read-only health check.
+
 ## Browser navigation and screenshots
 
 `agent-browser` and Chromium come from the locked nixpkgs input; no npm install

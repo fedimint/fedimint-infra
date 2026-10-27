@@ -126,24 +126,47 @@ Interpret signals carefully:
 
 ## Communicate with the existing coordinator
 
-The source-verified supported route is the interactive attached UI. This is a
-real mutating user input, not a read-only health check, and therefore requires
-explicit authorization. It has not yet been round-trip tested against this bot.
+Prefer `tau message --wait-response` for an authorized operator request. Sending
+input mutates the live conversation; it is not a read-only health check and
+requires explicit authorization.
 
-First discover the current root coordinator ID as above. Use a PTY-capable
-connection from the current authorized environment, then run this command on
-the runner:
+Discover the current session and root coordinator ID as above. On the runner,
+using the same `tau_as_bot` helper and authorized connection, substitute the
+current ID and send one literal stdin message:
 
 ```sh
-runuser -u tau-fedimint -- env \
-  HOME=/home/tau-fedimint \
-  XDG_CONFIG_HOME=/home/tau-fedimint/.config \
-  XDG_STATE_HOME=/home/tau-fedimint/.local/state \
-  XDG_RUNTIME_DIR=/run/user/$(id -u tau-fedimint) \
-  /run/current-system/sw/bin/tau attach tau-fedimint-bot
+coordinator_id='FRESH_COORDINATOR_ID'
+tau_as_bot message --wait-response "tau-fedimint-bot/@$coordinator_id" <<'REQUEST'
+Describe your current task in one final reply via the message tool to the supplied one-shot reply address. Use no other tools and take no external actions.
+REQUEST
 ```
 
-Inside the UI, explicitly select the freshly discovered root:
+The CLI uses local same-user IPC, so run it on the remote runner, not in the
+operator's local Tau session. Exact session/agent targeting fails closed if the
+target is absent and creates no sender agent or new session. Avoid a bare
+`&tau-fedimint-bot` recipient here: its configured receiver policy can auto-start
+an agent.
+
+Delivery acknowledgement on stderr confirms durable acceptance, not task
+completion. With `--wait-response`, stdout contains only the
+recipient's one final response, sent through its one-shot reply address.
+Without that flag, success means durable acceptance only and the recipient is
+told not to reply.
+
+`--wait-response` waits indefinitely. An external timeout or disconnect can end
+the wait without cancelling delivered work. A disconnect before
+acknowledgement leaves delivery uncertain. Inspect the existing conversation
+before considering another submission; never blindly retry an ambiguous send.
+
+Verification covered the help and source for deployed Tau revision
+`42495e547dc3299f86913f198ea5fd330b5a288b` (`docs/cli-message.md`,
+`crates/tau-cli/src/message.rs`, and
+`crates/tau-harness/src/harness/cli_messaging.rs`), not a live CLI round trip.
+Recheck installed help/source when the revision changes.
+
+For an interactive fallback, use a PTY-capable connection and run
+`tau_as_bot attach tau-fedimint-bot` on the runner. In the attached UI, select
+the freshly discovered root:
 
 ```text
 :agent switch COORDINATOR_ID
@@ -155,20 +178,7 @@ changes, or `:agent new` as health checks. A timeout is inconclusive: inspect
 whether the input was accepted before considering another submission, and never
 automatically retry an ambiguous request.
 
-The manual path is verified from Tau source to submit `HumanUi` input to the
-selected existing agent. No operator request/reply round trip was performed as
-part of establishing this skill, so describe it as source-verified rather than
-live-tested until an authorized probe proves it.
-
 ## Do not mistake other transports for request/reply
-
-There is currently no verified headless command that sends literal input to an
-exact existing agent and returns its correlated reply.
-
-These communication semantics were source-verified on September 23, 2026
-against deployed Tau revision
-`30c8b43410a84294f31f74451f9f7f09a94df473`. Recheck them against the newly
-installed source whenever the deployed revision changes.
 
 * `tau dev send SESSION TEXT` creates a new parentless `engineer`; it does not
   message the existing coordinator and does not wait for model acceptance or a
@@ -177,18 +187,12 @@ installed source whenever the deployed revision changes.
   `dev send` calls do not form a persistent selected-agent conversation.
 * `--prompt-stdin` also creates a new agent rather than targeting the existing
   root.
-* Tau peer `message` discovers local runtime sockets and carries peer authority,
-  not direct `HumanUi` authority. It is not a host-qualified route to the remote
-  runner, and a bare receiver need not identify the exact existing coordinator.
+* The agent's peer `message` tool is not the shell's `tau message` CLI. Neither
+  is a host-qualified route to the remote runner. The CLI uses exact-session
+  same-user UI admission but records `AgentMessageReceived` with `cli_origin`,
+  not a `HumanUi` prompt or peer-tool authority.
 * The GitHub notifier is an external integration path, not an administration
   channel. Do not manufacture an issue, comment, review, or identity to probe it.
-
-A command such as `tau session request` is only a proposed upstream feature. Do
-not present it as available. A safe implementation would need exact session and
-agent targeting, literal stdin, fail-closed behavior without autostart, explicit
-acceptance and reply correlation, bounded observation, and no retry after an
-ambiguous post-send timeout. That upstream implementation is outside this
-skill's scope.
 
 ## Post-deployment check
 
@@ -199,11 +203,13 @@ After deployment, verify read-only:
 * expected extension startup without a retry or error storm;
 * the intended native coordinator bootstrap and current work state.
 
-Request a separate approval for one bounded attached-UI round-trip probe. Record
-the exact daemon incarnation and target before sending, use a unique nonce, ask
-for no tools or external actions, and observe for a bounded interval. Never
-restart the service or send a second prompt merely because the first response is
-slow.
+Request separate approval for one bounded CLI or attached-UI round-trip probe.
+Record the exact daemon incarnation and target before sending, use a unique
+nonce, and observe for a bounded interval. For a CLI probe, allow only the final
+`message` reply to its one-shot address; forbid other tools and external actions.
+For an attached-UI probe, ask for no tools or external actions.
+Never restart the service or send a second prompt merely because the first
+response is slow.
 
 Escalate with the exact version, generation, target IDs, time window, minimal
 sanitized evidence, uncertainty, and smallest proposed next probe. Route Tau
