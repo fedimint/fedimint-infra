@@ -22,8 +22,9 @@ reaction, internal report, or artifact alone is not a response. Inspect existing
 bot comments first to avoid duplicates. If publication fails or the target is
 ambiguous, preserve the response, report it as pending, and do not claim delivery.
 
-After disposition, the coordinator loads and follows
-`fedimint-bot-github-cli`'s notification acknowledgement procedure.
+As soon as the coordinator verifies notification provenance and the exact
+target, it loads and follows the acknowledgement procedure in
+`fedimint-bot-github-cli`. Do not wait for disposition or task completion.
 Acknowledgement does not authorize work or replace a substantive response.
 
 ## Delegate bounded work

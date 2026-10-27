@@ -265,7 +265,8 @@ systemctl --user --machine=tau-fedimint@.host list-timers tau-fedimint-weekly-su
 `tau-fedimint` account. Its agenix credentials belong to the dedicated
 `fedimint-tau` GitHub account: one action token, one notification-reader token,
 one outbound SSH identity, and one stable notification identity key. Bot roles
-use explicit role-specific model and effort settings, while Nix maps the
+use the settings below. The editor inherits the configured default model
+(`services.tau-fedimint-bot.model`). Nix maps the
 `codex` provider name to the existing `chatgpt-dpc` provider profile. The
 profile keeps its actual name and credentials, so changing the backing account
 later requires only a new alias target.
@@ -279,6 +280,7 @@ later requires only a new alias target.
 | researcher | `codex/gpt-6.1-sol` | 0.5 |
 | researcher-senior | `codex/gpt-6-astra` | 0.5 |
 | reviewer | `codex/gpt-6-astra` | 0.5 |
+| editor | Configured default (`codex/gpt-6.1-sol` by default) | 0.5 |
 
 ## Implemented shape
 
@@ -316,6 +318,31 @@ later requires only a new alias target.
   tracking, coherent delegation, read-only support roles, independent review,
   verification, and clean repository history. Personal messaging, cross-sandbox
   routing, provider identities, and unrelated tools are not copied.
+- The coordinator follows the personal harness's research, implementation,
+  review, and retrospective stages. It delegates specific research only when
+  needed, assigns engineers by task difficulty, and watches their independent
+  review and project checks. It verifies Git status and history before handing
+  a checkout to the next task. The coordinator passes literal requests separately
+  from interpretations, keeps each agent on one coherent task, and passes along
+  existing approval limits. Engineers preserve blocked work in an explicit WIP
+  checkpoint while the coordinator continues safe, independent queued work.
+- Proactive work stays within authorized goals: the coordinator handles routine
+  decisions and follow-ups without asking about every step. For uncertain
+  scope or decisions it can ask a fresh senior researcher to apply `proactive-work`.
+  Neither that skill nor a research recommendation grants new authority.
+  The coordinator must still respect read-only requests, routine-event handling,
+  and publication limits.
+- Engineers delegate longer external prose to an editor who works on temporary copies
+  under `/tmp/public`. The editor uses the installed `stop-slop` skill, preserves
+  technical meaning, and cannot start sub-agents. It must not edit project source
+  or history, commit, or publish. Engineers copy issue-free results back without
+  another editing pass; normal review and functional checks still apply.
+- Coordinators can request a read-only retrospective after complications
+  or user-requested rework. Researchers use `task-retrospective` and Tau's built-in
+  tracing skills to inspect relevant task evidence without blocking delivery.
+  They keep raw traces private and return evidence-backed findings. Coordinators
+  deduplicate and queue follow-ups under existing approval limits; findings do
+  not authorize changes.
 - A dedicated Git identity for the public `fedimint-tau` GitHub account:
   `fedimint-tau <332691140+fedimint-tau@users.noreply.github.com>`. The generated
   `.gitconfig` is installed in the bot home and mounted read-only in the sandbox.
@@ -885,12 +912,13 @@ repeat failed mutations in a loop. After an ambiguous result it inspects current
 remote and pull-request state before deciding whether a retry is safe, preventing
 duplicate branches or pull requests.
 
-After deciding how to handle each independently authenticated notification with
-an unambiguous repository and target that has a supported exact-object reaction
-form, the coordinator reacts directly on the
-exact notified object rather than delegating the acknowledgement. `+1` means
-action is warranted, not that work is complete; `eyes` means seen but not
-actionable; and `-1` means ignored or prevented by policy. It may also add
+The coordinator acknowledges each notification as soon as it verifies its
+provenance, repository, and exact target. It reacts on the exact notified object
+if that object supports a reaction, without delegating the acknowledgement or
+waiting for disposition or task completion. `+1` means
+action is warranted, not that work is complete; `eyes` is an “I've seen it”
+placeholder when no better reaction applies yet; and `-1` means ignored or
+prevented by policy. The coordinator may also add
 `laugh`, `confused`, `heart`, `hooray`, or `rocket` when appropriate, and may
 add multiple reactions. GitHub's sad-face reaction is not in the broker's
 supported enum. The corresponding exact forms are:
