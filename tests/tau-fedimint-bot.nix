@@ -265,6 +265,11 @@ let
     "pr-submissions-checklist"
   ];
   localSkills = {
+    change-description = ../.agents/skills/change-description;
+    conventional-commit = ../.agents/skills/conventional-commit;
+    proactive-work = ../.agents/skills/proactive-work;
+    stop-slop = ../.agents/skills/stop-slop;
+    task-retrospective = ../.agents/skills/task-retrospective;
     fedimint-bot-github-cli = ../.agents/skills/fedimint-bot-github-cli;
     fedimint-maintainer-requests = ../.agents/skills/fedimint-maintainer-requests;
     fedimint-pull-request-review = ../.agents/skills/fedimint-pull-request-review;
@@ -431,6 +436,10 @@ let
             "researcher-senior",
             "reviewer"
           ])
+          and ((.agents.role_groups.editors.roles | keys) == ["editor"])
+          and (.agents.role_groups.editors.effort == 0.5)
+          and (.agents.role_groups.editors.required_skills == ["stop-slop"])
+          and (.agents.role_groups.editors.disable_tools == ["agent_start"])
           and (.agents.role_groups.coordinator.roles.coordinator.model == "codex/gpt-6.1-sol")
           and (.agents.role_groups.coordinator.roles.coordinator.effort == 0.35)
           and (.agents.role_groups.coordinator.roles.coordinator.compactions == {
@@ -752,6 +761,9 @@ let
             and ($actual | index("project-subdir-test") != null)
             and ($actual | index("linked-specs-grooming") == null)
             and ($actual | index("github-cli") == null)
+            and ($actual | index("tau-self-knowledge-tracing") != null)
+            and ($actual | index("tau-self-knowledge-cache") != null)
+            and ($actual | index("tau-self-knowledge-debugging") != null)
           ' "$skills" >/dev/null
           provider_prompt="$TMPDIR/$role-provider-prompt"
           env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
@@ -765,7 +777,37 @@ let
           done
           grep -Fq 'PROJECT_SUBDIR_AGENTS_MARKER' "$provider_prompt"
           grep -Fq '<name>project-subdir-test</name>' "$provider_prompt"
+          case "$role" in
+            editor)
+              grep -Fq 'only the designated temporary copies' "$provider_prompt"
+              env -u TAU_PROFILE HOME="$test_home" \
+                XDG_CONFIG_HOME="$test_home/.config" \
+                XDG_STATE_HOME="$test_home/.local/state" \
+                XDG_CACHE_HOME="$test_home/.cache" \
+                ${tauPackage}/bin/tau --role editor dev print-tools \
+                  >"$TMPDIR/editor-tools"
+              ! grep -q 'agent_start' "$TMPDIR/editor-tools"
+              ;;
+            engineer|engineer-junior|engineer-senior)
+              grep -Fq 'delegate polishing to an `editor`' "$provider_prompt"
+              ;;
+            coordinator)
+              grep -Fq 'researcher using `task-retrospective`' "$provider_prompt"
+              for section in \
+                'Research/planning (optional)' Implementation Review \
+                'Retrospective (optional)'; do
+                grep -Fq "## $section" "$provider_prompt"
+              done
+              grep -Fq '# Proactive work' "$provider_prompt"
+              grep -Fq '`researcher-senior`' "$provider_prompt"
+              grep -Fq '`proactive-work`' "$provider_prompt"
+              ;;
+          esac
         done <"$TMPDIR/roles"
+        for reference in phrases structures examples; do
+          test -s "$test_home/.config/agents/skills/stop-slop/references/$reference.md"
+        done
+        test -s "$test_home/.config/agents/skills/stop-slop/LICENSE"
 
         ${lib.optionalString (discordPackage != null) ''
           # Exercise the real extension's scoped declarations and effective
