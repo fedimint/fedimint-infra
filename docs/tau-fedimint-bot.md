@@ -114,8 +114,8 @@ Its overlapping window is intentional. The summary skill owns page naming,
 reruns, publication, and announcement details.
 
 Only the coordinator has papercut history tools. Follow the self-improvement
-skill to reconcile reports added between review and archival. For operator-led
-grooming, use the
+skill to archive the exact reviewed generation and handle concurrent arrivals.
+For operator-led grooming, use the
 [operator grooming skill](../.agents/skills/fedimint-tau-bot-papercuts-grooming/SKILL.md).
 
 Cleanup waits for active work and builds to finish, preserves unfinished source,

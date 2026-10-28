@@ -69,6 +69,14 @@
       ...
     }@inputs:
     let
+      # Protocol-14 backport: remove once the Tau pin includes generation-bound
+      # papercut archival. Use the same patched binary for the bot and its checks.
+      tauPackage =
+        system:
+        (inputs.tau.packages.${system}.tau.override { buildDirty = true; }).overrideAttrs (old: {
+          patches = (old.patches or [ ]) ++ [ ./nix/patches/tau-papercut-generation.patch ];
+        });
+
       overlays = [
         (final: prev: {
           perfitd = inputs.perfit.packages.${final.system}.perfitd;
@@ -327,7 +335,7 @@
                   tokenAgeFile = ./secrets/tau-fedimint-discord-token.age;
                   identityKeyAgeFile = ./secrets/tau-fedimint-discord-identity-key.age;
                 };
-                tauPackage = inputs.tau.packages.x86_64-linux.tau;
+                tauPackage = tauPackage "x86_64-linux";
                 isolatePackage = inputs.isolate.packages.x86_64-linux.default;
                 ghBrokerPackage = inputs.gh-isolate.packages.x86_64-linux.default;
                 clankPackage = inputs.clank.packages.x86_64-linux.default;
@@ -408,7 +416,7 @@
             tau-fedimint-bot-config = import ./tests/tau-fedimint-bot.nix {
               inherit system nixpkgs agenix;
               module = ./modules/tau-fedimint-bot.nix;
-              tauPackage = inputs.tau.packages.${system}.tau;
+              tauPackage = tauPackage system;
               isolatePackage = inputs.isolate.packages.${system}.default;
               ghBrokerPackage = inputs.gh-isolate.packages.${system}.default;
               skillsSource = inputs.linked-specs-skills;

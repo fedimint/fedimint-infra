@@ -935,6 +935,8 @@ let
       ];
     };
     testScript = ''
+      import shlex
+
       start_all()
 
       registration_status, registration_output = machine.execute(
@@ -1081,6 +1083,54 @@ let
           "/home/tau-fedimint/fedimint/fedimint-infra remote get-url --push origin)\" = "
           "git@github.com:fedimint/fedimint-infra.git"
       )
+      # Use the real supervised shell, not just the outer isolate: hidden Tau
+      # state must remain hidden while private grooming bookkeeping is writable.
+      bot_env = (
+          "env HOME=/home/tau-fedimint "
+          "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/tau-fedimint/bin "
+          "XDG_CONFIG_HOME=/home/tau-fedimint/.config "
+          "XDG_STATE_HOME=/home/tau-fedimint/.local/state "
+          "XDG_RUNTIME_DIR=/run/user/1001 "
+      )
+      tau = "runuser -u tau-fedimint -- " + bot_env + "${tauPackage}/bin/tau "
+      state = "/home/tau-fedimint/.local/state/tau"
+      machine.succeed(
+          "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
+          "/run/user/1001\n"
+          "runuser -u tau-fedimint -- mkdir -p " + state + "/ext/std-utils\n"
+          "systemd-run --unit=tau-grooming-shell-test --uid=tau-fedimint "
+          "--property=WorkingDirectory=/home/tau-fedimint/fedimint "
+          + bot_env + "${tauPackage}/bin/tau serve "
+          "--session grooming-shell-test --create --mirror-extension-stderr"
+      )
+      try:
+          machine.wait_until_succeeds(
+              tau + "session list --json | grep -q grooming-shell-test", timeout=30
+          )
+      except Exception:
+          print(machine.succeed("journalctl -u tau-grooming-shell-test --no-pager"))
+          raise
+      machine.succeed(
+          tau + "dev send grooming-shell-test "
+          + shlex.quote(
+              "!!core-shell set -eu; umask 077; "
+              f"test ! -e {state}/ext/std-utils; "
+              f"if mkdir {state}/papercut-grooming 2>/dev/null; then exit 1; fi; "
+              f"mkdir -p {state}/ext/core-shell/papercut-grooming; "
+              f"private_dir=$(mktemp -d {state}/ext/core-shell/papercut-grooming/sweep.XXXXXXXX); "
+              'printf complete >"$private_dir/snapshot.md"; '
+              'test "$(cat "$private_dir/snapshot.md")" = complete; '
+              'test "$(stat -c %a "$private_dir")" = 700; '
+              'test "$(stat -c %a "$private_dir/snapshot.md")" = 600; '
+              f"printf passed >{state}/ext/core-shell/grooming-shell-check"
+          )
+      )
+      # A successful dev send is only delivery acceptance; await the shell's
+      # completed checks rather than treating that acknowledgement as success.
+      machine.wait_until_succeeds(
+          f"test \"$(cat {state}/ext/core-shell/grooming-shell-check)\" = passed"
+      )
+      machine.succeed("systemctl stop tau-grooming-shell-test")
       machine.fail("${tauSandboxPackage}/bin/tau-fedimint-sandbox --version")
       machine.succeed(
           "set -eu\n"
