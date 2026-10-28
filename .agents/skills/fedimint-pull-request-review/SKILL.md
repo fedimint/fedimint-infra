@@ -53,6 +53,15 @@ request, exact head commit, relevant context, and review scope. Integrate its
 verdict and findings; do not substitute the coordinator's own reading for that
 independent review.
 
+Before delegating, the coordinator verifies that it can read the exact head
+commit and required source using `git cat-file -e FULL_SHA^{commit}` and source
+reads. The coordinator supplies the full head and trunk SHAs and the source or
+comparison evidence needed for the review. If required objects or source are
+missing, the reviewer immediately reports the missing full SHAs and source paths
+to the coordinator rather than substituting checkout `HEAD` or trying unsupported
+endpoints. The coordinator resolves gaps through supported reads or reports the
+review blocked.
+
 Publish substantive feedback for every completed review, whether it passes or
 fails, explicitly naming the full inspected SHA. Formally approve eligible changes
 after independent PASS for that exact SHA and satisfaction of all main-prompt
