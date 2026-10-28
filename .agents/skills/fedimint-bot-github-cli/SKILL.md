@@ -8,14 +8,47 @@ advertise: true
 # GitHub CLI in the Fedimint bot sandbox
 
 Use `gh` for GitHub interaction. A sandbox broker intercepts the installed
-command and accepts a deliberately bounded grammar. Read normally, but use only
-the documented forms below for mutations. If a form is denied, do not try another
+command and accepts a bounded grammar for read and write commands. Use
+the documented forms below. If a form is denied, do not try another
 client, credential path, raw API variant, reordered flags, mutation `--help`, or
 another executable path.
 
 Use explicit `-R OWNER/REPO`, inspect current state before mutation, perform one
 mutation at a time, and check its result. After an ambiguous result, inspect remote
 state before deciding whether a retry is safe.
+
+## Bounded reads
+
+Run `gh` from `/home/tau-fedimint/fedimint`, not a project subcheckout: project
+shells can supply a different `gh` that does not use the sandbox broker. Use
+explicit `-R OWNER/REPO` for CLI commands and the exact repository in API paths.
+
+For PR inspection, request only the JSON fields you need for the task. This
+metadata recipe avoids organization-dependent fields such as `reviewRequests`;
+default PR views and `--comments` can request fields that require unavailable
+`read:org` scope.
+
+```sh
+gh pr view NUMBER -R OWNER/REPO --json number,state,isDraft,author,headRefOid,headRefName,baseRefName,title,body,files
+gh pr diff NUMBER -R OWNER/REPO
+gh api repos/OWNER/REPO/pulls/NUMBER
+gh api repos/OWNER/REPO/pulls/NUMBER/files --paginate
+gh api --paginate repos/OWNER/REPO/pulls/NUMBER/reviews
+gh api repos/OWNER/REPO/issues/comments/COMMENT_ID
+```
+
+Use the `files` metadata or paginated PR-files response to identify changed
+paths, and the full PR diff to inspect changes. Filter saved output locally
+when needed; `gh pr diff --stat` and diff pathspecs are unsupported.
+
+These recipes do not authorize arbitrary API reads. Repository
+`commits`, `contents`, and `compare` endpoints and reaction-list GETs are
+unsupported. Repository-wide commit reads are unsupported, unlike the bounded
+PR-scoped commits collection documented in `fedimint-weekly-dev-summary`.
+If a required read is unavailable,
+report the blocker rather than trying endpoint variants or another client.
+Synthetic missing-token tests verify accepted grammar and denied neighbors,
+not live GitHub permissions or scope behavior.
 
 ## Ordinary collaboration
 
