@@ -875,6 +875,40 @@ let
       gh api repos/fedimint/fedimint/issues/comments/5803800022
     expect_supported files-read \
       gh api repos/fedimint/fedimint/pulls/42/files --paginate
+    # These reads must pass grammar validation before opening a token. This
+    # fixture does not contact GitHub or test live token scopes.
+    expect_supported pr-metadata-read \
+      gh pr view 42 -R fedimint/fedimint \
+      --json number,state,isDraft,author,headRefOid,headRefName,baseRefName,title,body,files
+    expect_supported pr-diff-read \
+      gh pr diff 42 -R fedimint/fedimint
+    expect_supported pr-api-read \
+      gh api repos/fedimint/fedimint/pulls/42
+    expect_supported pr-reviews-read \
+      gh api --paginate repos/fedimint/fedimint/pulls/42/reviews
+    expect_supported pr-commits-read \
+      gh api --paginate --include 'repos/fedimint/fedimint/pulls/42/commits?per_page=100'
+
+    # Nearby unsupported forms must fail before token access; documenting
+    # safe reads must not widen the broker's read boundary.
+    expect_denied pr-diff-stat \
+      gh pr diff 42 -R fedimint/fedimint --stat
+    expect_denied pr-diff-pathspec \
+      gh pr diff 42 -R fedimint/fedimint -- README.md
+    expect_denied repository-commits-read \
+      gh api repos/fedimint/fedimint/commits
+    expect_denied repository-commit-read \
+      gh api repos/fedimint/fedimint/commits/0123456789abcdef0123456789abcdef01234567
+    expect_denied repository-contents-read \
+      gh api repos/fedimint/fedimint/contents/README.md
+    expect_denied repository-compare-read \
+      gh api repos/fedimint/fedimint/compare/master...topic
+    expect_denied issue-reactions-read \
+      gh api repos/fedimint/fedimint/issues/42/reactions
+    expect_denied issue-comment-reactions-read \
+      gh api repos/fedimint/fedimint/issues/comments/5803800022/reactions
+    expect_denied pr-comment-reactions-read \
+      gh api repos/fedimint/fedimint/pulls/comments/5803800022/reactions
     printf '%s\n' 'request changes' >request-changes.md
     expect_supported request-changes \
       gh pr review 42 -R fedimint/fedimint \
