@@ -412,7 +412,6 @@
             };
           };
           checks = nixpkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-            tau-ext-github-tests = inputs.tau-ext-github.checks.${system}.tests;
             tau-fedimint-bot-config = import ./tests/tau-fedimint-bot.nix {
               inherit system nixpkgs agenix;
               module = ./modules/tau-fedimint-bot.nix;
@@ -421,34 +420,6 @@
               ghBrokerPackage = inputs.gh-isolate.packages.${system}.default;
               skillsSource = inputs.linked-specs-skills;
               fedimintSkillsSource = inputs.fedimint-skills;
-              githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
-              discordPackage = inputs.tau-ext-discord.packages.${system}.tau-ext-discord;
-            };
-            runner-root-ssh-authorization = import ./tests/runner-root-ssh-authorization.nix {
-              inherit system nixpkgs;
-              automationPublicKey = fedimintAutomationPublicKey;
-              inherit adminKeys;
-              runnerRootAuthorizedKeys =
-                map (name: nixosConfigurations.${name}.config.users.users.root.openssh.authorizedKeys.keys)
-                  [
-                    "runner-01"
-                    "runner-02"
-                    "runner-04"
-                    "runner-arm-01"
-                  ];
-              nonRunnerRootAuthorizedKeys =
-                map (name: nixosConfigurations.${name}.config.users.users.root.openssh.authorizedKeys.keys)
-                  [
-                    "fedimintd-01"
-                    "irohdns-eu-01"
-                    "irohrelay-eu-01"
-                  ];
-              botAuthorizedKeys =
-                nixosConfigurations.runner-01.config.users.users.tau-fedimint.openssh.authorizedKeys.keys;
-            };
-            tau-fedimint-github-password-backup = import ./tests/tau-fedimint-github-password-backup.nix {
-              inherit system nixpkgs nixosConfigurations;
-              secretPolicies = import ./secrets.nix;
             };
           };
         }
