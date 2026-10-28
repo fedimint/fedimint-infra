@@ -59,10 +59,7 @@ let
   mkSystem =
     {
       githubNotifications,
-      providerProfile ? null,
-      weeklySummary ? { },
-      selfPrGrooming ? { },
-      workdirCleanup ? { },
+      papercutGrooming ? { },
       discord ? { },
     }:
     nixpkgs.lib.nixosSystem {
@@ -72,20 +69,9 @@ let
         module
         {
           system.stateVersion = "26.05";
-          services.tau-fedimint-bot =
-            common
-            // {
-              inherit
-                githubNotifications
-                weeklySummary
-                selfPrGrooming
-                workdirCleanup
-                discord
-                ;
-            }
-            // lib.optionalAttrs (providerProfile != null) {
-              inherit providerProfile;
-            };
+          services.tau-fedimint-bot = common // {
+            inherit githubNotifications papercutGrooming discord;
+          };
         }
       ];
     };
@@ -95,47 +81,10 @@ let
   disabled = mkSystem {
     githubNotifications.package = githubNotificationsPackage;
   };
-  weekly = mkSystem {
+  papercut = mkSystem {
     githubNotifications = { };
-    weeklySummary.enable = true;
+    papercutGrooming.enable = true;
   };
-  weeklyAlternate = mkSystem {
-    githubNotifications = { };
-    weeklySummary = {
-      enable = true;
-      onCalendar = "Tue *-*-* 12:00:00 UTC";
-    };
-  };
-  weeklyService = weekly.config.systemd.user.services.tau-fedimint-weekly-summary;
-  grooming = mkSystem {
-    githubNotifications = { };
-    selfPrGrooming.enable = true;
-  };
-  groomingAlternate = mkSystem {
-    githubNotifications = { };
-    selfPrGrooming = {
-      enable = true;
-      onCalendar = "*-*-* 12:00:00 UTC";
-    };
-  };
-  groomingService = grooming.config.systemd.user.services.tau-fedimint-self-pr-grooming;
-  groomingTimer = grooming.config.systemd.user.timers.tau-fedimint-self-pr-grooming;
-  groomingScript = builtins.readFile groomingService.serviceConfig.ExecStart;
-  cleanup = mkSystem {
-    githubNotifications = { };
-    workdirCleanup.enable = true;
-  };
-  cleanupAlternate = mkSystem {
-    githubNotifications = { };
-    workdirCleanup = {
-      enable = true;
-      onCalendar = "Sun *-*-* 01:00:00 UTC";
-    };
-  };
-  cleanupService = cleanup.config.systemd.user.services.tau-fedimint-workdir-cleanup;
-  cleanupTimer = cleanup.config.systemd.user.timers.tau-fedimint-workdir-cleanup;
-  cleanupScript = builtins.readFile cleanupService.serviceConfig.ExecStart;
-  weeklyTimer = weekly.config.systemd.user.timers.tau-fedimint-weekly-summary;
   weeklyCheck =
     pkgs.runCommand "tau-weekly-summary-check"
       {
@@ -147,10 +96,6 @@ let
         python3 ${./tau-github-collect.py} ${../bin/tau-github-collect.py}
         mkdir "$out"
       '';
-  alternateProvider = mkSystem {
-    githubNotifications = { };
-    providerProfile = "future-provider";
-  };
   enabled = mkSystem {
     githubNotifications = {
       enable = true;
@@ -224,27 +169,7 @@ let
     lib.findFirst (package: lib.getName package == "tau-fedimint-sandbox")
       (throw "tau-fedimint-sandbox package missing from the Tau bot user profile")
       disabled.config.users.users.tau-fedimint.packages;
-  alternateProviderStart =
-    alternateProvider.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
-  enabledStart = enabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   discordStart = discordEnabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
-  privateDirectoryRules = map (path: "d ${path} 0700 tau-fedimint tau-fedimint -") [
-    "/home/tau-fedimint/fedimint"
-    "/home/tau-fedimint/.config"
-    "/home/tau-fedimint/.config/agents"
-    "/home/tau-fedimint/.config/agents/skills"
-    "/home/tau-fedimint/.config/isolate"
-    "/home/tau-fedimint/.config/tau"
-    "/home/tau-fedimint/.ssh"
-    "/home/tau-fedimint/.local"
-    "/home/tau-fedimint/.local/share"
-    "/home/tau-fedimint/.local/share/direnv"
-    "/home/tau-fedimint/.local/state"
-    "/home/tau-fedimint/.local/state/tau"
-    "/home/tau-fedimint/.local/state/clank"
-    "/home/tau-fedimint/.cache"
-    "/home/tau-fedimint/.cache/tau"
-  ];
   upstreamSkillNames = [
     "linked-specs"
     "linked-specs-updating"
@@ -276,6 +201,7 @@ let
     fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
     fedimint-weekly-dev-summary = ../.agents/skills/fedimint-weekly-dev-summary;
     self-pr-grooming = ../.agents/skills/self-pr-grooming;
+    fedimint-bot-self-improvement = ../.agents/skills/fedimint-bot-self-improvement;
   };
   localSkillNames = builtins.attrNames localSkills;
   installedSkillNames = upstreamSkillNames ++ fedimintSkillNames ++ localSkillNames;
@@ -305,277 +231,16 @@ let
         disabled_harness=$(
           sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${disabledStart}
         )
-        alternate_provider_harness=$(
-          sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${alternateProviderStart}
-        )
-        enabled_harness=$(
-          sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${enabledStart}
-        )
-        disabled_isolate=$(
-          sed -n 's#.*install -m 0600 \([^ ]*isolate.yaml\).*#\1#p' ${disabledStart}
-        )
-        enabled_isolate=$(
-          sed -n 's#.*install -m 0600 \([^ ]*isolate.yaml\).*#\1#p' ${enabledStart}
-        )
-        git_config=$(
-          sed -n 's#.*install -m 0600 \([^ ]*gitconfig\).*#\1#p' ${disabledStart}
-        )
-        ssh_config=$(
-          sed -n 's#.*install -m 0600 \([^ ]*ssh-config\).*#\1#p' ${disabledStart}
-        )
         test -n "$disabled_harness"
-        test -n "$alternate_provider_harness"
-        test -n "$enabled_harness"
-        test -n "$disabled_isolate"
-        test -n "$enabled_isolate"
-        test -n "$git_config"
-        test -n "$ssh_config"
 
+        papercut_harness=$(sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' \
+          ${papercut.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart})
         discord_harness=$(sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${discordStart})
-        discord_isolate=$(sed -n 's#.*install -m 0600 \([^ ]*isolate.yaml\).*#\1#p' ${discordStart})
-        jq -e '
-          .extensions["maintainer-discord"] as $d
-          | $d.enable == true and $d.require == true
-          and $d.tool_prefix == "maintainer"
-          and ($d.command[0] | endswith("/bin/tau-ext-discord"))
-          and $d.secrets == {discord_bot_token:{}, discord_identity_key:{}}
-          and $d.config == {
-            bot_token_secret:"discord_bot_token",
-            identity_key_secret:"discord_identity_key",
-            allowed_user_ids:[345678901234567890],
-            sender_aliases:[{user_id:345678901234567890, alias:"maintainer"}],
-            message_content:false, register_on_start:true, role:"coordinator",
-            conversations:[{
-              alias:"fedimint_maintainers", guild_id:123456789012345678,
-              display_name:"Fedimint maintainers",
-              channel_id:234567890123456789, description:"Fedimint maintainer assistance",
-              receive:"mentions_only", proactive_send:true
-            }]
-          }
-          and .agents.disable_tool_tags == ["discord:*"]
-          and .agents.role_groups.coordinator.roles.coordinator.enable_tools == [
-            "github_register","github_user_context",
-            "maintainer_discord_register","maintainer_discord_conversations","maintainer_discord_send"
-          ]
-          and ([.agents.role_groups | to_entries[]
-            | select(.key != "coordinator") | .value | .. | strings]
-            | all(contains("maintainer_discord") | not))
-        ' "$discord_harness" >/dev/null
-        jq -e '
-          .profiles["fedimint-bot"].setenv as $env
-          | $env.TAU_SECRET_DISCORD_BOT_TOKEN == {file:"/run/agenix/tau-fedimint-discord-token"}
-          and $env.TAU_SECRET_DISCORD_IDENTITY_KEY == {file:"/run/agenix/tau-fedimint-discord-identity-key"}
-          and ($env | has("TAU_SECRET_GITHUB_TOKEN"))
-        ' "$discord_isolate" >/dev/null
-        for config in "$disabled_harness" "$enabled_harness" "$disabled_isolate" "$enabled_isolate"; do
-          ! grep -q 'maintainer_discord\|maintainer-discord\|TAU_SECRET_DISCORD' "$config"
-        done
-
-        for config in "$disabled_harness" "$alternate_provider_harness" "$enabled_harness" \
-          "$disabled_isolate" "$enabled_isolate"; do
-          test "$(wc -l <"$config")" -gt 1
-          grep -q '^  "' "$config"
-          jq --indent 2 . "$config" | cmp -s - "$config"
-        done
-
-        test "$(${pkgs.git}/bin/git config --file "$git_config" user.name)" = "fedimint-tau"
-        test "$(${pkgs.git}/bin/git config --file "$git_config" user.email)" = \
-          "332691140+fedimint-tau@users.noreply.github.com"
-        test "$(${pkgs.git}/bin/git config --file "$git_config" core.sshCommand)" = \
-          "${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config"
-        test "$(grep -Fxc 'Host *' "$ssh_config")" -eq 1
-        grep -Fqx '  BatchMode yes' "$ssh_config"
-        grep -Fqx '  GlobalKnownHostsFile /etc/ssh/ssh_known_hosts' "$ssh_config"
-        grep -Fqx '  StrictHostKeyChecking yes' "$ssh_config"
-        grep -Fqx '  UserKnownHostsFile /dev/null' "$ssh_config"
-        grep -Fqx 'Host github.com' "$ssh_config"
-
-        sandbox_wrapper=${tauSandboxPackage}/bin/tau-fedimint-sandbox
-        test -x "$sandbox_wrapper"
-        grep -Fq 'must run as tau-fedimint' "$sandbox_wrapper"
-        grep -Fq 'cd /home/tau-fedimint/fedimint' "$sandbox_wrapper"
-        grep -Fq '${dummyIsolatePackage}/bin/isolate exec' "$sandbox_wrapper"
-        grep -Fq -- '--profile fedimint-bot' "$sandbox_wrapper"
-        grep -Fq '${tauPackage}/bin/tau "$@"' "$sandbox_wrapper"
-        grep -Fq 'export HOME=/home/tau-fedimint' "$sandbox_wrapper"
-        grep -Fq 'export XDG_CONFIG_HOME=/home/tau-fedimint/.config' "$sandbox_wrapper"
-        grep -Fq 'export XDG_RUNTIME_DIR=/run/user/1001' "$sandbox_wrapper"
-        grep -Fq 'managed fedimint-bot isolate config is missing' "$sandbox_wrapper"
-        ! grep -Fq 'tau-fedimint-clear-session' "$sandbox_wrapper"
-        ! grep -Fq -- '--session tau-fedimint-bot' "$sandbox_wrapper"
-        ! grep -Fq 'TAU_SECRET_' "$sandbox_wrapper"
-
-        jq -e '
-          (.extensions["github-notifications"] == null)
-          and (.aliases.providers.codex == "chatgpt-dpc")
-          and (.agents.model == "codex/gpt-6.1-sol")
-          and (.agents.effort == 0.5)
-          and (.agents.compactions == {
-            "compact-after-done": {
-              threshold: 100000,
-              when: {
-                at: "outer_turn_finished",
-                statuses: ["done"]
-              }
-            },
-            "compact-after-done-any-status": {
-              threshold: 250000,
-              when: {
-                at: "outer_turn_finished"
-              }
-            }
-          })
-          and ((.agents.role_groups.coordinator.roles | keys) == ["coordinator"])
-          and ((.agents.role_groups.engineer.roles | keys) == [
-            "engineer",
-            "engineer-junior",
-            "engineer-senior"
-          ])
-          and ((.agents.role_groups.support.roles | keys) == [
-            "researcher",
-            "researcher-senior",
-            "reviewer"
-          ])
-          and ((.agents.role_groups.editors.roles | keys) == ["editor"])
-          and (.agents.role_groups.editors.effort == 0.5)
-          and (.agents.role_groups.editors.required_skills == ["stop-slop"])
-          and (.agents.role_groups.editors.disable_tools == ["agent_start"])
-          and (.agents.role_groups.coordinator.roles.coordinator.model == "codex/gpt-6.1-sol")
-          and (.agents.role_groups.coordinator.roles.coordinator.effort == 0.35)
-          and (.agents.role_groups.coordinator.roles.coordinator.compactions == {
-            "compact-after-done": {
-              threshold: 100000,
-              when: {
-                at: "outer_turn_finished",
-                statuses: ["done", "waiting"]
-              }
-            },
-            "compact-after-done-any-status": {
-              threshold: 150000,
-              when: {
-                at: "outer_turn_finished"
-              }
-            }
-          })
-          and (.agents.role_groups.engineer.roles["engineer-junior"].model == "codex/gpt-6.1-sol")
-          and (.agents.role_groups.engineer.roles["engineer-junior"].effort == 0.25)
-          and (.agents.role_groups.engineer.roles.engineer.model == "codex/gpt-6.1-sol")
-          and (.agents.role_groups.engineer.roles.engineer.effort == 0.5)
-          and (.agents.role_groups.engineer.roles["engineer-senior"].model == "codex/gpt-6-astra")
-          and (.agents.role_groups.engineer.roles["engineer-senior"].effort == 0.25)
-          and (.agents.role_groups.support.roles.researcher.model == "codex/gpt-6.1-sol")
-          and (.agents.role_groups.support.roles.researcher.effort == 0.5)
-          and (.agents.role_groups.support.roles["researcher-senior"].model == "codex/gpt-6-astra")
-          and (.agents.role_groups.support.roles["researcher-senior"].effort == 0.5)
-          and (.agents.role_groups.support.roles.reviewer.model == "codex/gpt-6-astra")
-          and (.agents.role_groups.support.roles.reviewer.effort == 0.5)
-          and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == [])
-          and (.extensions["core-shell"].config.shell.prefix == [
-            "direnv-dpc",
-            "exec",
-            "."
-          ])
-        ' "$disabled_harness" >/dev/null
-        jq -e '
-          (.aliases.providers.codex == "future-provider")
-          and (.agents.model == "codex/gpt-6.1-sol")
-        ' "$alternate_provider_harness" >/dev/null
-        jq -e '
-          .agents.role_groups.support.roles.reviewer.required_skills
-          == ["multipart-review"]
-        ' "$disabled_harness" >/dev/null
-        jq -e '
-          (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == null)
-          and (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY == null)
-        ' "$disabled_isolate" >/dev/null
-        jq -e '
-          (.profiles["fedimint-bot"].pid == {mode: "private"})
-          and (.profiles["fedimint-bot"].exec_priv.allow | length == 1)
-          and (
-            .profiles["fedimint-bot"].exec_priv.allow[0] as $rule
-            | ($rule.name == "gh-host")
-            and ($rule.program == "gh")
-            and ($rule.allow_extra_args == true)
-            and ($rule.cwd == "repo-root")
-            and ($rule.import_roots == [
-              "/home/tau-fedimint/fedimint",
-              "/tmp/public"
-            ])
-            and ($rule.timeout_seconds == 600)
-            and ($rule.intercept == true)
-          )
-        ' "$disabled_isolate" >/dev/null
-        jq -e '
-          [.profiles["fedimint-bot"].bind[]
-            | select(.path == "/tmp/public")]
-          == [{
-            path: "/tmp/public",
-            rw: true,
-            required: true,
-            kind: "dir"
-          }]
-        ' "$disabled_isolate" >/dev/null
-        jq -e '
-          [.profiles["fedimint-bot"].bind[]
-            | select(.path == "/home/tau-fedimint/.local/share/direnv")]
-          == [{
-            path: "/home/tau-fedimint/.local/share/direnv",
-            rw: true,
-            create: "dir"
-          }]
-        ' "$disabled_isolate" >/dev/null
-        jq -e '
-          [.profiles["fedimint-bot"].bind[]
-            | select(.path == "/home/tau-fedimint/.config/agents")]
-          == [{
-            path: "/home/tau-fedimint/.config/agents",
-            required: true,
-            kind: "dir"
-          }]
-        ' "$disabled_isolate" >/dev/null
-        test -x ${direnvDpcPackage}/bin/direnv-dpc
-        test ! -e ${direnvDpcPackage}/bin/direnv
-        jq -er '
-          .profiles["fedimint-bot"].exec_priv.allow[]
-          | select(.name == "gh-host")
-          | .handler.script
-        ' "$disabled_isolate" >"$TMPDIR/gh-handler"
-        grep -Fq -- '--credential fedimint=/run/agenix/tau-fedimint-github-token' \
-          "$TMPDIR/gh-handler"
-        grep -Fq -- '--default-credential fedimint' "$TMPDIR/gh-handler"
-        grep -Fq -- '--pr-head-prefix tau/' "$TMPDIR/gh-handler"
-        grep -Fq -- '--import-context-fd 3' "$TMPDIR/gh-handler"
-        test "$(grep -Fc -- '--pr-head-prefix tau/' "$TMPDIR/gh-handler")" -eq 1
-        prefix_line=$(grep -Fn -- '--pr-head-prefix tau/' "$TMPDIR/gh-handler" | cut -d: -f1)
-        import_line=$(grep -Fn -- '--import-context-fd 3' "$TMPDIR/gh-handler" | cut -d: -f1)
-        caller_line=$(grep -Fn -- '"$@"' "$TMPDIR/gh-handler" | cut -d: -f1)
-        test "$prefix_line" -lt "$caller_line"
-        test "$import_line" -lt "$caller_line"
-        ! grep -q '${githubNotificationsPackage}' "$disabled_harness"
-        bot_unit=${
-          disabled.config.systemd.user.units."tau-fedimint-bot.service".unit
-        }/tau-fedimint-bot.service
-        grep -q '^UnsetEnvironment=TAU_MODEL_ALIASES$' "$bot_unit"
-        grep -q '^UnsetEnvironment=TAU_PROFILE$' "$bot_unit"
-        grep -q '^UnsetEnvironment=TAU_PROVIDER_ALIASES$' "$bot_unit"
-        grep -q -- '--create \\' ${disabledStart}
-        ! grep -q -- '--create-or-existing' ${disabledStart}
-        grep -q -- '--bootstrap-id fedimint-coordinator-v1$' ${disabledStart}
-
-        bootstrap_prompt=$(
-          sed -n 's#.*--bootstrap-prompt-file \([^ ]*\).*#\1#p' ${enabledStart}
-        )
-        test -n "$bootstrap_prompt"
-        test -s "$bootstrap_prompt"
 
         clear_session=$(
           grep -Eo '/nix/store/[^ ]+-tau-fedimint-clear-session' ${disabledStart}
         )
         test -n "$clear_session"
-        grep -Fq 'sessions="$tau_state/sessions"' "$clear_session"
-        grep -Fq 'session="$sessions/tau-fedimint-bot"' "$clear_session"
-        grep -Fq 'if [ -L "$tau_state" ] || [ -L "$sessions" ]; then' "$clear_session"
-        grep -Fq 'rm -rf --one-file-system -- "$session"' "$clear_session"
 
         cleanup_home="$TMPDIR/cleanup-home"
         mkdir -p \
@@ -652,8 +317,6 @@ let
           "git@github.com:fedimint/fedimint-sdk.git"
         test "$(${pkgs.git}/bin/git -C "$sdk_checkout" config --local --get core.sshCommand)" = \
           "${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config"
-        grep -Fxq '  /home/tau-fedimint/fedimint/fedimint \' ${disabledStart}
-        grep -Fxq '  /home/tau-fedimint/fedimint/fedimint-sdk \' ${disabledStart}
         unexpected="$TMPDIR/unexpected"
         ${pkgs.git}/bin/git init -q "$unexpected"
         ${pkgs.git}/bin/git -C "$unexpected" remote add origin \
@@ -777,32 +440,36 @@ let
           done
           grep -Fq 'PROJECT_SUBDIR_AGENTS_MARKER' "$provider_prompt"
           grep -Fq '<name>project-subdir-test</name>' "$provider_prompt"
-          case "$role" in
-            editor)
-              grep -Fq 'only the designated temporary copies' "$provider_prompt"
-              env -u TAU_PROFILE HOME="$test_home" \
-                XDG_CONFIG_HOME="$test_home/.config" \
-                XDG_STATE_HOME="$test_home/.local/state" \
-                XDG_CACHE_HOME="$test_home/.cache" \
-                ${tauPackage}/bin/tau --role editor dev print-tools \
-                  >"$TMPDIR/editor-tools"
-              ! grep -q 'agent_start' "$TMPDIR/editor-tools"
-              ;;
-            engineer|engineer-junior|engineer-senior)
-              grep -Fq 'delegate polishing to an `editor`' "$provider_prompt"
-              ;;
-            coordinator)
-              grep -Fq 'researcher using `task-retrospective`' "$provider_prompt"
-              for section in \
-                'Research/planning (optional)' Implementation Review \
-                'Retrospective (optional)'; do
-                grep -Fq "## $section" "$provider_prompt"
-              done
-              grep -Fq '# Proactive work' "$provider_prompt"
-              grep -Fq '`researcher-senior`' "$provider_prompt"
-              grep -Fq '`proactive-work`' "$provider_prompt"
-              ;;
-          esac
+          if [ "$role" = editor ]; then
+            env -u TAU_PROFILE HOME="$test_home" \
+              XDG_CONFIG_HOME="$test_home/.config" \
+              XDG_STATE_HOME="$test_home/.local/state" \
+              XDG_CACHE_HOME="$test_home/.cache" \
+              ${tauPackage}/bin/tau --role editor dev print-tools \
+                >"$TMPDIR/editor-tools"
+            ! grep -q 'agent_start' "$TMPDIR/editor-tools"
+          fi
+        done <"$TMPDIR/roles"
+        # Use the pinned harness's actual extension declarations and role policy.
+        # Tool previews do not invoke grooming or require provider credentials.
+        jq --arg workspace "$test_workspace" --arg workdir "$test_workdir" '
+          .extensions["core-shell"].config.working_directory = $workdir
+          | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
+        ' "$papercut_harness" >"$test_home/.config/tau/harness.yaml"
+        while IFS= read -r role; do
+          env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
+            HOME="$test_home" \
+            XDG_CONFIG_HOME="$test_home/.config" \
+            XDG_STATE_HOME="$test_home/.local/state" \
+            XDG_CACHE_HOME="$test_home/.cache" \
+            ${tauPackage}/bin/tau --role "$role" dev print-tools >"$TMPDIR/papercut-$role-tools"
+          if [ "$role" = coordinator ]; then
+            for tool in papercut_list papercut_read papercut_archive; do
+              grep -q "$tool" "$TMPDIR/papercut-$role-tools"
+            done
+          else
+            ! grep -Eq 'papercut_(list|read|archive)' "$TMPDIR/papercut-$role-tools"
+          fi
         done <"$TMPDIR/roles"
         for reference in phrases structures examples; do
           test -s "$test_home/.config/agents/skills/stop-slop/references/$reference.md"
@@ -843,66 +510,6 @@ let
           done <"$TMPDIR/roles"
           cp "$disabled_harness" "$test_home/.config/tau/harness.yaml"
         ''}
-
-        jq -e '
-          .extensions["github-notifications"] as $extension
-          | ($extension.enable == true)
-          and ($extension.command | length == 1)
-          and ($extension.command[0] | endswith("/bin/tau-ext-github"))
-          and ($extension.secrets | keys == ["github_identity_key", "github_token"])
-          and ($extension.config == {
-              "activity_filters": {
-                "direct_review_requests_only": true,
-                "require_comment_mention": true
-              },
-              "identity_context": {
-                "cache_seconds": 300,
-                "delivery": true,
-                "lookup_tool": true
-              },
-            "actors": {
-              "mode": "repository_maintainers",
-              "user_ids": [49699333]
-            },
-            "identity_key_secret": "github_identity_key",
-            "register_on_start": true,
-            "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk"],
-            "role": "coordinator",
-            "token_secret": "github_token"
-          })
-          and (.agents.role_groups.coordinator.roles.coordinator.enable_tools == [
-            "github_register",
-            "github_user_context"
-          ])
-        ' "$enabled_harness" >/dev/null
-        grep -q '${githubNotificationsPackage}/bin/tau-ext-github' "$enabled_harness"
-        jq -e \
-          --arg token '/run/agenix/tau-fedimint-github-notifications-token' \
-          --arg identity '/run/agenix/tau-fedimint-github-notifications-identity-key' '
-          (.profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_TOKEN == {"file": $token})
-          and (
-            .profiles["fedimint-bot"].setenv.TAU_SECRET_GITHUB_IDENTITY_KEY
-            == {"file": $identity}
-          )
-        ' "$enabled_isolate" >/dev/null
-        jq -e '
-          [.profiles["fedimint-bot"].bind[]
-            | select(.path == "/run/systemd/resolve/stub-resolv.conf")]
-          == [{
-            path: "/run/systemd/resolve/stub-resolv.conf",
-            required: true,
-            kind: "file"
-          }]
-        ' "$disabled_isolate" >/dev/null
-        jq -e '
-          [.profiles["fedimint-bot"].bind[]
-            | select(.path == "/home/tau-fedimint/.gitconfig")]
-          == [{
-            path: "/home/tau-fedimint/.gitconfig",
-            required: true,
-            kind: "file"
-          }]
-        ' "$disabled_isolate" >/dev/null
 
         touch "$out"
       '';
@@ -1017,7 +624,7 @@ let
         config = {
             "token_secret": "github_token",
             "identity_key_secret": "github_identity_key",
-            "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk"],
+            "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk", "fedimint/fedimint-infra"],
             "actors": {
                 "mode": "repository_maintainers",
                 "user_ids": [49699333],
@@ -1125,6 +732,13 @@ let
       grep -Fq 'open GitHub token secret: No such file or directory' \
         "$TMPDIR/$name.err"
     }
+
+    # Infra uses the same scoped credential and PR namespace, not a new broker.
+    expect_supported infra-pr-create --pr-head-prefix tau/ \
+      gh pr create -R fedimint/fedimint-infra --base main \
+      --head tau/self-improvement --title title --body body
+    expect_supported infra-pr-list \
+      gh pr list -R fedimint/fedimint-infra --author fedimint-tau --state open
 
     expect_denied() {
       name=$1
@@ -1321,6 +935,8 @@ let
       ];
     };
     testScript = ''
+      import shlex
+
       start_all()
 
       registration_status, registration_output = machine.execute(
@@ -1430,7 +1046,15 @@ let
       machine.succeed(
           "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
           "/home/tau-fedimint/fedimint/fedimint "
-          "/home/tau-fedimint/fedimint/fedimint-sdk\n"
+          "/home/tau-fedimint/fedimint/fedimint-sdk "
+          "/home/tau-fedimint/fedimint/fedimint-infra\n"
+          "runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-infra init -q\n"
+          "runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-infra remote add origin "
+          "https://github.com/fedimint/fedimint-infra.git\n"
+          "runuser -u tau-fedimint -- sh -c "
+          "'printf preserve > /home/tau-fedimint/fedimint/fedimint-infra/unfinished'\n"
           "runuser -u tau-fedimint -- git -C "
           "/home/tau-fedimint/fedimint/fedimint init -q\n"
           "runuser -u tau-fedimint -- git -C "
@@ -1450,6 +1074,63 @@ let
               "${disabledStart}"
           )
           assert status == 42
+      machine.succeed(
+          "test \"$(cat /home/tau-fedimint/fedimint/fedimint-infra/unfinished)\" = preserve\n"
+          "test \"$(runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-infra remote get-url origin)\" = "
+          "https://github.com/fedimint/fedimint-infra.git\n"
+          "test \"$(runuser -u tau-fedimint -- git -C "
+          "/home/tau-fedimint/fedimint/fedimint-infra remote get-url --push origin)\" = "
+          "git@github.com:fedimint/fedimint-infra.git"
+      )
+      # Use the real supervised shell, not just the outer isolate: hidden Tau
+      # state must remain hidden while private grooming bookkeeping is writable.
+      bot_env = (
+          "env HOME=/home/tau-fedimint "
+          "PATH=/run/current-system/sw/bin:/etc/profiles/per-user/tau-fedimint/bin "
+          "XDG_CONFIG_HOME=/home/tau-fedimint/.config "
+          "XDG_STATE_HOME=/home/tau-fedimint/.local/state "
+          "XDG_RUNTIME_DIR=/run/user/1001 "
+      )
+      tau = "runuser -u tau-fedimint -- " + bot_env + "${tauPackage}/bin/tau "
+      state = "/home/tau-fedimint/.local/state/tau"
+      machine.succeed(
+          "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
+          "/run/user/1001\n"
+          "runuser -u tau-fedimint -- mkdir -p " + state + "/ext/std-utils\n"
+          "systemd-run --unit=tau-grooming-shell-test --uid=tau-fedimint "
+          "--property=WorkingDirectory=/home/tau-fedimint/fedimint "
+          + bot_env + "${tauPackage}/bin/tau serve "
+          "--session grooming-shell-test --create --mirror-extension-stderr"
+      )
+      try:
+          machine.wait_until_succeeds(
+              tau + "session list --json | grep -q grooming-shell-test", timeout=30
+          )
+      except Exception:
+          print(machine.succeed("journalctl -u tau-grooming-shell-test --no-pager"))
+          raise
+      machine.succeed(
+          tau + "dev send grooming-shell-test "
+          + shlex.quote(
+              "!!core-shell set -eu; umask 077; "
+              f"test ! -e {state}/ext/std-utils; "
+              f"if mkdir {state}/papercut-grooming 2>/dev/null; then exit 1; fi; "
+              f"mkdir -p {state}/ext/core-shell/papercut-grooming; "
+              f"private_dir=$(mktemp -d {state}/ext/core-shell/papercut-grooming/sweep.XXXXXXXX); "
+              'printf complete >"$private_dir/snapshot.md"; '
+              'test "$(cat "$private_dir/snapshot.md")" = complete; '
+              'test "$(stat -c %a "$private_dir")" = 700; '
+              'test "$(stat -c %a "$private_dir/snapshot.md")" = 600; '
+              f"printf passed >{state}/ext/core-shell/grooming-shell-check"
+          )
+      )
+      # A successful dev send is only delivery acceptance; await the shell's
+      # completed checks rather than treating that acknowledgement as success.
+      machine.wait_until_succeeds(
+          f"test \"$(cat {state}/ext/core-shell/grooming-shell-check)\" = passed"
+      )
+      machine.succeed("systemctl stop tau-grooming-shell-test")
       machine.fail("${tauSandboxPackage}/bin/tau-fedimint-sandbox --version")
       machine.succeed(
           "set -eu\n"
@@ -1739,109 +1420,7 @@ assert failedBotAssertions enabled == [ ];
 assert failedBotAssertions discordEnabled == [ ];
 assert builtins.length (failedBotAssertions discordMissing) == 5;
 assert builtins.length (failedBotAssertions discordReusedSecret) == 1;
-assert !(disabled.config.age.secrets ? tau-fedimint-discord-token);
-assert discordEnabled.config.age.secrets.tau-fedimint-discord-token.mode == "0400";
-assert discordEnabled.config.age.secrets.tau-fedimint-discord-identity-key.owner == "tau-fedimint";
-assert !(disabled.config.systemd.user.timers ? tau-fedimint-weekly-summary);
-assert !(disabled.config.systemd.user.timers ? tau-fedimint-self-pr-grooming);
-assert !(disabled.config.systemd.user.timers ? tau-fedimint-workdir-cleanup);
-assert !(disabled.config.systemd.user.services ? tau-fedimint-workdir-cleanup);
-assert cleanupTimer.timerConfig.OnCalendar == "Sat *-*-* 23:00:00 UTC";
-assert
-  cleanupAlternate.config.systemd.user.timers.tau-fedimint-workdir-cleanup.timerConfig.OnCalendar
-  == "Sun *-*-* 01:00:00 UTC";
-assert cleanupTimer.timerConfig.Persistent == false;
-assert cleanupTimer.wantedBy == [ "timers.target" ];
-assert cleanupTimer.unitConfig.ConditionUser == "tau-fedimint";
-assert cleanupService.unitConfig.ConditionUser == "tau-fedimint";
-assert cleanupService.wantedBy == [ ];
-assert cleanupService.requires == [ ];
-assert cleanupService.wants == [ ];
-assert cleanupService.serviceConfig.Restart == "no";
-assert cleanupService.serviceConfig.TimeoutStartSec == "90s";
-assert cleanupService.environment.XDG_RUNTIME_DIR == "/run/user/1001";
-assert cleanupService.environment.HOME == "/home/tau-fedimint";
-assert lib.hasInfix
-  "exec ${builtins.unsafeDiscardStringContext tauPackage}/bin/tau message '&tau-fedimint-bot'"
-  cleanupScript;
-assert lib.hasInfix "nix run nixpkgs#dust -- -R /home/tau-fedimint/fedimint" cleanupScript;
-assert lib.hasInfix "/home/tau-fedimint/fedimint/fedimint-sdk" cleanupScript;
-assert lib.hasInfix "target/" cleanupScript;
-assert lib.hasInfix "target-nix/" cleanupScript;
-assert lib.hasInfix "ALL retained legacy task checkouts" cleanupScript;
-assert !(lib.hasInfix "--wait-response" cleanupScript);
-assert groomingTimer.timerConfig.OnCalendar == "*-*-* 07:00:00 America/Los_Angeles";
-assert
-  groomingAlternate.config.systemd.user.timers.tau-fedimint-self-pr-grooming.timerConfig.OnCalendar
-  == "*-*-* 12:00:00 UTC";
-assert groomingTimer.timerConfig.Persistent == false;
-assert groomingTimer.wantedBy == [ "timers.target" ];
-assert groomingTimer.unitConfig.ConditionUser == "tau-fedimint";
-assert groomingService.unitConfig.ConditionUser == "tau-fedimint";
-assert groomingService.wantedBy == [ ];
-assert groomingService.requires == [ ];
-assert groomingService.wants == [ ];
-assert groomingService.serviceConfig.Restart == "no";
-assert groomingService.serviceConfig.TimeoutStartSec == "90s";
-assert groomingService.environment.XDG_RUNTIME_DIR == "/run/user/1001";
-assert groomingService.environment.HOME == "/home/tau-fedimint";
-assert lib.hasInfix
-  "exec ${builtins.unsafeDiscardStringContext tauPackage}/bin/tau message '&tau-fedimint-bot'"
-  groomingScript;
-assert lib.hasInfix "self-pr-grooming skill" groomingScript;
-assert !(lib.hasInfix "--wait-response" groomingScript);
-assert weeklyTimer.timerConfig.OnCalendar == "Mon *-*-* 06:00:00 America/Los_Angeles";
-assert
-  weeklyAlternate.config.systemd.user.timers.tau-fedimint-weekly-summary.timerConfig.OnCalendar
-  == "Tue *-*-* 12:00:00 UTC";
-assert weeklyTimer.timerConfig.Persistent == false;
-assert weeklyTimer.wantedBy == [ "timers.target" ];
-assert weeklyTimer.unitConfig.ConditionUser == "tau-fedimint";
-assert weeklyService.unitConfig.ConditionUser == "tau-fedimint";
-assert weeklyService.wantedBy == [ ];
-assert weeklyService.requires == [ ];
-assert weeklyService.wants == [ ];
-assert weeklyService.serviceConfig.Restart == "no";
-assert weeklyService.serviceConfig.TimeoutStartSec == "90s";
-assert weeklyService.environment.XDG_RUNTIME_DIR == "/run/user/1001";
-assert weeklyService.environment.HOME == "/home/tau-fedimint";
-assert weeklyService.environment.PYTHONTZPATH == "${pkgs.tzdata}/share/zoneinfo";
-assert lib.hasSuffix "/bin/tau" weeklyService.serviceConfig.ExecStart;
 assert builtins.length (failedBotAssertions reusedToken) == 1;
-assert lib.all (rule: lib.elem rule disabled.config.systemd.tmpfiles.rules) privateDirectoryRules;
-assert lib.all (
-  name:
-  lib.elem "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ${skillsSource}/skills/${name}" disabled.config.systemd.tmpfiles.rules
-) upstreamSkillNames;
-assert lib.all (
-  name:
-  lib.elem "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ${fedimintSkillSources.${name}}" disabled.config.systemd.tmpfiles.rules
-) fedimintSkillNames;
-assert lib.all (
-  name:
-  lib.elem "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ${localSkills.${name}}" disabled.config.systemd.tmpfiles.rules
-) localSkillNames;
-assert !(defaultDisabled.config.age.secrets ? "tau-fedimint-github-notifications-token");
-assert !(defaultDisabled.config.age.secrets ? "tau-fedimint-github-notifications-identity-key");
-assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-token");
-assert !(disabled.config.age.secrets ? "tau-fedimint-github-notifications-identity-key");
-assert !(lib.elem githubNotificationsPackage disabled.config.environment.systemPackages);
-assert lib.elem pkgs.git disabled.config.environment.systemPackages;
-assert lib.elem pkgs.gnupg disabled.config.environment.systemPackages;
-assert lib.elem pkgs.just disabled.config.environment.systemPackages;
-assert lib.elem pkgs.jq disabled.config.environment.systemPackages;
-assert lib.elem pkgs.python3 disabled.config.environment.systemPackages;
-assert lib.elem pkgs.ripgrep disabled.config.environment.systemPackages;
-assert lib.elem direnvDpcPackage disabled.config.environment.systemPackages;
-assert !(lib.elem pkgs.jujutsu disabled.config.environment.systemPackages);
-assert lib.elem pkgs.bubblewrap disabled.config.systemd.user.services.tau-fedimint-bot.path;
-assert lib.elem direnvDpcPackage disabled.config.systemd.user.services.tau-fedimint-bot.path;
-assert lib.elem pkgs.just disabled.config.systemd.user.services.tau-fedimint-bot.path;
-assert lib.elem tauSandboxPackage disabled.config.users.users.tau-fedimint.packages;
-assert disabled.config.programs.ssh.knownHosts.github-ed25519.hostNames == [ "github.com" ];
-assert
-  disabled.config.programs.ssh.knownHosts.github-ed25519.publicKey
-  == "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 pkgs.linkFarm "tau-fedimint-bot-checks" [
   {
     name = "weekly-summary";

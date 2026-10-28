@@ -11,8 +11,10 @@ advertise: true
 # Groom Fedimint Tau bot papercuts
 
 Use this skill only when explicitly asked to review or groom the deployed bot's
-papercuts. It is an operator workflow, not a skill the bot needs mounted into its
-project sandboxes. Do not turn it into an automatic timer or scheduled job.
+papercuts. This operator workflow needs no mount into the bot's project sandboxes.
+For the separately authorized daily bot workflow, use
+`fedimint-bot-self-improvement`; it uses native history tools without operator
+SSH or deployment authority. Do not schedule this operator workflow.
 
 Papercuts are unredacted operational notes and may accidentally contain secrets.
 Keep raw reports, snapshots, agent/session identifiers, and archives private on

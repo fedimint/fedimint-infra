@@ -1,1236 +1,151 @@
 # Tau Fedimint bot
 
-## Communicate with the running bot
+The bot runs as `tau-fedimint` on runner-01, in the user systemd service
+`tau-fedimint-bot.service`. It handles GitHub work, admitted Discord requests,
+and scheduled maintenance through one coordinator.
 
-For authorized operator requests, prefer `tau message --wait-response` on
-runner-01 as the bot account. Discover the current session and coordinator
-before targeting them. The CLI sends literal stdin to the existing agent and
-returns one final reply without creating a sender agent or session. Follow the
-[general operator skill](../.agents/skills/fedimint-tau-bot/SKILL.md#communicate-with-the-existing-coordinator)
-for runtime discovery, the exact command, and delivery and timeout precautions.
-Sending a request requires authorization; it is not a read-only health check.
+## Where to look
 
-For diagnostic triage and post-deployment checks, follow the
-[debugging skill](../.agents/skills/fedimint-tau-bot-papercuts-debugging/SKILL.md).
+| Concern | Source |
+| --- | --- |
+| Service, sandbox, role prompts, schedules, and options | [`modules/tau-fedimint-bot.nix`](../modules/tau-fedimint-bot.nix) |
+| Enabled runner configuration and package pins | [`flake.nix`](../flake.nix), [`flake.lock`](../flake.lock) |
+| Bot task instructions | [`.agents/skills`](../.agents/skills) |
+| Configuration and real-sandbox checks | [`tests/tau-fedimint-bot.nix`](../tests/tau-fedimint-bot.nix) |
+| Secret recipients and encrypted sources | [`secrets.nix`](../secrets.nix), `secrets/` |
 
-## Browser navigation and screenshots
+## Operate the existing bot
 
-`agent-browser` and Chromium come from the locked nixpkgs input; no npm install
-or `agent-browser install` is needed. The system-profile wrapper is available
-both to the bot user and inside its isolate sandbox (which resets `PATH`).
-It selects the packaged Chromium and puts daemon sockets under
-`$XDG_RUNTIME_DIR/tau/agent-browser`, using the existing writable runtime mount.
-No host browser profile, credentials, new broker permission, or extra mount is
-provided.
+Use the [operator skill](../.agents/skills/fedimint-tau-bot/SKILL.md) to discover
+the current runtime and send an authorized request to its existing coordinator.
+Use the [debugging skill](../.agents/skills/fedimint-tau-bot-papercuts-debugging/SKILL.md)
+for read-only triage and post-deployment checks.
 
-Run browser commands inside the bot sandbox, with a distinct `--session` name
-for each independent task:
+Inspect the existing conversation for completion before resending a `tau message`.
+A timeout does not cancel accepted work. Use read-only checks to assess health;
+a live prompt starts work.
 
-```sh
-agent-browser --session web-check open https://example.com
-agent-browser --session web-check snapshot -i
-shot=$(mktemp /tmp/public/web-check-XXXXXX.png) || exit 1
-agent-browser --session web-check screenshot "$shot"
-agent-browser --session web-check close
-```
+Every service start clears the fixed `tau-fedimint-bot` session and starts a fresh
+coordinator. Repositories, Clank, and other persistent state survive; the
+coordinator recovers its queue from them. Coordinate deployments around active
+work, since activation can restart the service and interrupt agents and tools.
 
-The wrapper refuses Chromium sandbox-disabling flags, including the automatic
-`--no-sandbox` fallback in agent-browser 0.27.0's CI/container detection. If launch
-fails, diagnose the environment rather than bypassing the browser sandbox.
-This guard prevents accidental fallback; it is not a security boundary against
-arbitrary code run by the bot, which remains confined by isolate.
+The installed `tau-fedimint-sandbox` wrapper supplies the service's isolate
+profile without running the launcher. Even `dev print-prompt` initializes
+extensions. Follow the operator skill to inspect prompts without starting a
+second notifier.
 
-Agent-browser's native Chromium connection uses an unauthenticated CDP port on
-host loopback. Other local users or workloads could discover that port and
-control the browser, including accessing files visible inside its isolate.
-The operator explicitly accepts this as a non-issue for this deployment's
-trusted, single-user machine. This is not safe by default on a shared or
-untrusted host: revisit the transport/network boundary before introducing
-untrusted local users or workloads. Chromium's sandbox remains enabled; it
-does not authenticate CDP clients.
+## Credentials and containment
 
-The NixOS bot check runs navigation, a DOM interaction, PNG decoding, and
-Chromium's sandbox-status check as the bot UID inside the real, unmodified
-isolate profile. It uses a local fixture and a credential-free SSH agent socket;
-it neither sends a bot prompt nor contacts a website.
+The bot's writable project root is `/home/tau-fedimint/fedimint`. Core, SDK, and
+infra work reuse their main checkouts there, with one implementing engineer per
+repository under an update lock. Clank stores durable tasks outside the checkout;
+it is recovery state, not a source of authority.
 
-## Private Discord maintainer channel
+The sandbox intercepts `gh` through a host broker. The action token stays outside
+the sandbox; a dedicated SSH agent supplies Git access. Notification and Discord
+credentials are separate agenix secrets. See
+[`fedimint-bot-github-cli`](../.agents/skills/fedimint-bot-github-cli/SKILL.md)
+for supported commands, body-file imports, and branch publication.
 
-Runner-01 enables the operator-approved private channel using the independently
-pinned published extension and two operator-created encrypted agenix files.
-The bridge admits personal mentions from the three configured human maintainers
-and permits proactive coordinator alerts. Weekly reporting and GitHub delivery
-are unchanged. Setting `discord.enable = false` removes the subprocess,
-credentials, coordinator grants, and escalation prompt.
+Isolate guards against accidental agent actions, not hostile code. It shares the
+host network and exposes the configured runtime, state, and agent socket. Browser
+CDP uses unauthenticated host loopback; this is accepted for this trusted
+single-user deployment, not a safe default for a shared host.
 
-The operator has supplied the guild/channel and three human maintainer IDs;
-these are recorded in the runner configuration. The operator also
-confirmed that the app is installed and holds its token privately. Channel
-permissions and live connectivity have not been tested.
+Use `mktemp` to allocate unpredictable paths in the shared, non-listable
+`/tmp/public` dropbox and pass exact paths to delegates. Keep secrets and raw
+private traces in private state. The module protects isolate's backing `public`
+mountpoint from tmpfiles aging.
+To diagnose missing shared files in `/tmp/public`, inspect
+the **running inner daemon's** mount namespace; a fresh sandbox can work while
+the old daemon has lost its bind. A restart restores the bind but clears the
+session.
 
-Both Discord secret paths now have recipient policies in `secrets.nix`,
-matching the existing runner-01 bot credentials (runner-01 plus administrators).
-From the repository root, populate the token in your local editor:
+## GitHub and Discord
 
-```console
-just agenix-edit secrets/tau-fedimint-discord-token.age
-```
+GitHub ingress watches core, SDK, and infra. It is notification-triggered, not a
+complete activity feed. Comments require a direct bot mention; review requests
+must target the bot. Repository watch subscriptions persist after the notifier
+stops. Notification admission and permission lookup are separate from outbound
+broker authority.
 
-The recipe defaults to `$HOME/.ssh/id_ed25519.agenix`; pass your authorized
-identity file as its second argument if different. Enter only the bot token
-in the editor, not YAML or a shell command. Do not send it in chat or put it in
-command-line arguments; use a local editor without cloud synchronization.
-Only the resulting encrypted `.age` file should be tracked.
-Provision the independent stable identity secret separately, using
-`just agenix-edit secrets/tau-fedimint-discord-identity-key.age` when ready.
-Both encrypted files are wired into the enabled configuration. Editing a secret
-does not deploy the configuration; the new value takes effect after normal
-activation and harness restart.
+For task policy, use
+[`fedimint-maintainer-requests`](../.agents/skills/fedimint-maintainer-requests/SKILL.md)
+and [`fedimint-pull-request-review`](../.agents/skills/fedimint-pull-request-review/SKILL.md).
+Infra requests require native `write` or `admin` on **infra itself**. The
+historical-contributor helper is not a substitute for that permission.
+Repository access also does not prove that each dedicated token selects the
+repository; diagnose actual credential denials before changing scopes.
 
-Operator maintenance and live-validation checklist:
+Discord admits personal mentions from configured human maintainers in one
+private channel. Admission permits safe read-only assistance and a reply; it
+does not authorize source or GitHub mutations. Display names and aliases are
+presentation, not identity.
 
-1. Confirm the supplied destination is a maintainer-only ordinary guild
-   **text channel** and keep the approved **human** sender list current. Channel
-   membership is separate from the extension's sender allowlist.
-2. Confirm the installed Discord bot has view/send access to that channel. The prepared
-   bridge accepts only personal mentions of the bot in that exact channel.
-   It does not request privileged message-content access or all-message intake.
-3. Securely provision two independent agenix sources: a bot token (not a user
-   token) and stable identity secret text of at least 32 bytes. Follow the
-   existing secret recipient procedure; never put plaintext in Git, Nix,
-   prompts, tickets, logs, or chat. Add only encrypted `.age` files.
-4. Supply a compatible `tau-ext-discord` **package from an approved portable
-   pinned source**. Reviewed local revision
-   `fae57e20fb8376a4098ed31e104b579b675a1ecc` uses SDK/proto 0.10.0, wire 10.2,
-   whose credential-free handshake passed against deployed Tau wire 10.4.
-   The approved public source is pinned from
-   `radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git`.
-   Do not commit a workstation `git+file:` input or a raw `/nix/store` path.
-5. The following options describe the wiring; run the configuration
-   tests and runner closure build, then deploy through the normal runner
-   procedure. A live Discord receive/send test requires separate explicit
-   authorization; neither mock tests nor handshake tests prove channel access.
+The coordinator sends configured announcements and alerts needing external help
+to Discord; keep ordinary GitHub updates on GitHub. Use full issue/PR URLs in
+Discord. Sends suppress mentions, and provider acceptance does not imply that a
+maintainer has read the message.
 
-```nix
-services.tau-fedimint-bot.discord = {
-  enable = true;
-  package = approvedDiscordPackage;
-  guildId = actualGuildId;
-  channelId = actualChannelId;
-  allowedUserIds = approvedHumanMaintainerIds;
-  tokenAgeFile = ./secrets/tau-fedimint-discord-token.age;
-  identityKeyAgeFile = ./secrets/tau-fedimint-discord-identity-key.age;
-};
-```
+Provision credentials with `just agenix-edit`, using the recipient policy in
+`secrets.nix`. Discord needs independent token and stable identity secrets.
+Configuration checks are credential-free; they do not prove live channel access.
 
-The symbolic values above are a template, not deployable identities.
-Keep snowflakes as exact positive integers (Nix supports signed 64-bit
-integers); do not round-trip IDs through floating-point JSON tools.
+## Scheduled work
 
-The production configuration sets the operator-configured display label
-`Fedimint maintainers`, not a verified native Discord channel name.
-`displayName` becomes the extension's optional `conversations[].display_name`;
-`senderAliases` supplies existing `sender_aliases` entries (`user_id`, `alias`)
-for the already admitted dpc, m1sterc00lguy, and elsirion IDs. These labels are
-inert presentation, not identity lookup or authorization. The route stays
-`fedimint_maintainers` and the extension stays `maintainer-discord`.
-Incoming messages, replies, and proactive sends use the same configured
-channel presentation; retained reports keep their original labels.
+Read schedules and delivery prompts in the module; use these skills for task
+instructions:
 
-Enabled wiring requires the extension and both secrets rather than silently
-dropping escalation on startup failure. Agenix keeps decrypted sources under
-`/run/agenix` with bot-owned `0400` permissions. Isolate injects only
-`TAU_SECRET_DISCORD_BOT_TOKEN` and `TAU_SECRET_DISCORD_IDENTITY_KEY` from those
-files; Tau resolves and delivers only the declared secrets. No credential
-value enters the generated configuration or Nix store.
+| Task | Instructions |
+| --- | --- |
+| Weekly development summary | [`fedimint-weekly-dev-summary`](../.agents/skills/fedimint-weekly-dev-summary/SKILL.md) |
+| Own-PR grooming | [`self-pr-grooming`](../.agents/skills/self-pr-grooming/SKILL.md) |
+| Papercut self-improvement | [`fedimint-bot-self-improvement`](../.agents/skills/fedimint-bot-self-improvement/SKILL.md) |
+| Working-directory cleanup | Module's cleanup prompt |
 
-Only the coordinator receives `maintainer_discord_register`,
-`maintainer_discord_conversations`, and `maintainer_discord_send`. A global
-`discord:*` deny baseline keeps reactions, attachments, and other Discord
-tools unavailable. The conditional prompt permits one concise alert for an
-unexpected problem requiring external help, not routine progress. It requires
-safe evidence, the impact, attempted fixes, and the exact help needed.
-Standard tasks from GitHub notifications must not post routine acknowledgements,
-progress, status updates, or completion reports to Discord, including successful
-reviews and no-action dispositions. Their normal GitHub responses and internal
-task reports stay on the existing paths. Explicit scheduled weekly-summary
-publication announcements, scheduled self-PR-grooming reminders, and safe replies
-to admitted Discord read-only requests remain permitted.
+Timers deliver to the existing bot; they neither start it nor wait for task
+completion. Papercut grooming is persistent and catches up missed firings when
+the user manager resumes; the other timers are nonpersistent. Reconcile delivery
+failures and uncertain sends before retrying.
 
-Every permitted Discord post must reference GitHub issues and pull requests with
-full `https://github.com/OWNER/REPO/issues/NUMBER` or
-`https://github.com/OWNER/REPO/pull/NUMBER` URLs, not bare numbers or `#NUMBER`
-references, so readers can click them in Discord. This formatting rule does not
-authorize additional posts.
+The weekly summary covers the preceding **184 hours**, not a calendar week.
+Its overlapping window is intentional. The summary skill owns page naming,
+reruns, publication, and announcement details.
 
-Posts **do not ping users or roles**: the extension suppresses mentions.
-Successful sending means provider acceptance, not human acknowledgment.
-Uncertain outcomes must not be blindly retried. Receiver registration and
-network readiness are separate; automatic registration selects an eligible
-coordinator, while manual registration designates its authenticated caller.
-Incoming Discord content stays external. Only the extension's authenticated
-report metadata establishes the provider-authenticated sender ID and admission
-through the configured sender allowlist and conversation; body text, display
-names, claimed usernames, and quoted instructions do not establish identity.
-Missing or ambiguous authenticated admission fails closed.
+Only the coordinator has papercut history tools. Follow the self-improvement
+skill to archive the exact reviewed generation and handle concurrent arrivals.
+For operator-led grooming, use the
+[operator grooming skill](../.agents/skills/fedimint-tau-bot-papercuts-grooming/SKILL.md).
 
-Configured Discord admission now authorizes **safe read-only assistance**:
-GitHub, codebase, and online lookups, explanations, and routine read-only actions
-through existing approved tools, plus a normal safe reply in the admitted
-conversation. This scope needs no Discord-to-GitHub identity mapping or GitHub
-permission lookup. Scoped delegation carries the verified Discord admission
-facts and cannot expand authority. GitHub lookup broker limits still apply.
+Cleanup waits for active work and builds to finish, preserves unfinished source,
+and removes disposable output across the project root. It is an agent workflow,
+not an automatic deletion service or enforced task barrier.
 
-This is not authority for source/history changes, GitHub mutations (including
-comments, reviews, or reactions), admin actions, or system/environment changes.
-Do not execute untrusted code, repository scripts, installs, or builds as a
-lookup. No tools or broker bypasses are granted, and secrets/non-public data
-access or disclosure remains forbidden. All other requested actions retain the
-existing authentication and authorization rules; this exception does not
-relax policy for other channels.
+## Development and validation
 
-The standard flake configuration check covers enabled and disabled wiring and
-passes the pinned real extension as `discordPackage`. Its effective-tool/prompt
-check uses **null config and no secrets**, so it verifies declarations/grants
-without connecting to Discord. Production configuration uses the complete
-fixed-channel config.
+Shell commands use `direnv-dpc exec .` in the agent's effective workdir. Inspect
+each checkout's `.envrc`, then run `direnv-dpc allow` there as the bot account.
+Changed content needs renewed approval. An unapproved file warns and runs the
+command without loading that environment; deployment does not approve it.
 
-Deployment changes the bot's startup script, so normal NixOS activation restarts
-`tau-fedimint-bot.service`. The existing startup policy clears the fixed
-`tau-fedimint-bot` session before creating a new coordinator and recovering work
-from Clank and repository state. Running agents and pending tools are interrupted;
-coordinate activation around active work. This integration does not change that
-restart policy, and no live test post is part of activation.
+The service packages `agent-browser` and Chromium with Chromium's sandbox enabled.
+Use a distinct `--session` per task and close it afterward.
 
-## Weekly development summary
-
-Runner-01 enables `services.tau-fedimint-bot.weeklySummary.enable`. Its user
-timer `tau-fedimint-weekly-summary.timer` defaults to **Monday 06:00 California
-time** (`America/Los_Angeles`, following daylight saving time: 13:00 UTC in
-summer/PDT, 14:00 UTC in winter/PST);
-change `weeklySummary.onCalendar` to select another systemd calendar.
-The delivery time is configurable. Each new invocation captures the current UTC
-time once and covers the preceding **184 hours (7 days plus 16 hours)**, up to
-but excluding that endpoint, rather than a calendar week.
-The message includes exact half-open timestamps and a stable occurrence ID
-derived from the captured window end. This intentional overlap helps retain
-activity across weekly runs; items are deduplicated within a report, not
-suppressed across reports. DST changes or delayed execution can change the
-overlap, but not the 184-hour lookback.
-
-Reports use the exact Markdown heading `Week summary: D Month, YYYY` (unpadded
-day, full English month), from the captured endpoint's America/Los_Angeles date.
-For example, an endpoint of `2026-05-11T13:00:00Z` gives
-`Week summary: 11 May, 2026`. GitHub advises against colons in wiki filenames,
-so the portable filename/URL slug is `Week-summary-11-May,-2026.md` /
-`Week-summary-11-May,-2026`; the requested colon stays in the Markdown heading.
-Explicit reruns reuse that same page. Existing timestamp-named reports for the
-same window are renamed rather than duplicated; different-window same-date
-collisions require clarification rather than overwriting.
-Primary naming guidance: [GitHub — Adding or editing wiki pages, About wiki
-filenames](https://docs.github.com/en/communities/documenting-your-project-with-wikis/adding-or-editing-wiki-pages#about-wiki-filenames).
-GitHub derives its navigation title from the filename, so that title may omit
-the colon even though the report's visible H1 includes it.
-
-The oneshot service runs as the bot account in its existing HOME/XDG environment
-and invokes the pinned `tau message '&tau-fedimint-bot'`, with literal stdin and
-**without `--wait-response`**. It asks the existing coordinator to execute the
-installed `fedimint-weekly-dev-summary` skill, including safe wiki publication.
-After successful publication and verification, the prompt asks the coordinator
-to send the final wiki page URL to `fedimint_maintainers` via
-`maintainer_discord_send`. It forbids draft/unpublished links and blind retries
-after uncertain delivery; blocked or uncertain notifications are reported as such.
-It neither starts a new harness/notifier nor starts or restarts the bot.
-
-Transport semantics were checked against installed Tau `91d51d6`: exit zero
-means delivery acknowledged, not report completion or successful publication.
-The CLI does not retry. A disconnect before acknowledgement can mean delivery
-is uncertain, and killing the caller does not cancel already delivered work.
-The unit allows at most 90 seconds and has no automatic retry on any failure.
-Read its journal and the existing bot state before deciding whether to resend.
-An occurrence ID identifies the report; it is not transport deduplication.
-
-`Persistent=false` deliberately skips missed runs while the user manager/timer
-is inactive, including the first installation after that week's scheduled time.
-Deployment/activation does not itself request a report. Failures are visible in
-the service journal; there is no catch-up queue or completion monitor.
-Normal scheduling resumes at the next calendar occurrence.
-
-For an operator-approved rerun of an older report, use the installed oneshot
-unit's `ExecStart` command under the bot identity/environment, appending
-`--window-end YYYY-MM-DDTHH:MM:SSZ` with the original captured endpoint (any
-weekday/time). This reuses the same window, occurrence ID, and report page.
-Do not simply start the service to rerun a report: without an explicit endpoint
-it captures a new current time and therefore creates a new reporting window.
-Earlier manual instructions with Monday-midnight seven-day boundaries describe
-the old behavior; for a fresh manual test ask the skill to capture now and look
-back 184 hours instead.
-Never use a real message or wiki publication as a deployment health probe.
-On the runner, inspect the units and next scheduled time read-only (`systemctl
-cat` does not support the `--machine` user-manager connection):
+For changes to this integration, run the flake's bot check and build runner-01:
 
 ```console
-cat /etc/systemd/user/tau-fedimint-weekly-summary.service /etc/systemd/user/tau-fedimint-weekly-summary.timer
-systemctl --user --machine=tau-fedimint@.host list-timers tau-fedimint-weekly-summary.timer
+nix build .#checks.x86_64-linux.tau-fedimint-bot-config
+nix build .#nixosConfigurations.runner-01.config.system.build.toplevel
 ```
 
-`runner-01` enables one isolated Tau session under the dedicated
-`tau-fedimint` account. Its agenix credentials belong to the dedicated
-`fedimint-tau` GitHub account: one action token, one notification-reader token,
-one outbound SSH identity, and one stable notification identity key. Bot roles
-use the settings below. The editor inherits the configured default model
-(`services.tau-fedimint-bot.model`). Nix maps the
-`codex` provider name to the existing `chatgpt-dpc` provider profile. The
-profile keeps its actual name and credentials, so changing the backing account
-later requires only a new alias target.
-
-| Role | Model | Effort |
-| --- | --- | ---: |
-| coordinator | `codex/gpt-6.1-sol` | 0.35 |
-| engineer-junior | `codex/gpt-6.1-sol` | 0.25 |
-| engineer | `codex/gpt-6.1-sol` | 0.5 |
-| engineer-senior | `codex/gpt-6-astra` | 0.25 |
-| researcher | `codex/gpt-6.1-sol` | 0.5 |
-| researcher-senior | `codex/gpt-6-astra` | 0.5 |
-| reviewer | `codex/gpt-6-astra` | 0.5 |
-| editor | Configured default (`codex/gpt-6.1-sol` by default) | 0.5 |
-
-## Implemented shape
-
-- One normal Linux account, `tau-fedimint`, with all infrastructure
-  administrators' existing SSH authorized keys, a persistent user systemd
-  manager, and `fzf` in its per-user profile. This keeps `fzf` on `PATH` for
-  an attached host UI, including `bot-picker`, without adding it to the bot
-  service's isolated command path.
-- One fixed Tau session name, `tau-fedimint-bot`. Every service start removes
-  that session's previous durable state and uses `tau serve --create`, so a
-  restart begins with a fresh session instead of resuming conversation history.
-  Provider metadata and credentials, the repository checkout, and Clank state
-  live outside that session directory and remain intact.
-- Complete non-secret `harness.yaml` and `isolate.yaml` contents generated by
-  Nix and installed by the service at
-  `/home/tau-fedimint/.config/tau/harness.yaml` and
-  `/home/tau-fedimint/.config/isolate/isolate.yaml`. They reference runtime and
-  agenix paths but contain no secret values.
-- An isolate profile whose only writable project checkout is
-  `/home/tau-fedimint/fedimint`.
-- A writable `/tmp/public` bind matching the operator sandbox: a shared
-  `nobody:nogroup` mode-1733 dropbox for artifacts passed between agent sessions.
-  Agents cannot list it, so they use `mktemp` names and pass exact paths.
-- Private PID namespace and intercepted `gh` routed through `gh-broker`.
-  The GitHub token never enters the sandbox. Review-body imports use pinned
-  capabilities for the project root and `/tmp/public`; they do not depend on
-  the handler's repository-root cwd.
-- A dedicated SSH agent loaded from an agenix private key. The sandbox sees only
-  its socket, not the key or dpc's personal agent.
-- Read-only access to systemd-resolved's stub resolver file. The sandbox shares
-  the host network namespace, but its private `/run` would otherwise leave
-  NixOS's `/etc/resolv.conf` symlink dangling and prevent provider DNS lookups.
-- Coordinator, reviewer, researcher, and engineer workflows adapted from the
-  active local Tau harness: concise communication, durable task and active-queue
-  tracking, coherent delegation, read-only support roles, independent review,
-  verification, and clean repository history. Personal messaging, cross-sandbox
-  routing, provider identities, and unrelated tools are not copied.
-- The coordinator follows the personal harness's research, implementation,
-  review, and retrospective stages. It delegates specific research only when
-  needed, assigns engineers by task difficulty, and watches their independent
-  review and project checks. It verifies Git status and history before handing
-  a checkout to the next task. The coordinator passes literal requests separately
-  from interpretations, keeps each agent on one coherent task, and passes along
-  existing approval limits. Engineers preserve blocked work in an explicit WIP
-  checkpoint while the coordinator continues safe, independent queued work.
-- Proactive work stays within authorized goals: the coordinator handles routine
-  decisions and follow-ups without asking about every step. For uncertain
-  scope or decisions it can ask a fresh senior researcher to apply `proactive-work`.
-  Neither that skill nor a research recommendation grants new authority.
-  The coordinator must still respect read-only requests, routine-event handling,
-  and publication limits.
-- Engineers delegate longer external prose to an editor who works on temporary copies
-  under `/tmp/public`. The editor uses the installed `stop-slop` skill, preserves
-  technical meaning, and cannot start sub-agents. It must not edit project source
-  or history, commit, or publish. Engineers copy issue-free results back without
-  another editing pass; normal review and functional checks still apply.
-- Coordinators can request a read-only retrospective after complications
-  or user-requested rework. Researchers use `task-retrospective` and Tau's built-in
-  tracing skills to inspect relevant task evidence without blocking delivery.
-  They keep raw traces private and return evidence-backed findings. Coordinators
-  deduplicate and queue follow-ups under existing approval limits; findings do
-  not authorize changes.
-- A dedicated Git identity for the public `fedimint-tau` GitHub account:
-  `fedimint-tau <332691140+fedimint-tau@users.noreply.github.com>`. The generated
-  `.gitconfig` is installed in the bot home and mounted read-only in the sandbox.
-- A startup-only provider alias from `codex` to `chatgpt-dpc`. This rewrites
-  configured role model references; it does not rename, copy, authenticate, or
-  otherwise modify the provider profile.
-- The managed `fedimint/fedimint` checkout retains its HTTPS fetch URL but gets
-  an exact SSH push URL, where the dedicated agent supplies the bot key.
-  Startup refuses unexpected fetch or push URLs instead of broadening the
-  rewrite to other GitHub repositories. GitHub's published ED25519 host key is
-  pinned in the system SSH known-hosts configuration.
-- All Git SSH operations use the managed SSH configuration by default, including
-  initial wiki clones outside the managed checkouts. This avoids system SSH
-  config includes whose ownership is incompatible with the sandbox's user
-  namespace. Strict host-key checking and the dedicated agent remain unchanged;
-  this does not rewrite repository URLs or grant additional GitHub permissions.
-- `just` is present in both the bot service path and the system profile path
-  retained by isolate, so sandbox commands can resolve it. Project recipes can
-  still require the repository's development environment and tools beyond
-  `just`; the bot instructions require the repository's pinned development
-  shell rather than broadening the ambient toolchain.
-- Tau, `tau-ext-github`, `isolate`, `gh-isolate`, and `clank` packages pinned
-  as flake inputs.
-  Tau, `tau-ext-github`, and `tau-ext-discord` use compatible protocol 14 revisions.
-  `tau-ext-github` comes from its public Radicle repository through
-  the Iris HTTPS gateway. The inputs come from public sources and are locked to
-  explicit revisions.
-  Before activating this upgrade, stop all writers and preserve a verified,
-  private, consistent backup of the complete bot state. Include
-  `/home/tau-fedimint/.local/state/tau` (journals, Artifact objects and roots),
-  extension state, configuration, and repository/Clank recovery state. Retain
-  the old system closure. New readers accept legacy inline images, but old
-  binaries cannot read new reference-bearing journals. A journal-only backup
-  or NixOS generation rollback is not sufficient. To roll back, restore a copy
-  of the complete, consistent old state, retain both snapshots, and reconcile
-  any external side effects. The normal launcher clears the fixed session;
-  restarting does not resume it. Before deployment, pass a separate readiness
-  gate and obtain explicit authorization. Updating these pins alone does not
-  activate the new runtime.
-- A narrow writable Clank state directory at
-  `/home/tau-fedimint/.local/state/clank`. The bot can keep project tickets
-  without receiving write access to the rest of its home or state hierarchy.
-- One enabled inbound GitHub notification extension. It watches
-  `fedimint/fedimint` and `fedimint/fedimint-sdk`, dynamically admits actors with
-  effective push access in the relevant repository plus the verified numeric
-  user ID for `dependabot[bot]`, and follows GitHub's response headers for poll
-  timing and rate-limit delays. It does not add action tools or provide a
-  complete GitHub activity feed.
-
-This profile targets accidental-agent containment, not hostile-code isolation.
-`isolate` is a defense-in-depth guardrail and its own security documentation
-explicitly excludes hostile code actively trying to escape or steal data. The
-sandbox intentionally exposes its normal read-only runtime baseline (including
-system paths such as `/etc`, `/nix`, and `/sys`), the Tau config read-only, the
-project/Tau state/Tau cache/Tau runtime subtree read-write, and the dedicated
-SSH-agent socket. It inherits normal network access. `gh-broker` is a privileged
-host component with a narrow command protocol, but neither it nor role prompts
-turn the whole agent into a hostile-code security boundary.
-
-The `/tmp/public` bind exposes that directory only, not the rest of the host's
-`/tmp`. `systemd-tmpfiles` creates it as `nobody:nogroup` mode `1733`; if the
-path is replaced by a symlink, tmpfiles refuses to follow it and isolate also
-requires the bind source to be a directory. The sticky bit prevents users from
-removing files they do not own, while the missing read bit prevents directory
-listing. Artifact names are still capabilities: use unpredictable `mktemp`
-names, do not store secrets there, and send collaborators the exact path.
-
-The private `/tmp` backing used by the pinned isolate is
-`/tmp/isolate-<first 16 hex digits of SHA-256(canonical cwd)>`. The module
-excludes **only its `public` mountpoint** for the bot's fixed project directory
-from tmpfiles aging. Removing that otherwise-empty host-side directory detaches
-the child bind in a running namespace; a fresh sandbox working correctly does
-not prove a long-lived daemon still has the bind. Ordinary private scratch and
-other isolate instances remain subject to normal cleanup. The empty mountpoint
-persists until reboot or explicit removal while the bot is stopped.
-
-This is an integration workaround for isolate's backing-directory lifetime,
-not a change to sandbox authority. The VM regression runs the real managed
-profile, reproduces mount loss without protection, then checks that the module's
-rules preserve the live bind and host-visible file writes through cleanup while
-still deleting ordinary scratch. It also checks the real backing path, so an
-isolate upgrade that changes the naming scheme cannot silently invalidate the
-exclusion. Keep the managed project root a real directory, not a symlink.
-
-Always stop if temporary allocation fails; never continue with an empty output
-directory (which can turn `"$dir/file"` into `/file`). After deployment, verify
-`/tmp/public` is a mount in the **inner Tau daemon's** mount namespace and has the
-same device/inode as the host dropbox, not merely that the directory exists.
-Adding the exclusion does not restore a bind already lost by a live daemon.
-The normal service restart restores it but also clears the bot session, so first
-arrange a safe boundary for ongoing work.
-
-The GitHub broker explicitly authorizes this dropbox and the project root as
-separate review-body import roots. That authority applies only to the exact
-body-file command form documented below; it does not broaden other privileged
-host commands.
-
-## Project development shell
-
-Tau's shell extension uses the same prefix shape as the operator harness:
-
-```yaml
-shell:
-  prefix:
-    - direnv-dpc
-    - exec
-    - .
-```
-
-The initial shell working directory remains `/home/tau-fedimint/fedimint`.
-Tau applies the prefix after selecting each command's effective per-agent
-workdir, so `.` follows the `workdir` tool into a nested checkout such as
-`/home/tau-fedimint/fedimint/fedimint`. The container directory has no
-`.envrc`, while each nested repository can load its own environment.
-`direnv-dpc` is a separately named patched variant used only by the bot. When
-`.envrc` is absent it runs the command normally. When an `.envrc` is present
-but not allowed, it warns and runs the command without loading that file; it
-also removes environment inherited from a previously loaded project. This
-keeps ordinary inspection available without silently trusting changed
-repository code.
-
-Before project commands use the development environment, the bot must inspect
-the intended repository or worktree's `.envrc` and authorize that exact content
-from its current workdir:
-
-```console
-direnv-dpc allow
-```
-
-An administrator can perform the same approval on the host, but must run it as
-the bot account so the approval reaches the bot's home:
-
-```console
-sudo -u tau-fedimint -H sh -c \
-  'cd /home/tau-fedimint/fedimint/fedimint && direnv-dpc allow'
-```
-
-`direnv-dpc allow` is the bot's equivalent of the usual `direnv allow`. The
-approval is stored under the bot's private, persistent `~/.local/share/direnv`
-directory. Any `.envrc` content change invalidates it and requires a new review
-and explicit allow. Each nested checkout is authorized separately. The bot must
-not blindly authorize an unexpected `.envrc` change from an untrusted pull
-request or approve blanket directories. Deployment does not create or refresh
-approvals automatically.
-
-The isolate baseline already exposes `/run/current-system`, `/etc`, and `/nix`
-read-only. The `/nix` bind includes the Nix daemon socket, so the unprivileged
-`tau-fedimint` user can evaluate flakes and request builds without another mount
-or host tool grant. The account remains an untrusted Nix client: it is not in
-`nix.settings.trusted-users`, and the bot configuration does not add trusted
-substituters, signing keys, or Cachix configuration.
-
-The bot follows each repository's checked-in project instructions and reports
-the checks it actually ran. The module does not prescribe a project-specific
-build or lint command.
-
-## Deployment ownership repair
-
-The first `runner-01` activation on September 22, 2026 exposed a startup bug:
-systemd-tmpfiles implicitly created `.config`, `.local`, `.local/state`, and
-`.cache` as `root:root 0755` while processing their child paths. The bot then
-failed before reaching Tau because it could not create its config and state
-directories.
-
-The module now declares every required parent directory explicitly as
-`tau-fedimint:tau-fedimint 0700`. A subsequent activation repairs those exact
-already-existing parent directories as well as creating missing children. It
-does not recursively change ownership elsewhere in the home directory.
-
-Redeploy the fix from this repository:
-
-```console
-just apply-runner "01"
-```
-
-Then connect as root and verify the repaired paths and service state:
-
-```console
-stat -c '%A %U:%G %n' \
-  /home/tau-fedimint/.config \
-  /home/tau-fedimint/.config/tau \
-  /home/tau-fedimint/.config/isolate \
-  /home/tau-fedimint/.local \
-  /home/tau-fedimint/.local/state \
-  /home/tau-fedimint/.local/state/tau \
-  /home/tau-fedimint/.cache \
-  /home/tau-fedimint/.cache/tau
-stat -c '%A %U:%G %n' \
-  /home/tau-fedimint/.config/tau/harness.yaml \
-  /home/tau-fedimint/.config/isolate/isolate.yaml
-systemctl --user --machine=tau-fedimint@ show tau-fedimint-bot \
-  -p ActiveState -p SubState -p Result -p ExecMainStatus
-journalctl _UID="$(id -u tau-fedimint)" \
-  _SYSTEMD_USER_UNIT=tau-fedimint-bot.service -n 20 --no-pager
-```
-
-The directories should be owner-private and both generated config files should
-be `0600`. If the journal still reports `Permission denied`, do not continue;
-inspect the deployed tmpfiles rules and path ownership first.
-
-An earlier local build-sandbox smoke test reported
-`unknown configuration profile: codex-default`. That was not a provider error
-and was never observed on `runner-01`: the smoke command inherited
-`TAU_PROFILE=codex-default,credentialed-web-all` from the operator's active Tau
-session while loading the bot's independent harness config, which intentionally
-defines no such configuration profiles. The systemd unit now removes ambient
-`TAU_PROFILE`, `TAU_PROVIDER_ALIASES`, and `TAU_MODEL_ALIASES` so the
-Nix-generated startup configuration is deterministic.
-
-## Remaining setup and validation
-
-1. **GitHub authority:** the credentials belong to `fedimint-tau`, whose
-   organization and repository grants remain the authority boundary.
-   `gh-broker` constrains action-token command shape, but the dedicated SSH agent
-   is independent and the broker cannot restrict pushes over SSH.
-2. **Provider mapping:** keep the existing `chatgpt-dpc` provider profile; do
-   not rename or recreate it. The generated harness maps the role-facing
-   `codex` name to `chatgpt-dpc` with `aliases.providers.codex`. Provider
-   metadata and credentials are per Unix account, so inspect them while logged
-   in as `tau-fedimint` with `tau provider list` and
-   `tau provider show chatgpt-dpc`. Run
-   `tau provider login chatgpt-dpc` only if Tau reports that this existing
-   profile needs authentication. To change backing providers later, set
-   `services.tau-fedimint-bot.providerProfile` to the new canonical profile
-   name; roles remain on `codex/...`.
-3. **Checkout:** clone `fedimint/fedimint` directly at
-   `/home/tau-fedimint/fedimint`. Startup requires that exact managed checkout
-   and refuses unexpected fetch or push URLs.
-4. **Known users and services:** the inbound configuration watches
-   `fedimint/fedimint` and `fedimint/fedimint-sdk`. For each repository, it
-   admits actors from GitHub's complete collaborator roster when their effective
-   `permissions.push` is true, plus the explicitly configured GitHub numeric user
-   ID `49699333` for `dependabot[bot]`. The explicit allowlist applies only to
-   otherwise supported events in configured repositories; it does not require a
-   runtime account lookup. Roster lookup failures remain fail-closed for the
-   entire repository batch, including explicitly allowlisted actors. This
-   filters received activity; it does not authorize the bot to act. Delivered
-   activity includes the actor's native `author_association` and, when the
-   collaborator roster supplied it, separate `permission`, `role_name`, and local
-   observation-time facts. This adds no notification-path API requests. In
-   particular, trusted Dependabot admission does not bypass pull-request safety,
-   other backward-compatibility or consensus-approval restrictions. The coordinator
-   prompt applies a separate authorization policy to those facts before acting on
-   a GitHub request. The coordinator retains its narrower maintainer-only policy:
-   outside the narrow exceptions below, it requires known native `admin` or `write` permission on
-   `fedimint/fedimint`; unknown, stale, denied, malformed, rate-limited, or
-   unavailable facts remain denied.
-5. **Models:** confirm that `chatgpt-dpc` publishes the role models in the table
-   above. Keep model references in provider-neutral `codex/...` form.
-6. **Runtime validation:** inspect
-    `isolate plan --profile fedimint-bot --command -- gh --version`, verify the
-    sandbox cannot read either agenix secret or another home directory, verify
-    the SSH agent exposes only the bot key, and test allowed and denied broker
-    commands. After completing provider setup in step 3, confirm
-    `tau session list` and `tau attach tau-fedimint-bot` work from an ordinary
-    SSH login as `tau-fedimint`; only the owner-private
-    `/run/user/UID/tau` discovery subtree is shared with the sandbox. GitHub
-   authentication and Git pushes use only the dedicated bot identities.
-
-## Inbound GitHub notifications
-
-`runner-01` enables one inbound-only `tau-ext-github` instance with this fixed
-policy:
-
-- repositories: `fedimint/fedimint` and `fedimint/fedimint-sdk`
-- actor admission: current collaborators with effective push access in each
-  repository
-- poll timing: GitHub's `X-Poll-Interval` and `Retry-After` headers, plus
-  rate-limit reset headers when the reported quota is exhausted, with
-  conservative fallback and backoff when guidance is unavailable
-- automatic receiver role: `coordinator`
-- model-visible tools: unprefixed `github_register` and `github_user_context`,
-  enabled only for the coordinator role
-- manual self-designation: `github_register {}` (`{"enabled":true}` remains a
-  compatibility spelling)
-- identity lookup: `github_user_context {"username":"LOGIN"}` resolves the
-  numeric identity and reports native `permission` and separate `role_name` facts
-  across the configured repositories
-- conversation and inline comments: delivered only when their original body
-  contains an exact, case-insensitive `@fedimint-tau` mention
-- review requests: delivered only when they directly target the `fedimint-tau`
-  user; team, missing, and other-user targets are ignored
-
-The extension is notification-triggered and hydrates supported issue and pull
-request activity. It is not a complete GitHub activity feed. GitHub coalesces
-notifications. Each delivered activity includes its admitted author, activity
-type, time, canonical GitHub URL, and original body/details size. Body and
-structured details totaling up to 4096 UTF-8 bytes remain inline; larger
-content is omitted entirely with a notice directing the coordinator to fetch
-it from the canonical URL if needed. Genuine fetch, count, transport,
-malformed-activity, and other documented hard-limit failures remain
-fail-closed, while unsupported activity follows the extension's documented
-discard behavior.
-
-The two activity filters are independent opt-in extension settings. They do not
-change creation, `ready_for_review`, or submitted-review activity;
-submitted reviews need no mention. Actor admission still applies before these
-filters. For comments, the extension examines the original body before deciding
-whether omitted oversized content qualifies. Its conservative mention parser
-recognizes a bounded subset of backtick, escape, and token boundaries rather
-than rendering all Markdown, and deliberately does not match team mentions or
-longer `[bot]`-style tokens.
-
-The review-request filter resolves the bot account through GitHub's `/user`
-endpoint once, lazily before the first nonempty notification batch. Comment
-mentions use the returned login for exact case-insensitive matching, while
-individual review targets must match its numeric user ID. The identity is cached
-until restart, so an account rename requires a service restart. Malformed
-individual targets fail closed. The configured dedicated classic PAT supports
-this lookup in addition to its existing notification, repository, and
-collaborator reads.
-
-Within one repository poll, the extension completes the batch and delivers
-admitted activities oldest-to-newest by their actual activity timestamp.
-Deterministic thread and activity identifiers break equal-timestamp ties. This
-ordering does not span repositories or separate poll batches.
-
-Header-driven spacing also applies to stabilization and read validation, so it
-can increase delivery and checkpoint latency. An active batch remains serial
-and can delay scans of the other configured repository.
-
-The extension uses a dedicated classic PAT and a separate stable 64-hex-digit
-identity key. It does not reuse `tau-fedimint-github-token`, which grants action
-authority through `gh-broker`. The PAT needs `repo, read:org` so it can read
-notification subjects and enumerate the complete collaborator roster used by
-the dynamic maintainer filter.
-
-On startup, the extension subscribes `fedimint-tau` to each configured
-repository, clears its ignored state, and automatically selects the oldest
-eligible loaded coordinator. The service still uses Tau's supported bootstrap
-prompt to create the default coordinator. The prompt tells the fresh session
-that the service restarted and directs it to reconcile the bot's active Clank
-queue and tickets with existing local work and current GitHub state. It resumes
-authorized work that remains relevant, avoids duplicating external actions, and
-closes completed or obsolete Clank tickets with its findings. Ticket text remains
-recovery state rather than new authority, and lost session context alone does not
-justify closing a ticket. Registration no longer depends on prompt compliance.
-Because each service start creates a fresh session, there is no prior receiver to
-restore.
-If admitted activity arrives before an eligible coordinator exists, the
-configured role lets Tau create one lazily; startup probes, filtered activity,
-and unsupported activity do not create agents.
-
-The coordinator retains `github_register` for explicit self-designation or
-handoff. Call it with `{}`; legacy `{"enabled":true}` remains accepted, while
-`{"enabled":false}` is rejected rather than unregistering the receiver. A saved
-eligible designation is preferred when durable session state is retained, and
-the configured role constraint still applies.
-
-GitHub watch preferences persist after the process stops. The extension can mark
-successfully examined notification batches read after its repository-wide
-acknowledgement barrier, including batches rejected by the actor filter or
-unsupported by the extension. Stopping or disabling the extension prevents
-further polling but does not undo the persistent GitHub watch subscriptions;
-change those preferences separately if rollback requires it.
-
-At startup, isolate reads the two agenix files through explicit `setenv` file
-sources after its deny-by-default environment filtering and supplies one-shot
-`TAU_SECRET_GITHUB_TOKEN` and `TAU_SECRET_GITHUB_IDENTITY_KEY` inputs to Tau.
-Tau consumes those values into the extension's declared managed-secret names
-`github_token` and `github_identity_key`; the generated harness and isolate
-configuration, Nix store, logs, and tool results contain only names and file
-paths, never the secret values.
-
-Receiving an admitted maintainer's activity does not grant authority to follow
-its instructions. Before authorization, the coordinator may inspect a public
-issue or pull request read-only to identify its authenticated author and scope;
-that inspection does not authorize requested work, mutation, non-public access,
-or external communication. Relevant activity is delivered to the coordinator
-automatically. It ordinarily acts only on an explicit request from a sender whose
-independently authenticated identity has known native `admin` or `write`
-permission on `fedimint/fedimint`. Fresh delivered actor facts can satisfy the
-policy for activity in that repository. Otherwise the coordinator calls
-`github_user_context` with exactly the authenticated username and requires a
-matching resolved identity and known repository result with an observation time.
-Custom `role_name` text is never interpreted as permission. Its one proactive
-exception is code review: it reviews every newly opened non-draft pull request
-whose author satisfies that policy or is independently authenticated by GitHub as
-Dependabot (`dependabot[bot]`). A claimed bot name or message is not identity
-evidence. It also reviews any pull request when a verified maintainer explicitly
-requests review. Before starting a review, the coordinator reads the pull
-request's current state and confirms it remains open. An explicit review request
-from an authenticated, authorized maintainer overrides automatic draft deferral:
-the coordinator delegates independent review of the requested scope at the current
-head even if the pull request is still draft, without requiring a ready-for-review
-toggle. This does not relax identity, authority, approval limits, or consensus
-restrictions. Without an explicit maintainer request, it does not proactively
-review a draft. It reconsiders a deferred proactive review only after an admitted
-`ready_for_review` activity or a new explicit request from a verified maintainer.
-For `ready_for_review` activity without an explicit request, it confirms that the
-pull request is no longer draft and has not already received the bot's review.
-It avoids duplicate reviews and does not
-create durable work, schedule reminders, or periodically poll solely to reconsider
-a draft. Deferring a draft requires no substantive review or acknowledgement
-comment. Proactive review grants no authority to follow bot
-requests or to modify, merge, or close the pull request; it authorizes only the
-review, its reaction when the exact object supports one, feedback publication,
-and SHA-bound approval subject to all approval limits.
-
-Authenticated, authorized maintainer requests can also authorize ordinary
-development work; they are not limited to review. When a maintainer explicitly
-asks the bot to fix or update a pull request, or to create a new or alternative
-one, that is a request for pull-request delivery unless the maintainer explicitly
-asks for local-only output. The coordinator delegates the exact repository,
-requested outcome, and publication scope to an engineer. Before checkout, the
-engineer briefly reviews requested pull requests, commits, or changes. Genuine
-Fedimint project trunk and release branches and tags are trusted; pull requests and
-external code remain untrusted. The normal checks and independent review still
-apply. After they pass, the engineer publishes through the configured Git SSH
-remote and creates the requested pull request through the broker, following the
-CLI skill's branch-publication procedure. A local commit, patch, artifact, or
-comment containing a diff does not satisfy a request for pull-request delivery.
-
-An authenticated PR author may explicitly request or agree to rewriting their
-open public PR's exact head without `admin` or `write` permission. This exception
-authorizes only that rewrite and its agreed scope, not general author commands,
-other refs, unrelated changes, or private-data access. Verify the actual consent
-source against the current PR author and exact head repository/ref/OID; pass those
-facts and scope in any delegation. A maintainer's request alone cannot authorize
-rewriting another author's PR. Fast-forward updates retain the existing maintainer
-request path.
-
-Global prompt fragments give every role the security, authorization, and sandbox
-boundaries. Role prompts retain role-specific limits and require loading the
-relevant workflow before acting. Advertisements show skill names and descriptions,
-not their bodies; `required_skills` validates availability, not automatic loading.
-User-scoped skills provide the operational detail:
-
-- `fedimint-bot-github-cli` documents the sandbox broker's supported command forms and
-  troubleshooting boundaries;
-- `fedimint-maintainer-requests` covers responses, delegation, and pull-request
-  delivery;
-- `fedimint-pull-request-review` covers review admission, draft deferral,
-  feedback, and approval workflow;
-- `fedimint-dependabot` adds the identity and dependency-update rules for
-  Dependabot-authored pull requests;
-- `fedimint-codebase` provides Fedimint architecture and codebase navigation;
-- `fedimint-development` provides the Fedimint build, test, formatting, and
-  development workflow;
-- `pr-submissions-checklist` provides Fedimint pull-request preparation
-  guidance.
-
-The skills are installed in the bot user's skill directory from immutable,
-pinned Nix store paths beside the existing review skills. The Fedimint workflow
-skills opt into prompt advertisement from user scope; Tau advertises their names
-and descriptions, then loads their full text only when the agent selects one.
-The bot-specific CLI name avoids colliding with the workstation's generic
-`github-cli` skill during project discovery. Operator debugging and grooming
-skills remain discoverable on the workstation. On a future activation, tmpfiles
-removes the old bot-managed `github-cli` link from the dedicated bot user's skill
-directory; workstation user skills are not touched.
-
-Eligible changes receive formal approval after independent PASS for the exact
-inspected SHA, using the broker's SHA-bound approval form. The coordinator rechecks
-the head before submission and obtains a new review if it has changed. Binding
-prevents an approval from attaching to a different unreviewed commit; it is not
-an atomic current-head comparison and does not prevent concurrent pushes.
-Alternative clients and raw API write bypasses remain forbidden.
-Approval assesses the code change, not CI execution status. CI that is still
-running, failing, missing, or otherwise non-passing does not by itself block
-approval. A CI outcome matters only when it establishes a substantive correctness
-or security finding in the code change. This does not change the separate
-implementation-check or merge-policy requirements.
-
-Security findings in a PR must be compared with the project's current trunk,
-using the actual vulnerable behavior rather than only changed lines or the PR's
-base commit. The independent review records both inspected SHAs and the comparison
-reasoning; the coordinator helps obtain missing trunk evidence through supported
-reads. A bounded source comparison can establish applicability without an
-exploit or exhaustive absence proof.
-When the PR introduces a vulnerability confirmed absent from trunk, the bot
-discloses it normally in the PR, including trigger conditions, impact, and fix
-guidance. It must not withhold the finding, make it vague, or insist on private
-disclosure solely because it is security-related or theoretically sensitive.
-There is no additional release-status gate. Findings already present on trunk,
-or whose trunk applicability remains unresolved, retain existing security
-handling. Publication authority and the ban on exposing credentials or private
-data remain in force, but do not turn a confirmed PR-only defect explanation into
-private data. The main security prompt applies this rule across roles, and
-`fedimint-pull-request-review` supplies the comparison and delegation workflow.
-
-For every authorized request delivered through an independently authenticated
-GitHub notification, the coordinator publishes its substantive response as a
-comment on the originating issue or pull request, or on the relevant comment
-thread when the broker supports that reply. A reaction, internal report, or
-artifact alone does not satisfy that response. It first checks for an existing
-bot reply to avoid duplicates, uses only broker-supported comment forms, and
-reports a failed or unsafe-to-target publication honestly rather than claiming
-delivery.
-
-The pinned broker supports bounded ordinary issue and pull-request collaboration.
-Each mutation is a separate command whose result must be checked before the next
-step:
-
-```console
-gh issue create -R OWNER/REPO --title TITLE --body BODY
-gh issue create -R OWNER/REPO --title TITLE --body-file FILE
-gh issue edit NUMBER -R OWNER/REPO --title TITLE
-gh issue edit NUMBER -R OWNER/REPO --body BODY
-gh pr edit NUMBER -R OWNER/REPO --title TITLE
-gh pr edit NUMBER -R OWNER/REPO --body-file FILE
-gh pr create -R OWNER/REPO --base BASE --head '[OWNER:]tau/BRANCH' --title TITLE --body BODY [--draft]
-gh pr create -R OWNER/REPO --base BASE --head '[OWNER:]tau/BRANCH' --title TITLE --body-file FILE [--draft]
-gh issue close NUMBER -R OWNER/REPO
-gh issue close NUMBER -R OWNER/REPO --reason 'not planned'
-gh issue reopen NUMBER -R OWNER/REPO
-gh pr close NUMBER -R OWNER/REPO
-gh pr reopen NUMBER -R OWNER/REPO
-gh pr ready NUMBER -R OWNER/REPO
-gh pr ready NUMBER -R OWNER/REPO --undo
-gh issue comment NUMBER -R OWNER/REPO --body BODY
-gh pr comment NUMBER -R OWNER/REPO --body-file FILE
-```
-
-Issue and pull-request edits also accept one existing-label or concrete-assignee
-delta with `--add-label`, `--remove-label`, `--add-assignee`, or
-`--remove-assignee`. Pull-request edits accept one concrete user or same-owner
-team reviewer delta with `--add-reviewer` or `--remove-reviewer`. Metadata
-changes cannot be combined with title or body changes. Inline `--body` is
-supported for issue creation, issue/PR edits, and issue/PR conversation comments.
-Secure `--body-file` forms are available for those content operations. Formal
-comment and request-changes reviews remain file-backed:
-
-```console
-gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
-gh pr review NUMBER -R OWNER/REPO --request-changes --body-file FILE
-```
-
-The broker also supports named label discovery, exact paginated reads for
-labels, assignees, milestones, PR reviews/files/commits/requested reviewers and
-issue labels/events/timeline, and a singleton conversation-comment read. It can
-edit the bot's own conversation or line-review comment only through the
-author-checked explicit-ID forms:
-
-```console
-gh api --method PATCH repos/OWNER/REPO/issues/comments/COMMENT_ID --raw-field body=TEXT
-gh api --method PATCH repos/OWNER/REPO/pulls/comments/COMMENT_ID --raw-field body=TEXT
-```
-
-Permanent deletion, merge, changes to an existing pull request's base
-or head identity, moderation, administration, review dismissal, auth/config access, and
-arbitrary API calls remain denied. Branch publication uses the configured Git SSH
-remote rather than the GitHub broker. The broker's upstream `docs/collaboration.md` is the
-complete executable capability contract.
-
-Non-fast-forward updates are allowed for authorized work on verified bot-owned
-`tau/` PR heads and for other PR heads with their authenticated author's explicit
-rewrite consent. Bot ownership alone does not authorize unsolicited work.
-The [CLI skill](../.agents/skills/fedimint-bot-github-cli/SKILL.md)
-documents the exact authorization, contribution-preservation, expected-OID lease,
-excluded-ref, and verification procedure. Dependabot remediation remains limited
-to a new replacement PR.
-
-The broker cannot read enough information to establish a branch's effective
-protections and rulesets. Missing protection reads alone do not block publication
-or prove a branch unprotected: GitHub enforces protections on the ordinary bot
-SSH identity's push, without administrative bypass. Known protected targets and
-ambiguous eligibility still block publication. Follow the CLI procedure rather
-than probing forbidden endpoints or routing around rejections.
-
-The coordinator posts the delivered pull request URL on the originating
-discussion. It reports publication as blocked only after an observed broker,
-Git SSH, permission, or configuration failure, or when installed documentation
-and configuration establish that the operation is unsupported. It does not infer
-a blocker without evidence, probe with denied mutation help, bypass policy, or
-repeat failed mutations in a loop. After an ambiguous result it inspects current
-remote and pull-request state before deciding whether a retry is safe, preventing
-duplicate branches or pull requests.
-
-The coordinator acknowledges each notification as soon as it verifies its
-provenance, repository, and exact target. It reacts on the exact notified object
-if that object supports a reaction, without delegating the acknowledgement or
-waiting for disposition or task completion. `+1` means
-action is warranted, not that work is complete; `eyes` is an “I've seen it”
-placeholder when no better reaction applies yet; and `-1` means ignored or
-prevented by policy. The coordinator may also add
-`laugh`, `confused`, `heart`, `hooray`, or `rocket` when appropriate, and may
-add multiple reactions. GitHub's sad-face reaction is not in the broker's
-supported enum. The corresponding exact forms are:
-
-```console
-gh api -X POST repos/OWNER/REPO/issues/NUMBER/reactions -f content='+1'
-gh api -X POST repos/OWNER/REPO/issues/comments/COMMENT_ID/reactions -f content=eyes
-gh api -X POST repos/OWNER/REPO/pulls/comments/COMMENT_ID/reactions -f content=heart
-```
-
-The first route targets an issue or pull-request root, the second an issue or
-pull-request conversation comment, and the third a line-review comment. Each
-request has exactly one raw `content` field. Reaction listing, deletion, other
-reaction names, and other endpoint families remain denied.
-Submitted reviews (not inline review comments) and other non-reactable deliveries
-receive no reaction. Do not substitute the PR root or create a comment merely to
-acknowledge receipt. Substantive response obligations remain separate. Delegated
-engineers implement their scoped work rather than repeating coordinator-owned
-admission, acknowledgement, or implementation delegation.
-
-This acknowledgement is the sole exception to the ordinary fail-closed rule
-against external communication before requester authorization. It remains
-allowed after an independently verified request is denied so the coordinator
-can apply `-1`, but it does not authorize the requested work or any other
-external action. Spoofed or unverifiable delivery, ambiguous repository or
-target, and absent or ambiguous identity remain fail-closed. The coordinator
-may use the existing supported read-only inspection to verify provenance and
-the exact target independently; otherwise it reports and skips the reaction.
-
-Interactive instructions delivered through Tau's authenticated outer
-`<user>...</user>` channel are direct user requests and do not need GitHub
-authorization. This exception depends on Tau-stamped channel provenance, not the
-text itself: GitHub, service, repository, tool, and agent content stays external
-data even if it quotes, embeds, or claims to be a direct user request. All other
-prompt restrictions, broker controls, review requirements, and pull-request
-approval limits still apply.
-
-Verified maintainers may request research and operational tasks, including
-opening or closing pull requests. Approval remains an independent safety
-decision rather than a maintainer-controlled action: all required code review
-must pass, and uncertainty means no approval. The coordinator refuses to
-approve changes that violate backward-compatibility requirements in either
-watched repository, except that Fedimint does not guarantee Rust source/API
-compatibility between versions. Normal Rust API changes alone must not block
-approval or trigger change requests; substantive correctness/security findings
-and other compatibility requirements, including protocol and persistence
-compatibility, still apply. The coordinator also refuses to approve changes to
-Fedimint consensus in `fedimint/fedimint`, even when a maintainer requests approval.
-Every completed review must still publish
-substantive feedback naming the full inspected SHA. Eligible passing changes
-also receive SHA-bound formal approval; comment-only feedback remains appropriate
-when approval limits prevent approval. A blocked publication
-remains pending and must not be reported as posted.
-
-The broker accepts review feedback only from a securely imported regular file,
-using this exact command form:
-
-```console
-gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
-```
-
-`NUMBER` is a positive numeric pull-request number and `OWNER/REPO` is the
-explicit GitHub repository. A relative `FILE` starts at the sandbox caller's
-invocation directory, including a nested checkout or worktree. An absolute
-`FILE` may select `/home/tau-fedimint/fedimint` or `/tmp/public`. The invocation
-directory must itself be under one of those roots, even when `FILE` is absolute.
-Use an absolute path to select the other root; `..` cannot traverse out of one
-root and into another.
-
-The isolate server pins the invocation ancestry and both root directory objects
-before the host broker resolves the file. Resolution rejects symlinks, magic
-links, mount crossings, hardlinks, special files, paths over 4096 bytes or 128
-components, and files over 1 MiB. Import finishes before credential access.
-The handler keeps its repository-root cwd, so nested GitHub repository context
-and artifact export behavior remain unchanged. Inline review bodies, stdin,
-alternate flag ordering, and raw review API writes remain denied.
-Request-changes reviews use the same secure file-import contract with
-`--request-changes --body-file FILE`.
-
-Findings tied to one exact diff line can instead use the broker's separate
-standalone line-comment capability:
-
-```console
-gh api -X POST repos/OWNER/REPO/pulls/PR/comments \
-  -f body='This condition should use the validated value.' \
-  -f commit_id=0123456789abcdef0123456789abcdef01234567 \
-  -f path=src/policy.rs \
-  -f line=42 \
-  -f side=RIGHT
-```
-
-This form requires exactly five unique raw fields. `commit_id` is the full
-40-character lowercase hexadecimal commit inspected by the reviewer. `path` is
-a normalized repository-relative Git path. `line` is canonical positive decimal
-in `1..=4294967295`; the broker validates and converts only this field to a typed
-number. `side` is `LEFT` for a deletion and `RIGHT` for an addition or context
-line. Caller-typed `-F` fields, multiline ranges, file-level comments, deprecated
-positions, pending-review arrays, whole-review API writes, edits, and deletion
-remain denied.
-
-The broker's unpinned approval form is not authorized for bot use. Use only:
-
-```console
-gh pr review NUMBER -R OWNER/REPO --approve --commit-id FULL_SHA
-```
-
-`FULL_SHA` must be the independently reviewed full 40-character lowercase
-hexadecimal commit. This bounded form sends `event=APPROVE` with `commit_id` and
-accepts no body; substantive feedback is published separately. Recheck with
-`gh pr view NUMBER -R OWNER/REPO --json headRefOid` immediately before approval.
-Verify the returned review and read remote reviews with
-`gh api --paginate repos/OWNER/REPO/pulls/NUMBER/reviews`: match the bot's review
-ID and author, `state=APPROVED`, and the exact `commit_id`. Inspect remote state
-before retrying an ambiguous submission; unresolved delivery remains pending,
-not a claimed approval or a reason to blindly duplicate it.
-
-Pull requests opened by the bot must use a head in the exact `tau/` namespace,
-for example `tau/topic`. The trusted wrapper selects that namespace before the
-intercepted `gh` argument, so sandbox callers cannot replace it with a
-post-`gh` broker option. The upstream broker's omitted default remains `dpc/`,
-but this deployment explicitly configures `tau/`. This constrains pull-request
-creation only; the dedicated SSH agent remains the authority path for pushes.
-
-The separate `fedimint-github-requester` helper retains list-all maintainer and
-historical-contributor operations plus its targeted contributor check. Native
-per-user repository-permission lookups moved to `github_user_context`.
-Contribution scanning is not implemented by the extension, so the existing
-historical-contributor operations remain available.
-
-The checked-in deployment metadata identifies only the ordinary token's agenix
-file, not its GitHub scopes or repository grants. This source review therefore
-cannot establish that the existing credential can perform these new writes, and
-does not claim a live permission check. Before deployment, verify independently
-that the ordinary token has Issues-write permission for root and conversation
-reactions and Pull-requests-write permission for line-review reactions and new
-line comments. Do not expose, replace, or broaden the credential merely to test
-the broker grammar.
-
-### Body-import rollout gate
-
-Do not enable the import authority merely because this source configuration
-evaluates. First activate the preceding mount-only `/tmp/public` generation,
-without this change's new package pins or import settings. Build this candidate
-generation but do not switch the live service to it. Then inspect a fresh,
-credential-free candidate sandbox:
-
-1. On the host, confirm no mount exists strictly below either
-   `/home/tau-fedimint/fedimint` or `/tmp/public`.
-2. In the fresh sandbox mountinfo, confirm exact binds at both roots and no
-   mount strictly below either one. The private ancestor `/tmp` followed by the
-   exact `/tmp/public` bind is expected.
-3. Confirm the effective isolate plan has no raw bubblewrap arguments, nested
-   mount/overlay operation, or generated symlink destination below either root.
-4. Confirm typed `pid: { mode: private }` is effective, the sandbox has its own
-   procfs, and a sandbox process cannot see the host exec-priv sidecar or broker
-   `/proc/PID/fd` entries.
-5. In a temporary candidate configuration, enable both `import_roots` and the
-   literal `--import-context-fd 3` together while keeping credentials
-   unavailable and the live service disabled. Exercise a nested-cwd relative
-   project file and an absolute `/tmp/public` file; both must reach the missing-
-   credential failure. Confirm outside-root, symlink, hardlink, special-file,
-   and root-escaping inputs fail at import before credential access.
-
-Only after these checks pass should a later deployment activate `import_roots`
-and the broker's literal `--import-context-fd 3` option atomically. If either
-side is absent or any root contains a child mount/overlay, leave import
-authority disabled and investigate rather than falling back.
-
-## GitHub requester policy
-
-The remaining list helper fixes `fedimint/fedimint` as the canonical project and
-uses only intercepted `gh` calls:
-
-```console
-fedimint-github-requester check USERNAME contributor
-fedimint-github-requester list maintainers
-fedimint-github-requester list contributors
-```
-
-`list maintainers` returns collaborators with effective push access visible to
-the action credential. It is not used to authorize a named requester. Per-user
-authorization first uses `github_user_context`. Known native `admin` or `write`
-on that exact repository authorizes under the global policy. A known `read` or
-`none` result may fall back to the retained historical-contributor check,
-preserving the previous global `either` policy. Unknown or failed permission
-lookups never fall back, and custom `role_name` text cannot override native
-permission. The coordinator's role-specific GitHub work policy remains narrower
-and does not use the contributor fallback.
-
-`check USERNAME contributor` and `list contributors` have a deliberately
-different meaning: the username appears in GitHub's historical
-commit-contributor list. GitHub caches that list for several hours, and appearing
-in it does not imply current repository access. This preserves the previous
-global authorization policy; it is not a claim that contributors are
-maintainers.
-
-The helper buffers and validates complete paginated list results. The lookup
-tool independently resolves the requested login to its immutable numeric
-identity and validates each permission endpoint's returned identity. Unknown
-tool results, identity mismatches, missing observations, authentication
-failures, insufficient token visibility, API errors, rate limits, malformed
-responses, and broker denials remain fail-closed.
-
-The extension uses the existing dedicated classic notification PAT and
-configured repository set for identity lookup. Successful permission
-observations are cached for 300 seconds, strictly below the extension's
-twelve-hour maximum. Insufficient visibility produces an `unknown` result; it
-must not trigger credential, scope, repository, or write-power expansion.
-
-This prompt policy guides the coordinator but is not a security boundary and
-does not authenticate ingress by itself. Keep service-side sender
-authentication and admission controls separate.
-
-## Daily self-PR grooming
-
-Runner-01 enables `services.tau-fedimint-bot.selfPrGrooming.enable`.
-`tau-fedimint-self-pr-grooming.timer` requests the installed `self-pr-grooming`
-skill daily at **07:00 America/Los_Angeles**; override `selfPrGrooming.onCalendar`
-to change it. Like the weekly-summary timer, it is nonpersistent and sends one
-message to the existing bot without starting it, waiting for completion, or
-retrying an uncertain delivery.
-
-The bot reviews its own open PRs in `fedimint/fedimint` and
-`fedimint/fedimint-sdk`, verifies GitHub author identity, and closes clearly
-obsolete or unhelpful PRs with an explanation. Inactivity alone does not justify
-closure. The bot sends one consolidated reminder to the existing
-`fedimint_maintainers` Discord destination for useful PRs and uncertain cases
-awaiting maintainer decisions. It uses durable Clank state to prevent duplicate
-daily sweeps and limit unchanged reminders to once per PR per seven days. This
-task does not authorize unsolicited code changes, branch rewrites, merges, or
-grooming other authors' PRs. Timer success means message delivery, not completion
-of grooming or receipt by a maintainer.
-
-## Weekly working directory cleanup
-
-Runner-01 enables `services.tau-fedimint-bot.workdirCleanup.enable`.
-`tau-fedimint-workdir-cleanup.timer` sends a cleanup request every Saturday at
-**23:00 UTC**; override `workdirCleanup.onCalendar` to change the schedule. Like
-the other scheduled messages, it is nonpersistent. The delivery service does not
-start the bot or retry uncertain delivery; it reports delivery, not task completion.
-
-The prompt tells the bot to finish all started work, including delegates and
-builds, and defer new tasks until cleanup completes. The bot must preserve the
-configured main repositories and unfinished source, and check that temporary
-clones and generated `target/` and `target-nix/` directories throughout the project
-root are disposable before deleting them. It then runs
-`nix run nixpkgs#dust -- -R <dir>` on the working directory to inspect other large
-non-essential items. The bot must protect unfinished or unpublished work, active
-repositories/builds, bookkeeping, credentials and Tau persistent state, and skip
-and report uncertain items. It reports removals, recovered space when measurable,
-total remaining usage, and the largest retained build directories with reasons,
-then resumes its normal queue.
-This is an agent instruction, not an automatic filesystem deletion service or
-a runtime-enforced task barrier.
-
-### Repository reuse
-
-Core and SDK tasks reuse their configured main checkouts. The coordinator queues
-modifying and building tasks per repository rather than creating per-task clones,
-Git worktrees or Jujutsu workspaces. One engineer holds the main repository's
-update lock from checkout through implementation, review fixes, final verification
-and history cleanup. Read-only agents may inspect immutable revisions concurrently
-without changing the checkout or running competing builds.
-
-Before switching tasks, preserve existing changes and unpublished commits. If
-blocked, the engineer leaves a recoverable WIP checkpoint and durable handoff
-before releasing the lock. Preserve source in existing auxiliary checkouts;
-do not reuse them for new tasks.
-
-The bot preserves source while removing rebuildable output. After finishing active
-work, it inventories generated `target/` and `target-nix/`
-directories across the entire project root, including retained legacy worktrees
-and clones. An unfinished source task is not itself a reason to retain rebuildable
-output. The bot protects specific non-rebuildable evidence and output that active
-processes still use.
-The report must include recovered space, total remaining usage, and the largest
-retained build directories with concrete reasons.
-
-## Clank tickets
-
-Use `clank` from inside a project checkout for durable local task state. The
-repository stores only its Clank project locator; ticket descriptions and
-attachments live under the dedicated writable state directory. Typical
-non-interactive operations are:
-
-```console
-clank create 'Investigate flaky recovery test'
-clank show 0x1234
-clank replace 0x1234 'Updated complete ticket description'
-clank close 0x1234
-```
-
-Do not put credentials or other secrets in tickets. Clank is local task
-tracking; it does not publish or authenticate GitHub requests.
-
-## Known integration gap
-
-The goal mentions reviews and other services for known GitHub users, but does
-not select an event transport. `gh-broker` supplies constrained outbound GitHub
-CLI access; it does not receive GitHub events or authenticate message senders.
-Add a narrowly scoped ingress only after choosing its protocol and stable
-identity mapping.
+The check includes generated configuration, real Tau tool visibility, broker
+behavior, startup preservation, and VM sandbox/browser checks. These do not
+prove live credentials or external delivery. After an authorized deployment
+through `just apply-runner "01"`, follow the debugging skill for live checks.
+
+When upgrading Tau's persistent-state format, stop writers and retain a
+consistent private backup of the **complete** state, including journals,
+artifacts, extension state, and repository/Clank recovery data. Retain the old
+closure too. A NixOS rollback alone cannot undo a data-format upgrade or external
+side effects; restore compatible state and reconcile those effects.

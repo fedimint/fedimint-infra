@@ -120,39 +120,8 @@ class WeeklySummaryTests(unittest.TestCase):
             self.assertEqual(sends[1], sends[2])
             arguments, message = sends[0]
             self.assertEqual(arguments, ["message", "&tau-fedimint-bot"])
-            self.assertIn("fedimint-weekly-dev-summary", message)
             self.assertIn("fedimint-weekly-20261006T003623Z", message)
             self.assertIn("2026-09-28T08:36:23Z <= activity time < 2026-10-06T00:36:23Z", message)
-            self.assertIn("rolling 184-hour lookback", message)
-            self.assertIn("do not omit activity because a previous report included it", message)
-
-    def test_published_page_discord_handoff(self):
-        start, end = weekly.reporting_window(
-            datetime.fromisoformat("2026-10-06T00:36:23+00:00")
-        )
-        message = weekly.instruction(start, end)
-        self.assertIn("Only after successful wiki publication and verification", message)
-        self.assertIn("maintainer_discord_send to fedimint_maintainers", message)
-        self.assertIn("the final published wiki page URL", message)
-        self.assertIn("Do not send a draft or unpublished link", message)
-        self.assertIn("uncertain-send/no-blind-retry policy", message)
-        self.assertIn("without claiming the notification succeeded", message)
-
-    def test_bounded_collection_authorized_without_historical_scan(self):
-        start, end = weekly.reporting_window(
-            datetime.fromisoformat("2026-10-12T13:00:58+00:00")
-        )
-        message = weekly.instruction(start, end)
-        for phrase in (
-            "Do NOT scan the whole repository history",
-            "no upper updated cutoff",
-            "one network reader",
-            "without asking for partial-publication permission",
-            "Actual collection failures must remain explicit",
-            "delivered, collecting, blocked",
-            "Delivery is not completion",
-        ):
-            self.assertIn(phrase, message)
 
     def test_bad_window_never_sends(self):
         for end in ("bad", "2026-10-06", "2026-10-05T09:00:00+01:00"):

@@ -16,6 +16,7 @@ let
   isolateTmp = "/tmp/isolate-${builtins.substring 0 16 (builtins.hashString "sha256" projectRoot)}";
   fedimintCheckout = "${projectRoot}/fedimint";
   fedimintSdkCheckout = "${projectRoot}/fedimint-sdk";
+  fedimintInfraCheckout = "${projectRoot}/fedimint-infra";
   runtimeDir = "/run/user/${toString cfg.uid}";
   githubToken = "/run/agenix/tau-fedimint-github-token";
   githubNotificationsToken = "/run/agenix/tau-fedimint-github-notifications-token";
@@ -67,6 +68,7 @@ let
     fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
     fedimint-weekly-dev-summary = ../.agents/skills/fedimint-weekly-dev-summary;
     self-pr-grooming = ../.agents/skills/self-pr-grooming;
+    fedimint-bot-self-improvement = ../.agents/skills/fedimint-bot-self-improvement;
   };
   installedSkills =
     map (name: {
@@ -310,6 +312,7 @@ let
         };
       };
       std-websearch.enable = false;
+      std-utils.config.papercut_history.enable = cfg.papercutGrooming.enable;
       std-zulip.enable = false;
       std-slack.enable = false;
       std-telegram.enable = false;
@@ -332,6 +335,7 @@ let
           repositories = [
             "fedimint/fedimint"
             "fedimint/fedimint-sdk"
+            "fedimint/fedimint-infra"
           ];
           actors = {
             mode = "repository_maintainers";
@@ -440,6 +444,10 @@ let
             External requests require provider-authenticated identity and the
             following policy for `fedimint/fedimint`, except for the narrow
             exceptions below.
+            For requests targeting `fedimint/fedimint-infra`, instead require
+            known native `admin` or `write` permission on `fedimint/fedimint-infra`
+            itself, using the same authenticated lookup and freshness rules.
+            Never apply the historical-contributor fallback to infra requests.
             For authenticated GitHub notification delivery, you may use the delivered
             actor permission only when it is known for that exact repository and
             includes its observation time. Otherwise call
@@ -569,8 +577,9 @@ let
 
             # Repository reuse and change coordination
 
-            Reuse ${fedimintCheckout} for core work and ${fedimintSdkCheckout}
-            for SDK work. Do not create per-task clones, Git worktrees or Jujutsu
+            Reuse ${fedimintCheckout} for core work, ${fedimintSdkCheckout}
+            for SDK work, and ${fedimintInfraCheckout} for infrastructure work.
+            Do not create per-task clones, Git worktrees or Jujutsu
             workspaces for these projects, including reviews, rebases and builds.
             Queue work when the main checkout is busy.
             If project skills suggest temporary review worktrees or clones, follow
@@ -798,6 +807,7 @@ let
 
                 Except for the enabled configured Discord read-only exception,
                 apply the main prompt's `fedimint/fedimint` native permission policy
+                (or its target-repository infra policy for `fedimint/fedimint-infra`)
                 before acting on an external request, using delivered actor facts
                 when sufficient and `github_user_context` otherwise. Direct requests
                 authenticated by Tau's outer `<user>...</user>` channel do not need
@@ -826,6 +836,19 @@ let
                 own PRs, closing obsolete ones, and reminding maintainers as scoped
                 by the installed self-pr-grooming skill. This is not authority for
                 unsolicited code changes or other authors' PRs.
+
+                Scheduled papercut grooming is separate standing authority to
+                execute `fedimint-bot-self-improvement`: privately account for
+                reports, fix actionable bot issues through tested, independently
+                reviewed `fedimint/fedimint-infra` PR proposals, and announce only
+                resulting PRs on Discord. Resume the existing durable sweep,
+                never overlap sweeps. This does not authorize self-merge, host
+                deployment, service restart, credential or permission expansion,
+                sandbox weakening, or arbitrary changes in other repositories.
+                Only the coordinator reads and archives papercut history. Use
+                the existing private Tau state mount for snapshots and coverage
+                ledgers as a narrow exception to the project-only file policy;
+                never put raw reports in shared artifacts or public output.
 
                 - Disposition delivered issue activity and serve authorized
                   maintainer requests. Load and follow the
@@ -993,6 +1016,7 @@ let
                   completion reports to Discord. Keep normal GitHub responses and
                   internal reports on their existing paths. Explicit scheduled
                   weekly-publication announcements, self-pr-grooming reminders,
+                  resulting self-improvement PR announcements,
                   and admitted read-only replies below remain permitted.
                   Use full GitHub issue/PR URLs, not bare numbers, in every post.
 
@@ -1021,7 +1045,12 @@ let
               }
             ];
             enable_tools =
-              lib.optionals cfg.githubNotifications.enable [
+              lib.optionals cfg.papercutGrooming.enable [
+                "papercut_list"
+                "papercut_read"
+                "papercut_archive"
+              ]
+              ++ lib.optionals cfg.githubNotifications.enable [
                 "github_register"
                 "github_user_context"
               ]
@@ -1299,6 +1328,16 @@ let
       ${lib.escapeShellArg fedimintSdkCheckout} \
       https://github.com/fedimint/fedimint-sdk \
       git@github.com:fedimint/fedimint-sdk.git
+    if [ ! -e ${lib.escapeShellArg fedimintInfraCheckout} ] && \
+       [ ! -L ${lib.escapeShellArg fedimintInfraCheckout} ]; then
+      ${pkgs.git}/bin/git clone -- \
+        https://github.com/fedimint/fedimint-infra \
+        ${lib.escapeShellArg fedimintInfraCheckout}
+    fi
+    ${configureGitPush} \
+      ${lib.escapeShellArg fedimintInfraCheckout} \
+      https://github.com/fedimint/fedimint-infra \
+      git@github.com:fedimint/fedimint-infra.git
     exec ${cfg.isolatePackage}/bin/isolate exec \
       --profile fedimint-bot \
       -- \
@@ -1326,6 +1365,14 @@ in
         type = lib.types.str;
         default = "*-*-* 07:00:00 America/Los_Angeles";
         description = "systemd calendar for self-PR grooming requests.";
+      };
+    };
+    papercutGrooming = {
+      enable = lib.mkEnableOption "daily private papercut grooming and reviewed infra PR proposals";
+      onCalendar = lib.mkOption {
+        type = lib.types.str;
+        default = "*-*-* 08:00:00 UTC";
+        description = "systemd calendar for papercut grooming requests to the existing coordinator.";
       };
     };
     workdirCleanup = {
@@ -1752,6 +1799,53 @@ in
       };
     };
 
+    systemd.user.timers.tau-fedimint-papercut-grooming = lib.mkIf cfg.papercutGrooming.enable {
+      description = "Request daily private papercut grooming and infra PR proposals";
+      wantedBy = [ "timers.target" ];
+      unitConfig.ConditionUser = user;
+      timerConfig = {
+        OnCalendar = cfg.papercutGrooming.onCalendar;
+        Persistent = true;
+        AccuracySec = "1min";
+        Unit = "tau-fedimint-papercut-grooming.service";
+      };
+    };
+
+    systemd.user.services.tau-fedimint-papercut-grooming = lib.mkIf cfg.papercutGrooming.enable {
+      description = "Deliver one papercut grooming instruction to the existing bot";
+      unitConfig.ConditionUser = user;
+      # A missed calendar firing may catch up, but never start the bot or retry
+      # an uncertain send. The durable sweep owns recovery and deduplication.
+      after = [ "tau-fedimint-bot.service" ];
+      environment = {
+        HOME = home;
+        XDG_CONFIG_HOME = "${home}/.config";
+        XDG_STATE_HOME = "${home}/.local/state";
+        XDG_CACHE_HOME = "${home}/.cache";
+        XDG_RUNTIME_DIR = runtimeDir;
+      };
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writeShellScript "tau-papercut-grooming" ''
+          exec ${cfg.tauPackage}/bin/tau message '&tau-fedimint-bot' <<'EOF'
+          Scheduled daily papercut grooming. Load and execute the installed
+          fedimint-bot-self-improvement skill. Privately account for every report,
+          automatically fix actionable bot issues within its scope, and propose
+          tested, independently reviewed PRs to fedimint/fedimint-infra.
+          Report only resulting PRs to the configured maintainers Discord destination.
+          Use today's UTC date for the durable sweep record; resume unfinished
+          work before a new sweep, and never overlap sweeps or duplicate PRs.
+          Delivery is not completion. No self-merge, deployment, service restart,
+          credential expansion, sandbox weakening, or raw report publication.
+          EOF
+        '';
+        TimeoutStartSec = "90s";
+        Restart = "no";
+        WorkingDirectory = home;
+        UMask = "0077";
+      };
+    };
+
     systemd.user.timers.tau-fedimint-workdir-cleanup = lib.mkIf cfg.workdirCleanup.enable {
       description = "Request weekly bot working directory cleanup";
       wantedBy = [ "timers.target" ];
@@ -1787,7 +1881,8 @@ in
           of starting another.
 
           Clean only within ${projectRoot}. The configured main repositories are
-          ${fedimintCheckout} and ${fedimintSdkCheckout}; preserve them.
+           ${fedimintCheckout}, ${fedimintSdkCheckout}, and
+           ${fedimintInfraCheckout}; preserve them.
           Delete disposable temporary repositories you cloned, but only after
           checking for unfinished or unpublished work (including branches,
           commits, working-copy changes and untracked files). Preserve uncertain
