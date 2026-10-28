@@ -11,7 +11,7 @@ and scheduled maintenance through one coordinator.
 | Service, sandbox, role prompts, schedules, and options | [`modules/tau-fedimint-bot.nix`](../modules/tau-fedimint-bot.nix) |
 | Enabled runner configuration and package pins | [`flake.nix`](../flake.nix), [`flake.lock`](../flake.lock) |
 | Bot task instructions | [`.agents/skills`](../.agents/skills) |
-| Configuration and real-sandbox checks | [`tests/tau-fedimint-bot.nix`](../tests/tau-fedimint-bot.nix) |
+| Local script and real sandbox checks | [`tests/tau-fedimint-bot.nix`](../tests/tau-fedimint-bot.nix) |
 | Secret recipients and encrypted sources | [`secrets.nix`](../secrets.nix), `secrets/` |
 
 ## Operate the existing bot
@@ -90,7 +90,7 @@ maintainer has read the message.
 
 Provision credentials with `just agenix-edit`, using the recipient policy in
 `secrets.nix`. Discord needs independent token and stable identity secrets.
-Configuration checks are credential-free; they do not prove live channel access.
+Offline checks do not prove live channel access.
 
 ## Scheduled work
 
@@ -139,9 +139,9 @@ nix build .#checks.x86_64-linux.tau-fedimint-bot-config
 nix build .#nixosConfigurations.runner-01.config.system.build.toplevel
 ```
 
-The check includes generated configuration, real Tau tool visibility, broker
-behavior, startup preservation, and VM sandbox/browser checks. These do not
-prove live credentials or external delivery. After an authorized deployment
+The check exercises local scripts, startup preservation, and real sandbox,
+browser, SSH, scratch-cleanup, and broker file-import behavior. It does not
+verify live credentials or external delivery. After an authorized deployment
 through `just apply-runner "01"`, follow the debugging skill for live checks.
 
 When upgrading Tau's persistent-state format, stop writers and retain a

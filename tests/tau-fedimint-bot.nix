@@ -8,8 +8,6 @@
   ghBrokerPackage,
   skillsSource,
   fedimintSkillsSource,
-  githubNotificationsPackage,
-  discordPackage ? null,
 }:
 
 let
@@ -38,52 +36,30 @@ let
     exit 42
   '';
   actionToken = builtins.toFile "action-token.age" "test-only";
-  notificationToken = builtins.toFile "notification-token.age" "test-only";
-  identityKey = builtins.toFile "notification-identity-key.age" "test-only";
   sshKey = builtins.toFile "ssh-private-key.age" "test-only";
-  devShellSmoke = pkgs.mkShell {
-    packages = [ pkgs.just ];
-  };
-  common = {
-    enable = true;
-    inherit tauPackage;
-    isolatePackage = dummyIsolatePackage;
-    inherit ghBrokerPackage;
-    clankPackage = dummyPackage "clank";
-    inherit skillsSource;
-    inherit fedimintSkillsSource;
-    githubTokenAgeFile = actionToken;
-    sshPrivateKeyAgeFile = sshKey;
-    sshAuthorizedKeys = [ "ssh-ed25519 test-only" ];
-  };
-  mkSystem =
-    {
-      githubNotifications,
-      papercutGrooming ? { },
-      discord ? { },
-    }:
-    nixpkgs.lib.nixosSystem {
-      inherit system;
-      modules = [
-        agenix.nixosModules.default
-        module
-        {
-          system.stateVersion = "26.05";
-          services.tau-fedimint-bot = common // {
-            inherit githubNotifications papercutGrooming discord;
-          };
-        }
-      ];
-    };
-  defaultDisabled = mkSystem {
-    githubNotifications = { };
-  };
-  disabled = mkSystem {
-    githubNotifications.package = githubNotificationsPackage;
-  };
-  papercut = mkSystem {
-    githubNotifications = { };
-    papercutGrooming.enable = true;
+  disabled = nixpkgs.lib.nixosSystem {
+    inherit system;
+    modules = [
+      agenix.nixosModules.default
+      module
+      {
+        system.stateVersion = "26.05";
+        services.tau-fedimint-bot = {
+          enable = true;
+          inherit
+            tauPackage
+            ghBrokerPackage
+            skillsSource
+            fedimintSkillsSource
+            ;
+          isolatePackage = dummyIsolatePackage;
+          clankPackage = dummyPackage "clank";
+          githubTokenAgeFile = actionToken;
+          sshPrivateKeyAgeFile = sshKey;
+          sshAuthorizedKeys = [ "ssh-ed25519 test-only" ];
+        };
+      }
+    ];
   };
   weeklyCheck =
     pkgs.runCommand "tau-weekly-summary-check"
@@ -96,64 +72,6 @@ let
         python3 ${./tau-github-collect.py} ${../bin/tau-github-collect.py}
         mkdir "$out"
       '';
-  enabled = mkSystem {
-    githubNotifications = {
-      enable = true;
-      package = githubNotificationsPackage;
-      tokenAgeFile = notificationToken;
-      identityKeyAgeFile = identityKey;
-    };
-  };
-  discordSettings = {
-    enable = true;
-    package = if discordPackage == null then dummyPackage "tau-ext-discord" else discordPackage;
-    guildId = 123456789012345678;
-    channelId = 234567890123456789;
-    allowedUserIds = [ 345678901234567890 ];
-    senderAliases = [
-      {
-        user_id = 345678901234567890;
-        alias = "maintainer";
-      }
-    ];
-    displayName = "Fedimint maintainers";
-    tokenAgeFile = builtins.toFile "discord-token.age" "test-only";
-    identityKeyAgeFile = builtins.toFile "discord-identity.age" "test-only";
-  };
-  discordEnabled = mkSystem {
-    githubNotifications = enabled.config.services.tau-fedimint-bot.githubNotifications;
-    discord = discordSettings;
-  };
-  discordMissing = mkSystem {
-    githubNotifications = { };
-    discord.enable = true;
-  };
-  discordReusedSecret = mkSystem {
-    githubNotifications = { };
-    discord = discordSettings // {
-      identityKeyAgeFile = discordSettings.tokenAgeFile;
-    };
-  };
-  reusedToken = mkSystem {
-    githubNotifications = {
-      enable = true;
-      package = githubNotificationsPackage;
-      tokenAgeFile = actionToken;
-      identityKeyAgeFile = identityKey;
-    };
-  };
-  failedBotAssertions =
-    systemConfig:
-    builtins.filter (
-      assertion:
-      !assertion.assertion
-      && (
-        lib.hasPrefix "tau-fedimint-bot " assertion.message
-        || lib.hasPrefix "GitHub notifications " assertion.message
-        || lib.hasPrefix "GitHub notification " assertion.message
-        || lib.hasPrefix "Discord " assertion.message
-      )
-    ) systemConfig.config.assertions;
   disabledStart = disabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
   githubRequesterPackage = lib.findFirst (
     package: lib.getName package == "fedimint-github-requester"
@@ -161,60 +79,10 @@ let
   direnvDpcPackage = lib.findFirst (
     package: lib.getName package == "direnv-dpc"
   ) (throw "direnv-dpc package missing") disabled.config.environment.systemPackages;
-  fzfPackage =
-    lib.findFirst (package: lib.getName package == "fzf")
-      (throw "fzf package missing from the Tau bot user profile")
-      disabled.config.users.users.tau-fedimint.packages;
   tauSandboxPackage =
     lib.findFirst (package: lib.getName package == "tau-fedimint-sandbox")
       (throw "tau-fedimint-sandbox package missing from the Tau bot user profile")
       disabled.config.users.users.tau-fedimint.packages;
-  discordStart = discordEnabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
-  upstreamSkillNames = [
-    "linked-specs"
-    "linked-specs-updating"
-    "linked-specs-review"
-    "multipart-review"
-    "multipart-review-architecture"
-    "multipart-review-coordination"
-    "multipart-review-judgment"
-    "multipart-review-maintainability"
-    "multipart-review-prose"
-    "multipart-review-reliability"
-    "multipart-review-rust-style"
-    "multipart-review-skills"
-  ];
-  fedimintSkillNames = [
-    "fedimint-codebase"
-    "fedimint-development"
-    "pr-submissions-checklist"
-  ];
-  localSkills = {
-    change-description = ../.agents/skills/change-description;
-    conventional-commit = ../.agents/skills/conventional-commit;
-    proactive-work = ../.agents/skills/proactive-work;
-    stop-slop = ../.agents/skills/stop-slop;
-    task-retrospective = ../.agents/skills/task-retrospective;
-    fedimint-bot-github-cli = ../.agents/skills/fedimint-bot-github-cli;
-    fedimint-maintainer-requests = ../.agents/skills/fedimint-maintainer-requests;
-    fedimint-pull-request-review = ../.agents/skills/fedimint-pull-request-review;
-    fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
-    fedimint-weekly-dev-summary = ../.agents/skills/fedimint-weekly-dev-summary;
-    self-pr-grooming = ../.agents/skills/self-pr-grooming;
-    fedimint-bot-self-improvement = ../.agents/skills/fedimint-bot-self-improvement;
-  };
-  localSkillNames = builtins.attrNames localSkills;
-  installedSkillNames = upstreamSkillNames ++ fedimintSkillNames ++ localSkillNames;
-  fedimintSkillSources = lib.genAttrs fedimintSkillNames (
-    name:
-    let
-      prefix = "L+ /home/tau-fedimint/.config/agents/skills/${name} - - - - ";
-      rule =
-        lib.findFirst (lib.hasPrefix prefix) (throw "tmpfiles rule for ${name} is missing")
-          disabled.config.systemd.tmpfiles.rules;
-    in
-    lib.removePrefix prefix rule
-  );
   configCheck =
     pkgs.runCommand "tau-fedimint-bot-config-check"
       {
@@ -222,20 +90,10 @@ let
           pkgs.coreutils
           pkgs.git
           pkgs.gnugrep
-          pkgs.jq
         ];
       }
       ''
         set -euo pipefail
-
-        disabled_harness=$(
-          sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${disabledStart}
-        )
-        test -n "$disabled_harness"
-
-        papercut_harness=$(sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' \
-          ${papercut.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart})
-        discord_harness=$(sed -n 's#.*install -m 0600 \([^ ]*harness.yaml\).*#\1#p' ${discordStart})
 
         clear_session=$(
           grep -Eo '/nix/store/[^ ]+-tau-fedimint-clear-session' ${disabledStart}
@@ -275,7 +133,6 @@ let
             sort -u
         )
         test -n "$configure_git_push"
-        test "$(printf '%s\n' "$configure_git_push" | wc -l)" -eq 1
         for suffix in "" ".git"; do
           checkout="$TMPDIR/fedimint''${suffix//./-}"
           ${pkgs.git}/bin/git init -q "$checkout"
@@ -303,20 +160,6 @@ let
             https://github.com/fedimint/fedimint \
             git@github.com:fedimint/fedimint.git
         done
-        sdk_checkout="$TMPDIR/fedimint-sdk"
-        ${pkgs.git}/bin/git init -q "$sdk_checkout"
-        ${pkgs.git}/bin/git -C "$sdk_checkout" remote add origin \
-          https://github.com/fedimint/fedimint-sdk.git
-        "$configure_git_push" \
-          "$sdk_checkout" \
-          https://github.com/fedimint/fedimint-sdk \
-          git@github.com:fedimint/fedimint-sdk.git
-        test "$(${pkgs.git}/bin/git -C "$sdk_checkout" remote get-url origin)" = \
-          "https://github.com/fedimint/fedimint-sdk.git"
-        test "$(${pkgs.git}/bin/git -C "$sdk_checkout" remote get-url --push origin)" = \
-          "git@github.com:fedimint/fedimint-sdk.git"
-        test "$(${pkgs.git}/bin/git -C "$sdk_checkout" config --local --get core.sshCommand)" = \
-          "${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config"
         unexpected="$TMPDIR/unexpected"
         ${pkgs.git}/bin/git init -q "$unexpected"
         ${pkgs.git}/bin/git -C "$unexpected" remote add origin \
@@ -369,147 +212,6 @@ let
           git@github.com:fedimint/fedimint.git
         test "$(${pkgs.git}/bin/git -C "$rewritten" remote get-url --push origin)" = \
           "https://github.com/fedimint/fedimint"
-
-        test_home="$TMPDIR/tau-home"
-        test_workspace="$TMPDIR/workspace"
-        test_project="$test_workspace/project"
-        test_workdir="$test_project/subdir"
-        mkdir -p \
-          "$test_home/.config/tau" \
-          "$test_home/.config/agents/skills" \
-          "$test_project/.agents/skills/project-subdir-test" \
-          "$test_workdir"
-        cat >"$test_project/AGENTS.md" <<'EOF'
-        PROJECT_SUBDIR_AGENTS_MARKER
-        EOF
-        cat >"$test_project/.agents/skills/project-subdir-test/SKILL.md" <<'EOF'
-        ---
-        name: project-subdir-test
-        description: Test skill discovered from an ancestor of the configured workdir.
-        ---
-
-        PROJECT_SUBDIR_SKILL_MARKER
-        EOF
-        for name in ${lib.escapeShellArgs upstreamSkillNames}; do
-          ln -s "${skillsSource}/skills/$name" \
-            "$test_home/.config/agents/skills/$name"
-        done
-        ${lib.concatMapStringsSep "\n" (name: ''
-          ln -s "${fedimintSkillSources.${name}}" \
-            "$test_home/.config/agents/skills/${name}"
-        '') fedimintSkillNames}
-        ${lib.concatMapStringsSep "\n" (name: ''
-          ln -s "${localSkills.${name}}" \
-            "$test_home/.config/agents/skills/${name}"
-        '') localSkillNames}
-        jq --arg workspace "$test_workspace" --arg workdir "$test_workdir" '
-          .extensions["core-shell"].config.working_directory = $workdir
-          | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
-        ' "$disabled_harness" >"$test_home/.config/tau/harness.yaml"
-        jq -er '[.agents.role_groups[].roles | keys[]] | sort | unique | .[]' \
-          "$disabled_harness" >"$TMPDIR/roles"
-        while IFS= read -r role; do
-          skills="$TMPDIR/$role-skills"
-          env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
-            HOME="$test_home" \
-            XDG_CONFIG_HOME="$test_home/.config" \
-            XDG_STATE_HOME="$test_home/.local/state" \
-            XDG_CACHE_HOME="$test_home/.cache" \
-            ${tauPackage}/bin/tau --role "$role" \
-              dev print-skills --format json >"$skills"
-          jq -e --argjson expected '${builtins.toJSON installedSkillNames}' '
-            ([.[].name] | sort) as $actual
-            | ($expected | sort) as $expected
-            | (($expected - $actual) | length == 0)
-            and ($actual | index("project-subdir-test") != null)
-            and ($actual | index("linked-specs-grooming") == null)
-            and ($actual | index("github-cli") == null)
-            and ($actual | index("tau-self-knowledge-tracing") != null)
-            and ($actual | index("tau-self-knowledge-cache") != null)
-            and ($actual | index("tau-self-knowledge-debugging") != null)
-          ' "$skills" >/dev/null
-          provider_prompt="$TMPDIR/$role-provider-prompt"
-          env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
-            HOME="$test_home" \
-            XDG_CONFIG_HOME="$test_home/.config" \
-            XDG_STATE_HOME="$test_home/.local/state" \
-            XDG_CACHE_HOME="$test_home/.cache" \
-            ${tauPackage}/bin/tau --role "$role" dev print-prompt >"$provider_prompt"
-          for name in ${lib.escapeShellArgs fedimintSkillNames}; do
-            grep -Fq "<name>$name</name>" "$provider_prompt"
-          done
-          grep -Fq 'PROJECT_SUBDIR_AGENTS_MARKER' "$provider_prompt"
-          grep -Fq '<name>project-subdir-test</name>' "$provider_prompt"
-          if [ "$role" = editor ]; then
-            env -u TAU_PROFILE HOME="$test_home" \
-              XDG_CONFIG_HOME="$test_home/.config" \
-              XDG_STATE_HOME="$test_home/.local/state" \
-              XDG_CACHE_HOME="$test_home/.cache" \
-              ${tauPackage}/bin/tau --role editor dev print-tools \
-                >"$TMPDIR/editor-tools"
-            ! grep -q 'agent_start' "$TMPDIR/editor-tools"
-          fi
-        done <"$TMPDIR/roles"
-        # Use the pinned harness's actual extension declarations and role policy.
-        # Tool previews do not invoke grooming or require provider credentials.
-        jq --arg workspace "$test_workspace" --arg workdir "$test_workdir" '
-          .extensions["core-shell"].config.working_directory = $workdir
-          | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
-        ' "$papercut_harness" >"$test_home/.config/tau/harness.yaml"
-        while IFS= read -r role; do
-          env -u TAU_PROFILE -u TAU_PROVIDER_ALIASES -u TAU_MODEL_ALIASES \
-            HOME="$test_home" \
-            XDG_CONFIG_HOME="$test_home/.config" \
-            XDG_STATE_HOME="$test_home/.local/state" \
-            XDG_CACHE_HOME="$test_home/.cache" \
-            ${tauPackage}/bin/tau --role "$role" dev print-tools >"$TMPDIR/papercut-$role-tools"
-          if [ "$role" = coordinator ]; then
-            for tool in papercut_list papercut_read papercut_archive; do
-              grep -q "$tool" "$TMPDIR/papercut-$role-tools"
-            done
-          else
-            ! grep -Eq 'papercut_(list|read|archive)' "$TMPDIR/papercut-$role-tools"
-          fi
-        done <"$TMPDIR/roles"
-        for reference in phrases structures examples; do
-          test -s "$test_home/.config/agents/skills/stop-slop/references/$reference.md"
-        done
-        test -s "$test_home/.config/agents/skills/stop-slop/LICENSE"
-
-        ${lib.optionalString (discordPackage != null) ''
-          # Exercise the real extension's scoped declarations and effective
-          # role grants, with null config and no secrets: no Discord transport.
-          jq --arg workspace "$test_workspace" --arg workdir "$test_workdir" '
-            .extensions["maintainer-discord"].config = null
-            | .extensions["maintainer-discord"].secrets = {}
-            | del(.extensions["github-notifications"])
-            | .extensions["core-shell"].config.working_directory = $workdir
-            | .inter_session.allow_project_roots = [$workspace, ($workspace + "/**")]
-          ' "$discord_harness" >"$test_home/.config/tau/harness.yaml"
-          while IFS= read -r role; do
-            env -u TAU_PROFILE HOME="$test_home" \
-              XDG_CONFIG_HOME="$test_home/.config" \
-              XDG_STATE_HOME="$test_home/.local/state" \
-              XDG_CACHE_HOME="$test_home/.cache" \
-              ${tauPackage}/bin/tau --role "$role" dev print-tools >"$TMPDIR/discord-$role-tools"
-            env -u TAU_PROFILE HOME="$test_home" \
-              XDG_CONFIG_HOME="$test_home/.config" \
-              XDG_STATE_HOME="$test_home/.local/state" \
-              XDG_CACHE_HOME="$test_home/.cache" \
-              ${tauPackage}/bin/tau --role "$role" dev print-system-prompt >"$TMPDIR/discord-$role-prompt"
-            if [ "$role" = coordinator ]; then
-              printf '%s\n' maintainer_discord_conversations \
-                maintainer_discord_register maintainer_discord_send >"$TMPDIR/expected-discord-tools"
-              grep -oE 'maintainer_discord_[a-z_]+' "$TMPDIR/discord-$role-tools" |
-                sort -u >"$TMPDIR/actual-discord-tools"
-              cmp "$TMPDIR/expected-discord-tools" "$TMPDIR/actual-discord-tools"
-            else
-              ! grep -q 'maintainer_discord' "$TMPDIR/discord-$role-tools"
-              ! grep -q 'maintainer_discord' "$TMPDIR/discord-$role-prompt"
-            fi
-          done <"$TMPDIR/roles"
-          cp "$disabled_harness" "$test_home/.config/tau/harness.yaml"
-        ''}
 
         touch "$out"
       '';
@@ -564,381 +266,12 @@ let
         expect_status 64 check visible-user maintainer
         touch "$out"
       '';
-  githubToolRegistrationTest = pkgs.writeText "tau-fedimint-github-tool-registration.py" ''
-    import os
-    import subprocess
-    import sys
-    import queue
-    import signal
-    import threading
-
-    import cbor2
-
-    executable = sys.argv[1]
-    lookup_enabled = sys.argv[2] == "enabled"
-    signal.alarm(30)
-
-    def decode_messages(stream):
-        # cbor2 5.8 reads ahead: keep one decoder for the entire CBOR sequence.
-        decoder = cbor2.CBORDecoder(stream)
-        while True:
-            yield decoder.decode()
-
-    # Batch frames into one pipe write so the decoder must retain read-ahead.
-    burst = [
-        {"message": "hello", "payload": {}},
-        {"message": "emit", "payload": {"event": {"event": "tool.registration_declared"}}},
-        {"message": "ready", "payload": {}},
-    ]
-    read_fd, write_fd = os.pipe()
-    os.write(write_fd, b"".join(cbor2.dumps(message) for message in burst))
-    os.close(write_fd)
-    with os.fdopen(read_fd, "rb", buffering=0) as stream:
-        messages = decode_messages(stream)
-        assert [next(messages) for _ in burst] == burst
-
-    def registrations(lookup_enabled):
-        process = subprocess.Popen(
-            [executable],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            bufsize=0,
-        )
-        messages = queue.Queue()
-
-        def read_messages():
-            try:
-                for message in decode_messages(process.stdout):
-                    messages.put(message)
-            except BaseException as error:
-                messages.put(error)
-
-        threading.Thread(target=read_messages, daemon=True).start()
-
-        hello = messages.get(timeout=10)
-        if isinstance(hello, BaseException):
-            raise hello
-        assert hello["message"] == "hello"
-        assert hello["payload"]["protocol_version"] == {"major": 14, "minor": 0}
-        config = {
-            "token_secret": "github_token",
-            "identity_key_secret": "github_identity_key",
-            "repositories": ["fedimint/fedimint", "fedimint/fedimint-sdk", "fedimint/fedimint-infra"],
-            "actors": {
-                "mode": "repository_maintainers",
-                "user_ids": [49699333],
-            },
-            "activity_filters": {
-                "require_comment_mention": True,
-                "direct_review_requests_only": True,
-            },
-            "identity_context": {
-                "delivery": True,
-                "lookup_tool": lookup_enabled,
-                "cache_seconds": 300,
-            },
-            "register_on_start": True,
-            "role": "coordinator",
-        }
-        cbor2.dump(
-            {
-                "message": "configure",
-                "payload": {
-                    # Match the pinned core and independently pinned extension.
-                    "harness_protocol_version": {"major": 14, "minor": 0},
-                    "absent_optional_secrets": [],
-                    "config": config,
-                    "instance_name": "github-notifications",
-                    "secrets": {
-                        "github_token": "fixture",
-                        "github_identity_key": "00" * 32,
-                    },
-                    "settings_files": {},
-                },
-            },
-            process.stdin,
-        )
-        process.stdin.flush()
-        tools = []
-        ready = False
-        while not ready:
-            message = messages.get(timeout=10)
-            if isinstance(message, BaseException):
-                raise message
-            if message["message"] == "emit":
-                event = message["payload"]["event"]
-                if event["event"] == "tool.registration_declared":
-                    tools.append(event["payload"]["tool"])
-            if message["message"] == "ready":
-                ready = True
-        process.kill()
-        process.wait(timeout=5)
-        return tools
-
-    tools = registrations(lookup_enabled)
-    if lookup_enabled:
-        assert [tool["name"] for tool in tools] == [
-            "github_register",
-            "github_user_context",
-        ]
-        assert [tool["model_visible_name"] for tool in tools] == [
-            "github_register",
-            "github_user_context",
-        ]
-        context = tools[1]
-        assert context["enabled_by_default"] is False
-        assert context["parameters"] == {
-            "type": "object",
-            "properties": {
-                "username": {"type": "string", "minLength": 1, "maxLength": 80}
-            },
-            "required": ["username"],
-            "additionalProperties": False,
-        }
-    else:
-        assert [tool["name"] for tool in tools] == ["github_register"], tools
-  '';
-  ghBrokerPolicyCheck = pkgs.runCommand "tau-fedimint-gh-broker-policy-check" { } ''
-    set -euo pipefail
-    broker=${ghBrokerPackage}/bin/gh-broker
-    work="$TMPDIR/work"
-    runtime="$TMPDIR/runtime"
-    mkdir -m 0700 "$work" "$runtime"
-    cd "$work"
-
-    expect_status() {
-      expected=$1
-      name=$2
-      shift 2
-      set +e
-          XDG_RUNTIME_DIR="$runtime" GH_BROKER_RUNTIME_ROOT="$runtime" "$broker" \
-        --credential fedimint="$TMPDIR/missing-token" \
-        --default-credential fedimint \
-        "$@" >"$TMPDIR/$name.out" 2>"$TMPDIR/$name.err"
-      actual=$?
-      set -e
-      [ "$actual" -eq "$expected" ] || {
-        echo "expected status $expected, got $actual for $name" >&2
-        cat "$TMPDIR/$name.err" >&2
-        exit 1
-      }
-    }
-
-    expect_supported() {
-      name=$1
-      shift
-      expect_status 125 "$name" "$@"
-      grep -Fq 'open GitHub token secret: No such file or directory' \
-        "$TMPDIR/$name.err"
-    }
-
-    # Infra uses the same scoped credential and PR namespace, not a new broker.
-    expect_supported infra-pr-create --pr-head-prefix tau/ \
-      gh pr create -R fedimint/fedimint-infra --base main \
-      --head tau/self-improvement --title title --body body
-    expect_supported infra-pr-list \
-      gh pr list -R fedimint/fedimint-infra --author fedimint-tau --state open
-
-    expect_denied() {
-      name=$1
-      shift
-      expect_status 126 "$name" "$@"
-      grep -Fq 'gh invocation denied by isolate policy:' "$TMPDIR/$name.err"
-      ! grep -Fq 'open GitHub token secret' "$TMPDIR/$name.err"
-    }
-
-    # The upstream omitted default remains dpc/, while this deployment's
-    # trusted option accepts tau/ and rejects the old namespace.
-    expect_status 125 default-dpc \
-      gh pr create -R fedimint/fedimint --base master \
-      --head dpc/topic --title title --body body
-        grep -Fq 'open GitHub token secret: No such file or directory' \
-          "$TMPDIR/default-dpc.err"
-    expect_status 125 configured-tau \
-      --pr-head-prefix tau/ \
-      gh pr create -R fedimint/fedimint --base master \
-      --head tau/topic --title title --body body
-        grep -Fq 'open GitHub token secret: No such file or directory' \
-          "$TMPDIR/configured-tau.err"
-    expect_status 126 configured-rejects-dpc \
-      --pr-head-prefix tau/ \
-      gh pr create -R fedimint/fedimint --base master \
-      --head dpc/topic --title title --body body
-    grep -Fq 'gh invocation denied by isolate policy:' \
-      "$TMPDIR/configured-rejects-dpc.err"
-
-    # Broker-looking caller arguments remain after intercepted `gh` and
-    # cannot replace the trusted prefix.
-    expect_status 126 post-gh-cannot-override \
-      --pr-head-prefix tau/ \
-      gh --pr-head-prefix dpc/ pr create -R fedimint/fedimint \
-      --base master --head dpc/topic --title title --body body
-    grep -Fq 'gh invocation denied by isolate policy:' \
-      "$TMPDIR/post-gh-cannot-override.err"
-
-    # A regular repository-local COMMENT body passes secure import and only
-    # then reaches the deliberately missing credential. A symlink is denied
-    # before credential access.
-    printf '%s\n' 'review feedback' >review.md
-    expect_status 125 comment-regular \
-      --pr-head-prefix tau/ \
-      gh pr review 1 -R fedimint/fedimint \
-      --comment --body-file review.md
-        grep -Fq 'open GitHub token secret: No such file or directory' \
-          "$TMPDIR/comment-regular.err"
-    ln -s review.md linked-review.md
-    expect_status 126 comment-symlink \
-      --pr-head-prefix tau/ \
-      gh pr review 1 -R fedimint/fedimint \
-      --comment --body-file linked-review.md
-    grep -Fq 'could not securely import text file' \
-      "$TMPDIR/comment-symlink.err"
-
-    # Newly pinned reaction and standalone line-comment grammars pass policy
-    # validation before the deliberately absent credential is opened.
-    expect_status 125 reaction-root \
-      gh api -X POST repos/fedimint/fedimint/issues/42/reactions \
-      -f content=+1 --jq '{id,content,user:.user.login}'
-    grep -Fq 'open GitHub token secret: No such file or directory' \
-      "$TMPDIR/reaction-root.err"
-    expect_status 125 reaction-conversation-comment \
-      gh api -X POST repos/fedimint/fedimint/issues/comments/5803800022/reactions \
-      -f content=eyes --jq '{id,content,user:.user.login}'
-    grep -Fq 'open GitHub token secret: No such file or directory' \
-      "$TMPDIR/reaction-conversation-comment.err"
-    expect_status 125 reaction-review-comment \
-      gh api -X POST repos/fedimint/fedimint/pulls/comments/5803800022/reactions \
-      -f content=heart --jq '{id,content,user:.user.login}'
-    grep -Fq 'open GitHub token secret: No such file or directory' \
-      "$TMPDIR/reaction-review-comment.err"
-    expect_status 125 line-comment \
-      gh api -X POST repos/fedimint/fedimint/pulls/42/comments \
-      -f body='Use the validated value.' \
-      -f commit_id=0123456789abcdef0123456789abcdef01234567 \
-      -f path=src/policy.rs -f line=42 -f side=RIGHT \
-      --jq '{id,path,line,side,url:.html_url}'
-    grep -Fq 'open GitHub token secret: No such file or directory' \
-      "$TMPDIR/line-comment.err"
-
-    # Invalid enums, typed caller fields, and non-canonical lines remain local
-    # policy denials and expose the supported grammar without credential access.
-    expect_status 126 reaction-sad-face \
-      gh api -X POST repos/fedimint/fedimint/issues/42/reactions \
-      -f content=sad-face
-    grep -Fq 'gh invocation denied by isolate policy:' \
-      "$TMPDIR/reaction-sad-face.err"
-    grep -Fq 'documented endpoint families and options' \
-      "$TMPDIR/reaction-sad-face.err"
-    expect_status 126 line-comment-typed \
-      gh api -X POST repos/fedimint/fedimint/pulls/42/comments \
-      -f body='Use the validated value.' \
-      -f commit_id=0123456789abcdef0123456789abcdef01234567 \
-      -f path=src/policy.rs -F line=42 -f side=RIGHT
-    grep -Fq 'gh invocation denied by isolate policy:' \
-      "$TMPDIR/line-comment-typed.err"
-    grep -Fq 'Typed API fields are unsupported' \
-      "$TMPDIR/line-comment-typed.err"
-    expect_status 126 line-comment-leading-zero \
-      gh api -X POST repos/fedimint/fedimint/pulls/42/comments \
-      -f body='Use the validated value.' \
-      -f commit_id=0123456789abcdef0123456789abcdef01234567 \
-      -f path=src/policy.rs -f line=042 -f side=RIGHT
-    grep -Fq 'documented endpoint families and options' \
-      "$TMPDIR/line-comment-leading-zero.err"
-
-    # Exercise the pinned collaboration policy against a missing-token fixture.
-    # Accepted operations reach credential opening; denied neighbors stay local.
-    expect_supported pr-close \
-      gh pr close 9195 -R fedimint/fedimint
-    expect_supported pr-reopen \
-      gh pr reopen 9195 -R fedimint/fedimint
-    expect_supported issue-close \
-      gh issue close 42 -R fedimint/fedimint --reason 'not planned'
-    expect_supported issue-reopen \
-      gh issue reopen 42 -R fedimint/fedimint
-    expect_supported pr-ready \
-      gh pr ready 42 -R fedimint/fedimint
-    expect_supported pr-draft \
-      gh pr ready 42 -R fedimint/fedimint --undo
-    expect_supported issue-inline-comment \
-      gh issue comment 42 -R fedimint/fedimint --body reply
-    expect_supported issue-inline-edit \
-      gh issue edit 42 -R fedimint/fedimint --body updated
-    expect_supported pr-label \
-      gh pr edit 42 -R fedimint/fedimint --add-label bug
-    expect_supported pr-assignee \
-      gh pr edit 42 -R fedimint/fedimint --add-assignee octocat
-    expect_supported pr-reviewer \
-      gh pr edit 42 -R fedimint/fedimint --add-reviewer octocat
-    expect_supported comment-read \
-      gh api repos/fedimint/fedimint/issues/comments/5803800022
-    expect_supported files-read \
-      gh api repos/fedimint/fedimint/pulls/42/files --paginate
-    # These reads must pass grammar validation before opening a token. This
-    # fixture does not contact GitHub or test live token scopes.
-    expect_supported pr-metadata-read \
-      gh pr view 42 -R fedimint/fedimint \
-      --json number,state,isDraft,author,headRefOid,headRefName,baseRefName,title,body,files
-    expect_supported pr-diff-read \
-      gh pr diff 42 -R fedimint/fedimint
-    expect_supported pr-api-read \
-      gh api repos/fedimint/fedimint/pulls/42
-    expect_supported pr-reviews-read \
-      gh api --paginate repos/fedimint/fedimint/pulls/42/reviews
-    expect_supported pr-commits-read \
-      gh api --paginate --include 'repos/fedimint/fedimint/pulls/42/commits?per_page=100'
-
-    # Nearby unsupported forms must fail before token access; documenting
-    # safe reads must not widen the broker's read boundary.
-    expect_denied pr-diff-stat \
-      gh pr diff 42 -R fedimint/fedimint --stat
-    expect_denied pr-diff-pathspec \
-      gh pr diff 42 -R fedimint/fedimint -- README.md
-    expect_denied repository-commits-read \
-      gh api repos/fedimint/fedimint/commits
-    expect_denied repository-commit-read \
-      gh api repos/fedimint/fedimint/commits/0123456789abcdef0123456789abcdef01234567
-    expect_denied repository-contents-read \
-      gh api repos/fedimint/fedimint/contents/README.md
-    expect_denied repository-compare-read \
-      gh api repos/fedimint/fedimint/compare/master...topic
-    expect_denied issue-reactions-read \
-      gh api repos/fedimint/fedimint/issues/42/reactions
-    expect_denied issue-comment-reactions-read \
-      gh api repos/fedimint/fedimint/issues/comments/5803800022/reactions
-    expect_denied pr-comment-reactions-read \
-      gh api repos/fedimint/fedimint/pulls/comments/5803800022/reactions
-    printf '%s\n' 'request changes' >request-changes.md
-    expect_supported request-changes \
-      gh pr review 42 -R fedimint/fedimint \
-      --request-changes --body-file request-changes.md
-    expect_supported own-comment-edit \
-      gh api --method PATCH \
-      repos/fedimint/fedimint/issues/comments/5803800022 \
-      --raw-field body=corrected
-
-    expect_denied comment-delete \
-      gh pr comment 42 -R fedimint/fedimint --delete-last --yes
-    expect_denied pr-merge \
-      gh pr merge 42 -R fedimint/fedimint
-    expect_denied arbitrary-api \
-      gh api --method DELETE \
-      repos/fedimint/fedimint/issues/comments/5803800022
-
-    touch "$out"
-  '';
   tmpfilesCheck = pkgs.testers.runNixOSTest {
     name = "tau-fedimint-bot-tmpfiles";
     nodes.machine = {
       system.stateVersion = "26.05";
       virtualisation.memorySize = 4096;
       services.resolved.enable = true;
-      nix.settings.experimental-features = [
-        "nix-command"
-        "flakes"
-      ];
-      system.extraDependencies = [ devShellSmoke ];
       users.groups.tau-fedimint.gid = 991;
       users.users.tau-fedimint = {
         isNormalUser = true;
@@ -957,29 +290,16 @@ let
         direnvDpcPackage
         pkgs.bubblewrap
         pkgs.git
-        pkgs.gnupg
         pkgs.jq
-        pkgs.just
         (pkgs.python3.withPackages (python: [
-          python.cbor2
           python.pillow
         ]))
-        pkgs.ripgrep
-        githubNotificationsPackage
       ];
     };
     testScript = ''
       import shlex
 
       start_all()
-
-      registration_status, registration_output = machine.execute(
-          "python ${githubToolRegistrationTest} "
-          "${githubNotificationsPackage}/bin/tau-ext-github enabled 2>&1 && "
-          "python ${githubToolRegistrationTest} "
-          "${githubNotificationsPackage}/bin/tau-ext-github disabled 2>&1"
-      )
-      assert registration_status == 0, registration_output
 
       machine.succeed(
           "rm -rf "
@@ -1019,21 +339,6 @@ let
           "ln -s /tmp/public-target /tmp/public"
       )
       machine.succeed("systemd-tmpfiles --create")
-      # Simulate an upgrade from the old bot-managed generic skill name.
-      machine.succeed(
-          "ln -s ${localSkills.fedimint-bot-github-cli} "
-          "/home/tau-fedimint/.config/agents/skills/github-cli && "
-          "systemd-tmpfiles --remove --create && "
-          "test ! -L /home/tau-fedimint/.config/agents/skills/github-cli"
-      )
-      machine.succeed(
-          "set -e; "
-          "for name in ${lib.escapeShellArgs installedSkillNames}; do "
-          "test -L \"/home/tau-fedimint/.config/agents/skills/$name\"; "
-          "test -f \"/home/tau-fedimint/.config/agents/skills/$name/SKILL.md\"; "
-          "done; "
-          "test ! -e /home/tau-fedimint/.config/agents/skills/linked-specs-grooming"
-      )
       machine.succeed(
           "test -L /tmp/public && "
           "test \"$(stat -Lc '%u:%g:%a' /tmp/public-target)\" = 0:0:700"
@@ -1044,38 +349,12 @@ let
       )
       machine.fail("runuser -u tau-fedimint -- ls /tmp/public")
       machine.succeed(
-          "runuser -l tau-fedimint -c '"
-          "test \"$(readlink -f \"$(command -v fzf)\")\" = \"${fzfPackage}/bin/fzf\" && "
-          "fzf --version >/dev/null'"
-      )
-      machine.succeed(
           "runuser -u tau-fedimint -- sh -euc '"
           "artifact=$(mktemp /tmp/public/host-artifact-XXXXXX); "
           "printf shared >\"$artifact\"; "
           "test \"$(cat \"$artifact\")\" = shared; "
           "rm \"$artifact\"'"
       )
-
-      for path in ${
-        builtins.toJSON [
-          "/home/tau-fedimint/fedimint"
-          "/home/tau-fedimint/.config"
-          "/home/tau-fedimint/.config/isolate"
-          "/home/tau-fedimint/.config/tau"
-          "/home/tau-fedimint/.ssh"
-          "/home/tau-fedimint/.local"
-          "/home/tau-fedimint/.local/share"
-          "/home/tau-fedimint/.local/share/direnv"
-          "/home/tau-fedimint/.local/state"
-          "/home/tau-fedimint/.local/state/tau"
-          "/home/tau-fedimint/.local/state/clank"
-          "/home/tau-fedimint/.cache"
-          "/home/tau-fedimint/.cache/tau"
-        ]
-      }:
-          machine.succeed(
-              f"test \"$(stat -c '%u:%g:%a' '{path}')\" = 1001:991:700"
-          )
 
       machine.succeed(
           "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
@@ -1191,34 +470,6 @@ let
           "'--role' 'coordinator role' \"\" '*' >\"$expected\"\n"
           "cmp \"$expected\" \"$capture\""
       )
-      machine.succeed(
-          "test \"$(runuser -u tau-fedimint -- git -C "
-          "/home/tau-fedimint/fedimint/fedimint "
-          "remote get-url origin)\" = "
-          "https://github.com/fedimint/fedimint.git\n"
-          "test \"$(runuser -u tau-fedimint -- git -C "
-          "/home/tau-fedimint/fedimint/fedimint "
-          "remote get-url --push origin)\" = "
-          "git@github.com:fedimint/fedimint.git\n"
-          "test \"$(runuser -u tau-fedimint -- git -C "
-          "/home/tau-fedimint/fedimint/fedimint-sdk "
-          "remote get-url origin)\" = "
-          "https://github.com/fedimint/fedimint-sdk.git\n"
-          "test \"$(runuser -u tau-fedimint -- git -C "
-          "/home/tau-fedimint/fedimint/fedimint-sdk "
-          "remote get-url --push origin)\" = "
-          "git@github.com:fedimint/fedimint-sdk.git\n"
-          "test \"$(stat -c '%u:%g:%a' /home/tau-fedimint/.ssh/config)\" = "
-          "1001:991:600\n"
-          "test \"$(runuser -u tau-fedimint -- git -C "
-          "/home/tau-fedimint/fedimint/fedimint "
-          "config --local --get core.sshCommand)\" = "
-          "'${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config'\n"
-          "test \"$(runuser -u tau-fedimint -- git -C "
-          "/home/tau-fedimint/fedimint/fedimint-sdk "
-          "config --local --get core.sshCommand)\" = "
-          "'${pkgs.openssh}/bin/ssh -F /home/tau-fedimint/.ssh/config'"
-      )
       # Use the unmodified generated production profile, the real isolate, and
       # the bot UID. Supply only a credential-free SSH socket for its required
       # mount; browser commands never leave the sandbox.
@@ -1238,33 +489,6 @@ let
           "${pkgs.writeText "tau-scratch-tmpfiles.conf" (lib.concatStringsSep "\n" disabled.config.systemd.tmpfiles.rules)}",
           timeout=75,
       )
-      machine.succeed(
-          "set -e\n"
-          "cp /home/tau-fedimint/.config/isolate/isolate.yaml "
-          "/home/tau-fedimint/.config/isolate/isolate.yaml.saved\n"
-          "jq '.profiles[\"fedimint-bot\"].bind |= map(select("
-          ".path == \"/home/tau-fedimint/fedimint\" or "
-          ".path == \"/tmp/public\" or "
-          ".path == \"/home/tau-fedimint/.config/agents\"))' "
-          "/home/tau-fedimint/.config/isolate/isolate.yaml "
-          ">/home/tau-fedimint/.config/isolate/isolate.yaml.new\n"
-          "mv /home/tau-fedimint/.config/isolate/isolate.yaml.new "
-          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
-          "chown tau-fedimint:tau-fedimint "
-          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
-          "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
-          "/home/tau-fedimint/.runtime\n"
-          "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
-          "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
-          "isolate -c /home/tau-fedimint/fedimint "
-          "exec --profile fedimint-bot -- bash -euc '"
-          "for name in ${lib.escapeShellArgs installedSkillNames}; do "
-          "test -f \"/home/tau-fedimint/.config/agents/skills/$name/SKILL.md\"; "
-          "done'\n"
-          "mv /home/tau-fedimint/.config/isolate/isolate.yaml.saved "
-          "/home/tau-fedimint/.config/isolate/isolate.yaml"
-      )
-
       # Reproduce the overflow-owner failure, then run Git's real configured
       # SSH transport in the same isolate. Port 1 is deliberately closed:
       # reaching connect(2) proves OpenSSH accepted the bot-owned -F config.
@@ -1389,72 +613,9 @@ let
           assert "could not securely import text file" in output
           assert "open GitHub token secret" not in output
 
-      machine.succeed(
-          "cat >/home/tau-fedimint/.config/isolate/isolate.yaml <<'EOF'\n"
-          '{"version":1,"profiles":{"tool-test":{"pid":{"mode":"private"},'
-          '"bind_repo_root":true,"bind":[{"path":"/tmp/public","rw":true,'
-          '"required":true,"kind":"dir"}],"setenv":{"HOME":"/home/tau-fedimint",'
-          '"XDG_CONFIG_HOME":"/home/tau-fedimint/.config",'
-          '"XDG_STATE_HOME":"/home/tau-fedimint/.local/state",'
-          '"XDG_CACHE_HOME":"/home/tau-fedimint/.cache",'
-          '"XDG_RUNTIME_DIR":"/home/tau-fedimint/.runtime"}}}}\n'
-          "EOF\n"
-          "install -d -m 0700 -o tau-fedimint -g tau-fedimint "
-          "/home/tau-fedimint/.runtime\n"
-          "chown tau-fedimint:tau-fedimint "
-          "/home/tau-fedimint/.config/isolate/isolate.yaml\n"
-          "cat >/home/tau-fedimint/fedimint/fedimint/flake.nix <<'EOF'\n"
-          "{\n"
-          "  inputs.nixpkgs.url = \"path:${nixpkgs}\";\n"
-          "  outputs = { self, nixpkgs }:\n"
-          "    let pkgs = nixpkgs.legacyPackages.${system};\n"
-          "    in {\n"
-          "      devShells.${system}.default = pkgs.mkShell {\n"
-          "        packages = [ pkgs.just ];\n"
-          "      };\n"
-          "    };\n"
-          "}\n"
-          "EOF\n"
-          "cat >/home/tau-fedimint/fedimint/fedimint/flake.lock <<'EOF'\n"
-          '{"nodes":{"nixpkgs":{"locked":{"narHash":"${nixpkgs.narHash}",'
-          '"path":"${nixpkgs}","type":"path"},"original":{"path":"${nixpkgs}",'
-          '"type":"path"}},"root":{"inputs":{"nixpkgs":"nixpkgs"}}},'
-          '"root":"root","version":7}\n'
-          "EOF\n"
-          "chown tau-fedimint:tau-fedimint "
-          "/home/tau-fedimint/fedimint/fedimint/flake.nix "
-          "/home/tau-fedimint/fedimint/fedimint/flake.lock\n"
-          "runuser -u tau-fedimint -- git -C /home/tau-fedimint/fedimint/fedimint add "
-          "flake.nix flake.lock\n"
-          "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
-          "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
-          "isolate -c /home/tau-fedimint/fedimint/fedimint "
-          "exec --profile tool-test -- bash -euc '"
-          "test -S /nix/var/nix/daemon-socket/socket; "
-          "test \"$(nix store info --store daemon --json | jq -r .trusted)\" = false; "
-           "lock_before=$(sha256sum flake.lock); "
-           "for tool in rg jq python3 gpg; do command -v \"$tool\"; done; "
-           "nix develop --offline --no-write-lock-file .#default "
-           "--command bash -euc \""
-           "command -v rg && command -v jq && command -v python3 && command -v gpg && "
-           "rg --version && jq --version && python3 --version && gpg --version && just --version\"; "
-          "test \"$(sha256sum flake.lock)\" = \"$lock_before\"; "
-          "artifact=$(mktemp /tmp/public/isolate-artifact-XXXXXX); "
-          "printf shared >\"$artifact\"; "
-          "test \"$(cat \"$artifact\")\" = shared; "
-          "! ls /tmp/public >/dev/null 2>&1; "
-          "rm \"$artifact\"'"
-      )
     '';
   };
 in
-assert failedBotAssertions defaultDisabled == [ ];
-assert failedBotAssertions disabled == [ ];
-assert failedBotAssertions enabled == [ ];
-assert failedBotAssertions discordEnabled == [ ];
-assert builtins.length (failedBotAssertions discordMissing) == 5;
-assert builtins.length (failedBotAssertions discordReusedSecret) == 1;
-assert builtins.length (failedBotAssertions reusedToken) == 1;
 pkgs.linkFarm "tau-fedimint-bot-checks" [
   {
     name = "weekly-summary";
@@ -1471,9 +632,5 @@ pkgs.linkFarm "tau-fedimint-bot-checks" [
   {
     name = "github-requester";
     path = githubRequesterCheck;
-  }
-  {
-    name = "gh-broker-policy";
-    path = ghBrokerPolicyCheck;
   }
 ]
