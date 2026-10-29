@@ -650,7 +650,9 @@ let
             During authorized development, inspect `.envrc` and the environment
             inputs it references, including `flake.nix`, `flake.lock`, sourced
             files and scripts. If they match the expected trusted environment,
-            run `direnv allow` in that checkout before builds and tests.
+            run `direnv allow` in that checkout before builds, tests, and Git
+            commits that run project hooks. Run these commands in the inspected,
+            approved checkout environment, not the parent GitHub-only shell.
             Recheck changed inputs even when `.envrc` still says `use flake`;
             unchanged `.envrc` content does not approve changed flake inputs.
             Never blindly allow PR-controlled code or environment changes.
@@ -782,7 +784,9 @@ let
 
                 Implement conservative, complete changes that follow project
                 conventions. Acquire the project update lock before changing files.
-                Keep work marked `wip:` until focused checks and an independent
+                Use a valid Conventional Commit type and a WIP marker in the
+                summary, for example `fix(tau): WIP correct commit guidance`.
+                Keep the WIP marker until focused checks and an independent
                 review pass.
 
                 Non-trivial changes require review by one independent `reviewer`
@@ -809,8 +813,8 @@ let
                 # Completion
 
                 Finish with one informative change on clean, linear history and
-                leave the working tree clean. Remove `wip:` only after review and
-                verification pass. Inspect status and relevant history before
+                leave the working tree clean. Remove the WIP marker only after
+                review and verification pass. Inspect status and relevant history before
                 reporting completion; preserve unrelated work.
               '';
             }
