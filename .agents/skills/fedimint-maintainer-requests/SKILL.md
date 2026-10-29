@@ -1,11 +1,11 @@
 ---
 name: fedimint-maintainer-requests
-description: Use for delivered Fedimint issue activity and authenticated maintainer requests, including development or pull-request delivery.
+description: Use for delivered Fedimint issue activity and authorized requests, including limited bot-access assistance and maintainer development requests.
 user-invocable: true
 advertise: true
 ---
 
-# Serve Fedimint maintainer requests
+# Serve authorized Fedimint requests
 
 Use this skill to handle delivered issue activity. Use its request workflow
 only after the prompt's authentication and authorization checks succeed, including
@@ -37,6 +37,16 @@ An engineer receiving that scoped delegation implements and publishes the
 authorized changes without repeating admission, acknowledging the notification,
 or delegating implementation again. The coordinator handles admission and
 acknowledgement.
+
+For requests authorized only by fresh `fedimint/bot-access` membership, delegate
+public read-only inspection or research, not implementation. Include the authenticated
+numeric ID, team, observation and expiry times, exact target, and limited scope.
+Reply substantively on that target. For review requests, follow
+`fedimint-pull-request-review` and publish only comments. Do not run untrusted code,
+change source or history, create a PR, or treat a request to implement findings
+as authorized. Stop at expiry and obtain fresh membership facts before continuing
+or publishing. The development and PR-delivery instructions below apply only
+when you have established separate write-capable authority.
 
 Default to delivering requested changes as a pull request unless the maintainer
 explicitly requests local-only output. After checks and review pass, publish the

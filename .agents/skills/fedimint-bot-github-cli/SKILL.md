@@ -80,6 +80,13 @@ edits. Secure `--body-file` forms are available for content operations.
 
 ## SHA-bound approval and review forms
 
+Publish only comments for reviews authorized solely by `fedimint/bot-access`
+membership.
+Never submit APPROVE or REQUEST_CHANGES under that authority. Require fresh
+membership before publishing; independent PASS and a pinned SHA do not expand
+the requester's authority. The formal approval procedure below applies only
+when separate authority and all approval limits permit it.
+
 Formal reviews use:
 
 ```sh

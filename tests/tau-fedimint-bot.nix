@@ -6,6 +6,7 @@
   tauPackage,
   isolatePackage,
   ghBrokerPackage,
+  githubNotificationsPackage,
   skillsSource,
   fedimintSkillsSource,
 }:
@@ -73,6 +74,34 @@ let
         mkdir "$out"
       '';
   disabledStart = disabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  notificationsEnabled = disabled.extendModules {
+    modules = [
+      {
+        services.tau-fedimint-bot.githubNotifications = {
+          enable = true;
+          package = githubNotificationsPackage;
+          tokenAgeFile = builtins.toFile "notification-token.age" "test-only";
+          identityKeyAgeFile = builtins.toFile "notification-identity.age" "test-only";
+        };
+      }
+    ];
+  };
+  notificationsStart =
+    notificationsEnabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  notifierStartupCheck =
+    pkgs.runCommand "tau-github-startup-check"
+      {
+        nativeBuildInputs = [
+          pkgs.gnugrep
+          (pkgs.python3.withPackages (python: [ python.cbor2 ]))
+        ];
+      }
+      ''
+        harness=$(grep -Eo '/nix/store/[^ ]+-tau-fedimint-harness.yaml' ${notificationsStart})
+        python3 ${./tau-github-startup.py} \
+          ${githubNotificationsPackage}/bin/tau-ext-github "$harness"
+        touch "$out"
+      '';
   githubRequesterPackage = lib.findFirst (
     package: lib.getName package == "fedimint-github-requester"
   ) (throw "fedimint-github-requester package missing") disabled.config.environment.systemPackages;
@@ -594,6 +623,20 @@ let
           "gh pr review 1 -R fedimint/fedimint --comment --body-file \"$1\""
           "' sh "
       )
+      # Team membership belongs to the notifier, not the agent shell. Even the
+      # configured team must remain inaccessible through the general gh broker.
+      status, output = machine.execute(
+          "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+          "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
+          "isolate -c /home/tau-fedimint/fedimint "
+          "exec --profile fedimint-bot -- ${pkgs.runtimeShell} -c "
+          "'cd /home/tau-fedimint/fedimint && "
+          "gh api orgs/fedimint/teams/bot-access/members' 2>&1"
+      )
+      assert status == 126, (status, output)
+      assert "gh invocation denied by isolate policy" in output, output
+      assert "open GitHub token secret" not in output, output
+
       for name, body in [
           ("nested-relative", "review.md"),
           ("shared-absolute", shared_body),
@@ -617,6 +660,10 @@ let
   };
 in
 pkgs.linkFarm "tau-fedimint-bot-checks" [
+  {
+    name = "notifier-startup";
+    path = notifierStartupCheck;
+  }
   {
     name = "weekly-summary";
     path = weeklyCheck;
