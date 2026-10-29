@@ -87,7 +87,7 @@ let
     patches = (old.patches or [ ]) ++ [ ./direnv-dpc-run-blocked-command.patch ];
     postFixup = (old.postFixup or "") + ''
       rm -rf "$out/share"
-      mv "$out/bin/direnv" "$out/bin/direnv-dpc"
+      ln -s direnv "$out/bin/direnv-dpc"
     '';
     doInstallCheck = true;
     installCheckPhase = ''
@@ -99,24 +99,46 @@ let
 
       printf 'export BLOCKED_LOADED=yes\n' >"$test_root/blocked/.envrc"
       printf 'export OLD_PROJECT_ENV=yes\n' >"$test_root/source/.envrc"
-      "$out/bin/direnv-dpc" allow "$test_root/source"
+      test "$("$out/bin/direnv" version)" = "$("$out/bin/direnv-dpc" version)"
+      test "$out/bin/direnv" -ef "$out/bin/direnv-dpc"
+      "$out/bin/direnv" allow "$test_root/source"
       outer="$(
-        "$out/bin/direnv-dpc" exec "$test_root/source" \
+        "$out/bin/direnv" exec "$test_root/source" \
           sh -c 'printf "%s" "''${OLD_PROJECT_ENV-no}"'
       )"
       test "$outer" = "yes"
 
       output="$(
-        "$out/bin/direnv-dpc" exec "$test_root/source" \
-          "$out/bin/direnv-dpc" exec "$test_root/blocked" \
+        "$out/bin/direnv" exec "$test_root/source" \
+          "$out/bin/direnv" exec "$test_root/blocked" \
           sh -c 'printf "%s/%s" "''${BLOCKED_LOADED-no}" "''${OLD_PROJECT_ENV-no}"' \
           2>"$test_root/stderr"
       )"
       test "$output" = "no/no"
       grep -F "is blocked; running command without loading it" "$test_root/stderr"
+
+      "$out/bin/direnv-dpc" allow "$test_root/blocked"
+      output="$(
+        "$out/bin/direnv" exec "$test_root/blocked" \
+          sh -c 'printf "%s" "''${BLOCKED_LOADED-no}"'
+      )"
+      test "$output" = "yes"
+
+      "$out/bin/direnv" deny "$test_root/blocked"
+      output="$(
+        "$out/bin/direnv" exec "$test_root/source" \
+          "$out/bin/direnv" exec "$test_root/blocked" \
+          sh -c 'printf "%s/%s" "''${BLOCKED_LOADED-no}" "''${OLD_PROJECT_ENV-no}"' \
+          2>"$test_root/denied-stderr"
+      )"
+      test "$output" = "no/no"
+      if grep -F "running command without loading it" "$test_root/denied-stderr"; then
+        echo "explicit denial unexpectedly used the NotAllowed fallback" >&2
+        exit 1
+      fi
     '';
     meta = (old.meta or { }) // {
-      mainProgram = "direnv-dpc";
+      mainProgram = "direnv";
     };
   });
   gitConfig = pkgs.writeText "tau-fedimint-gitconfig" ''
@@ -300,7 +322,7 @@ let
         config = {
           working_directory = projectRoot;
           shell.prefix = [
-            "direnv-dpc"
+            "direnv"
             "exec"
             "."
           ];
@@ -620,6 +642,22 @@ let
 
             Before project work, use `workdir` to select the project's actual
             checkout so shell integration can use its own tools.
+
+            Shell commands use the patched `direnv exec .`; `direnv-dpc` remains
+            a compatibility alias. An unapproved `.envrc` warns and runs the
+            command without its environment. An explicit denial still prevents
+            environment loading.
+            During authorized development, inspect `.envrc` and the environment
+            inputs it references, including `flake.nix`, `flake.lock`, sourced
+            files and scripts. If they match the expected trusted environment,
+            run `direnv allow` in that checkout before builds and tests.
+            Recheck changed inputs even when `.envrc` still says `use flake`;
+            unchanged `.envrc` content does not approve changed flake inputs.
+            Never blindly allow PR-controlled code or environment changes.
+            This guidance grants no development or execution authority:
+            read-only reviews, team-only requests and support work retain their
+            restrictions and must not approve environments or execute untrusted
+            code or project scripts. Deployment does not approve environments.
 
             # Repository reuse and change coordination
 

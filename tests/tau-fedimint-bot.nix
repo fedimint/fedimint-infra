@@ -105,7 +105,7 @@ let
   githubRequesterPackage = lib.findFirst (
     package: lib.getName package == "fedimint-github-requester"
   ) (throw "fedimint-github-requester package missing") disabled.config.environment.systemPackages;
-  direnvDpcPackage = lib.findFirst (
+  patchedDirenvPackage = lib.findFirst (
     package: lib.getName package == "direnv-dpc"
   ) (throw "direnv-dpc package missing") disabled.config.environment.systemPackages;
   tauSandboxPackage =
@@ -119,10 +119,16 @@ let
           pkgs.coreutils
           pkgs.git
           pkgs.gnugrep
+          patchedDirenvPackage
         ];
       }
       ''
         set -euo pipefail
+
+        # Both public command names must select the same patched executable.
+        test "$(command -v direnv)" -ef "$(command -v direnv-dpc)"
+        direnv version
+        direnv-dpc version
 
         clear_session=$(
           grep -Eo '/nix/store/[^ ]+-tau-fedimint-clear-session' ${disabledStart}
@@ -316,7 +322,7 @@ let
           p: (p.name or "") == "agent-browser"
         ) (throw "missing agent-browser") disabled.config.environment.systemPackages)
         isolatePackage
-        direnvDpcPackage
+        patchedDirenvPackage
         pkgs.bubblewrap
         pkgs.git
         pkgs.jq

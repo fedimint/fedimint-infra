@@ -162,10 +162,21 @@ not an automatic deletion service or enforced task barrier.
 
 ## Development and validation
 
-Shell commands use `direnv-dpc exec .` in the agent's effective workdir. Inspect
-each checkout's `.envrc`, then run `direnv-dpc allow` there as the bot account.
-Changed content needs renewed approval. An unapproved file warns and runs the
-command without loading that environment; deployment does not approve it.
+Shell commands use the patched `direnv exec .` in the agent's effective workdir.
+`direnv-dpc` remains a compatibility alias for the same executable. For an
+unapproved file, direnv warns and runs the command without loading that environment.
+An explicit denial still prevents environment loading; deployment does not approve environments.
+
+During authorized development, inspect each checkout's `.envrc` and the environment
+inputs it references, including `flake.nix`, `flake.lock`, sourced files, and
+scripts. If they match the expected trusted environment, run `direnv allow` there
+as the bot account before builds and tests. Changed `.envrc` content needs renewed
+approval. Recheck changed inputs even if `.envrc` still says `use flake`; approval
+of unchanged `.envrc` content does not cover changed flake inputs. Do not approve
+PR-controlled code or environment changes without inspection. This procedure
+grants no extra authority: during read-only reviews, team-only requests, and
+support work, retain those restrictions. Do not approve environments or execute
+untrusted code or project scripts under that authority.
 
 The service packages `agent-browser` and Chromium with Chromium's sandbox enabled.
 Use a distinct `--session` per task and close it afterward.
