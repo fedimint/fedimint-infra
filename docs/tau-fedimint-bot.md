@@ -73,10 +73,48 @@ broker authority.
 For task policy, use
 [`fedimint-maintainer-requests`](../.agents/skills/fedimint-maintainer-requests/SKILL.md)
 and [`fedimint-pull-request-review`](../.agents/skills/fedimint-pull-request-review/SKILL.md).
-Infra requests require native `write` or `admin` on **infra itself**. The
+Write-capable infra requests require native `write` or `admin` on **infra itself**. The
 historical-contributor helper is not a substitute for that permission.
 Repository access also does not prove that each dedicated token selects the
 repository; diagnose actual credential denials before changing scopes.
+
+### Limited bot-access membership
+
+The notifier admits notifications from members of `fedimint/bot-access` (numeric
+team ID `19107422`) without changing repository permissions or granting general
+organization access to the shell broker. It refreshes the full team roster at
+startup and about every four hours. Admission and authenticated identity context
+use the same numeric-ID-bound
+roster; login names and notification admission alone do not authorize work.
+The numeric pin prevents a deleted and recreated team from inheriting this
+authority. GitHub's team-member listing includes members of child teams; those
+inherited members receive the same limited authority.
+
+Team facts expire four hours after the start of the successful refresh. Failed
+refreshes do not extend that deadline. Removing a member can therefore take up to
+about four hours to revoke team-only authority. After expiry, do not perform
+team-only work if refreshes are unavailable, fail, or remain incomplete; wait until
+a complete refresh succeeds. Previously delivered facts, queued tasks, and
+delegated work do not extend membership.
+The coordinator obtains fresh context before continuing or publishing after expiry.
+Separately verified maintainers retain their existing authority if team lookup fails.
+
+Fresh team membership permits public read-only assistance, automatic review of
+the member's newly opened public PR, and explicit review requests across core,
+SDK, and infra. Reply on the originating public issue/PR and publish review
+findings as comments, never formal approvals or change requests. Team membership
+does not authorize source/history changes, untrusted code execution, PR creation,
+merges, issue/label/admin changes, private-data access, deployment, or policy
+changes. Maintainer permissions take precedence. Existing mention, direct-review,
+draft, independent-review, SHA, and consensus rules still apply, as do the narrow
+Dependabot and authenticated-PR-author exceptions.
+
+Maintainer admission still comes from GitHub's effective repository collaborator
+permissions plus the existing configured numeric-ID exception. Request
+authorization separately checks native `write` or `admin` (on infra itself for
+infra writes); there is no new editable maintainer list in Tau's UI.
+Manage the limited roster in the GitHub organization's `bot-access` team instead.
+That team is not a substitute for repository collaborator access.
 
 Discord admits personal mentions from configured human maintainers in one
 private channel. Admission permits safe read-only assistance and a reply; it
@@ -124,10 +162,21 @@ not an automatic deletion service or enforced task barrier.
 
 ## Development and validation
 
-Shell commands use `direnv-dpc exec .` in the agent's effective workdir. Inspect
-each checkout's `.envrc`, then run `direnv-dpc allow` there as the bot account.
-Changed content needs renewed approval. An unapproved file warns and runs the
-command without loading that environment; deployment does not approve it.
+Shell commands use the patched `direnv exec .` in the agent's effective workdir.
+`direnv-dpc` remains a compatibility alias for the same executable. For an
+unapproved file, direnv warns and runs the command without loading that environment.
+An explicit denial still prevents environment loading; deployment does not approve environments.
+
+During authorized development, inspect each checkout's `.envrc` and the environment
+inputs it references, including `flake.nix`, `flake.lock`, sourced files, and
+scripts. If they match the expected trusted environment, run `direnv allow` there
+as the bot account before builds and tests. Changed `.envrc` content needs renewed
+approval. Recheck changed inputs even if `.envrc` still says `use flake`; approval
+of unchanged `.envrc` content does not cover changed flake inputs. Do not approve
+PR-controlled code or environment changes without inspection. This procedure
+grants no extra authority: during read-only reviews, team-only requests, and
+support work, retain those restrictions. Do not approve environments or execute
+untrusted code or project scripts under that authority.
 
 The service packages `agent-browser` and Chromium with Chromium's sandbox enabled.
 Use a distinct `--session` per task and close it afterward.
@@ -140,8 +189,12 @@ nix build .#nixosConfigurations.runner-01.config.system.build.toplevel
 ```
 
 The check exercises local scripts, startup preservation, and real sandbox,
-browser, SSH, scratch-cleanup, and broker file-import behavior. It does not
-verify live credentials or external delivery. After an authorized deployment
+browser, SSH, scratch-cleanup, and broker file-import behavior. It also runs the
+real pinned GitHub notifier's protocol14 handshake and generated
+notifications-enabled config with synthetic credentials in a network-isolated
+Nix build sandbox, stopping at startup ready to verify protocol/config
+compatibility. It does not verify live readiness, credentials, or external
+delivery. After an authorized deployment
 through `just apply-runner "01"`, follow the debugging skill for live checks.
 
 When upgrading Tau's persistent-state format, stop writers and retain a

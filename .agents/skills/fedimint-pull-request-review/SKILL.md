@@ -10,15 +10,19 @@ advertise: true
 ## Admission
 
 Confirm the PR is open. Proactively review new PRs only from authenticated,
-verified maintainers or under the main prompt's standing Dependabot creation
-policy; follow `fedimint-dependabot` for Dependabot PRs. Review any PR an
-authenticated, authorized maintainer explicitly requests, including drafts at
-their current head and requested scope without a ready-for-review toggle.
+verified maintainers, `fedimint/bot-access` members with fresh membership
+verification, or under the main prompt's standing Dependabot creation policy;
+follow `fedimint-dependabot` for Dependabot PRs. Review any PR an authenticated,
+authorized maintainer or bot-access member with fresh membership verification
+explicitly requests, including drafts at their current head and requested scope
+without a ready-for-review toggle.
 This overrides only draft deferral, not authentication, authorization, approval
 limits, or consensus restrictions.
 
 Otherwise defer drafts without substantive review or comment. Reconsider only on
-delivered `ready_for_review` activity or a new explicit maintainer request.
+delivered `ready_for_review` activity or a new explicit request from a maintainer
+or a bot-access member with fresh membership verification.
+Revalidate team membership when resuming a deferred team-only review.
 Do not create durable work, reminders, or polling solely to reconsider a draft.
 Without an explicit request, verify the PR is no longer draft and has not received
 the bot's review. Avoid duplicate reviews.
@@ -37,6 +41,10 @@ or completion. Acknowledgement neither authorizes work nor replaces feedback.
 The coordinator delegates substantive review to an independent `reviewer` following
 `multipart-review`, supplying the PR, exact head commit, context, and scope.
 Integrate its verdict and findings; do not substitute coordinator review.
+For team-only work, also pass the authenticated numeric ID, team observation and
+expiry times, and the explicit comment-only restriction. Do not execute untrusted
+code or project scripts under this read-only authority. Refresh expired membership
+facts before continuing or publishing; delegation does not extend authority.
 
 Supply readable source for the exact review SHA. If required objects or source are missing, report the gap to the coordinator; do not substitute checkout `HEAD` or work around broker restrictions.
 
@@ -49,6 +57,9 @@ Publish feedback separately; use comment-only feedback when approval limits
 prevent approval. Pin line comments to the full inspected commit and canonical
 diff line. If publication is blocked, preserve feedback and report it pending;
 do not claim delivery.
+Fresh team membership alone never makes a review eligible for formal APPROVE or
+REQUEST_CHANGES, even after independent PASS. Separately verified maintainer
+authority takes precedence; do not infer it from notification admission.
 
 Judge code, not whether CI ran; CI matters only when it establishes a substantive
 correctness or security finding. Fedimint does not guarantee Rust source/API

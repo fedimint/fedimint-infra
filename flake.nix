@@ -31,7 +31,8 @@
     };
 
     tau-ext-github = {
-      url = "git+https://iris.radicle.network/zeY514sMfgDNMC8czs3C1V1MFsaH.git?ref=master&rev=d945d8f825fbd7d85ecacbb4d17a1a4170d6ff4d";
+      # Keep protocol 14 until Tau and all deployed extensions upgrade together.
+      url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?ref=refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/compat/protocol14-team-admission&rev=86e945f5c2d687d1574bf38b6f7d226dc3ebdba9";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
@@ -418,6 +419,7 @@
               tauPackage = tauPackage system;
               isolatePackage = inputs.isolate.packages.${system}.default;
               ghBrokerPackage = inputs.gh-isolate.packages.${system}.default;
+              githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
               skillsSource = inputs.linked-specs-skills;
               fedimintSkillsSource = inputs.fedimint-skills;
             };
