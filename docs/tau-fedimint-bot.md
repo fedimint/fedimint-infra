@@ -160,12 +160,30 @@ Cleanup waits for active work and builds to finish, preserves unfinished source,
 and removes disposable output across the project root. It is an agent workflow,
 not an automatic deletion service or enforced task barrier.
 
+A tool or agent can return a terminal result while descendant checks or compilers
+still run, even with no active tool calls. Do not count timed-out or cancelled
+checks as completed or passed. Before claiming that no builds are running or
+declaring a clean handoff, inspect known check descendants and verify that
+owned processes have stopped within permitted visibility. Never kill unknown
+processes or those owned by others, or bypass process boundaries. If ownership or
+quiescence is uncertain, preserve a recoverable checkpoint and escalate instead
+of declaring completion.
+
 ## Development and validation
 
 Shell commands use the patched `direnv exec .` in the agent's effective workdir.
 `direnv-dpc` remains a compatibility alias for the same executable. For an
 unapproved file, direnv warns and runs the command without loading that environment.
 An explicit denial still prevents environment loading; deployment does not approve environments.
+
+Select the actual checkout with `workdir` for project work. For metadata-only
+recovery and inspection (such as Git status/history or Clank reads), keep the
+shell workdir at the parent project root and target the checkout with `git -C`,
+an internal `cd`, or a subprocess working directory. This avoids starting the
+project environment even for an already-approved `.envrc`. Keep `gh` at the parent
+project root as required by the GitHub CLI policy. This exception does not cover
+development, builds, tests, hooks, or commits; use the inspected, approved checkout
+environment for those operations.
 
 During authorized development, inspect each checkout's `.envrc` and the environment
 inputs it references, including `flake.nix`, `flake.lock`, sourced files, and

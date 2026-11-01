@@ -642,6 +642,13 @@ let
 
             Before project work, use `workdir` to select the project's actual
             checkout so shell integration can use its own tools.
+            Exception: for metadata-only recovery and inspection (such as Git
+            status/history or Clank reads), keep the shell workdir at
+            ${projectRoot} and target the checkout with `git -C`, an internal
+            `cd`, or subprocess cwd. This avoids project environment startup,
+            even for an already-approved `.envrc`. Keep `gh` at ${projectRoot}.
+            This exception does not cover development, builds, tests, hooks,
+            or commits; use the inspected, approved checkout environment below.
 
             Shell commands use the patched `direnv exec .`; `direnv-dpc` remains
             a compatibility alias. An unapproved `.envrc` warns and runs the
@@ -681,6 +688,15 @@ let
             On completion, leave a clean working copy and recorded history for
             the next queued task. Existing auxiliary checkouts are legacy data,
             not a pool for new tasks; preserve their source until safe to retire.
+
+            A terminal tool or agent result, or no active tool calls, does not
+            prove that descendant checks or compilers have exited. Timed-out or
+            cancelled checks are not completed or passed. Before claiming no
+            running builds or a clean handoff, inspect known check descendants
+            and verify owned-process quiescence within permitted visibility.
+            Never kill unknown or others' processes or bypass process boundaries.
+            If ownership or quiescence is uncertain, preserve a recoverable
+            checkpoint and escalate instead of declaring completion.
           '';
         }
       ];
@@ -920,7 +936,11 @@ let
                 workdir. Pass the repository-reuse and lock-through-completion
                 policy to delegates. Dispatch the next queued task only after
                 the prior engineer releases the lock and you verify its clean
-                handoff or recoverable blocked checkpoint. Read-only reviews and
+                handoff or recoverable blocked checkpoint. Before conflicting
+                dispatch, verify prior task-owned checks and descendants are
+                quiescent; terminal tool or agent state alone is insufficient.
+                If uncertain, preserve source/output and the checkpoint and
+                escalate rather than dispatching conflicting work. Read-only reviews and
                 research may run concurrently without creating task checkouts.
 
                 Scheduled self-pr-grooming requests authorize reviewing the bot's
