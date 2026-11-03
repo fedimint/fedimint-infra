@@ -16,9 +16,26 @@ For diagnostics and post-deployment checks, use
 [fedimint-tau-bot-papercuts-debugging](../fedimint-tau-bot-papercuts-debugging/SKILL.md).
 These instructions grant no additional authority to the bot.
 
-Start read-only. Do not restart or clear the service, start a duplicate Tau
-harness or notifier, dump secrets or full provider captures, or create synthetic
-GitHub activity unless the operator separately authorizes that mutation.
+## Deployment policy: fix forward
+
+This bot is not load-bearing. Accept breakage and downtime, deploy promptly,
+and fix failures in the live runtime.
+
+For an authorized deployment, follow the normal deployment path and run a brief
+live check. Do not add tests, mock fixtures, or extra validation gates, or debug
+tests to protect this bot's deployment. Follow required project workflow and
+review without adding testing requirements.
+
+Treat the current session as disposable: a normal service restart resets it.
+Do not preserve or migrate the session, build backup or session-identity
+machinery around it, or seek separate approval for a restart covered by
+deployment authorization. Preserve durable repository and task data.
+
+Start diagnostics read-only, but proceed with an authorized deployment and its
+restart. Outside that authorization, get operator approval before restarting or
+clearing the service. Do not start a duplicate Tau harness or
+notifier, expose secrets or full provider captures, or manufacture external
+activity as a deployment check. Keep security and secret protections in place.
 
 ## Discover the live runtime
 
