@@ -53,11 +53,6 @@
       url = "git+https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git?rev=efaaeb7df161fb0b2838b70f640490f01ec97221";
       flake = false;
     };
-
-    fedimint-skills = {
-      url = "github:fedimint/fedimint?rev=36d64222761c1dccc0bb0002012c077e105f9d21";
-      flake = false;
-    };
   };
 
   outputs =
@@ -341,7 +336,6 @@
                 ghBrokerPackage = inputs.gh-isolate.packages.x86_64-linux.default;
                 clankPackage = inputs.clank.packages.x86_64-linux.default;
                 skillsSource = inputs.linked-specs-skills;
-                fedimintSkillsSource = inputs.fedimint-skills;
                 githubTokenAgeFile = ./secrets/tau-fedimint-github-token.age;
                 sshPrivateKeyAgeFile = ./secrets/tau-fedimint-ssh-private-key.age;
                 # The automation key is root-only. This unprivileged bot account
@@ -421,7 +415,6 @@
               ghBrokerPackage = inputs.gh-isolate.packages.${system}.default;
               githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
               skillsSource = inputs.linked-specs-skills;
-              fedimintSkillsSource = inputs.fedimint-skills;
             };
           };
         }

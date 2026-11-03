@@ -42,21 +42,6 @@ let
     "multipart-review-rust-style"
     "multipart-review-skills"
   ];
-  fedimintSkillNames = [
-    "fedimint-codebase"
-    "fedimint-coding-style"
-    "fedimint-development"
-    "pr-submissions-checklist"
-  ];
-  fedimintUserSkills = pkgs.runCommand "tau-fedimint-user-skills" { } ''
-    mkdir -p "$out"
-    for name in ${lib.escapeShellArgs fedimintSkillNames}; do
-      mkdir "$out/$name"
-      sed '1a advertise: true' \
-        "${cfg.fedimintSkillsSource}/.agents/skills/$name/SKILL.md" \
-        >"$out/$name/SKILL.md"
-    done
-  '';
   localSkills = {
     change-description = ../.agents/skills/change-description;
     conventional-commit = ../.agents/skills/conventional-commit;
@@ -76,10 +61,6 @@ let
       inherit name;
       source = "${cfg.skillsSource}/skills/${name}";
     }) upstreamSkillNames
-    ++ map (name: {
-      inherit name;
-      source = "${fedimintUserSkills}/${name}";
-    }) fedimintSkillNames
     ++ lib.mapAttrsToList (name: source: {
       inherit name source;
     }) localSkills;
@@ -1506,11 +1487,6 @@ in
       default = null;
       description = "Linked Specs and multipart review skill source supplied by a pinned flake input.";
     };
-    fedimintSkillsSource = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = null;
-      description = "Fedimint project skill source supplied by a pinned flake input.";
-    };
     githubTokenAgeFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
@@ -1632,10 +1608,6 @@ in
       {
         assertion = cfg.skillsSource != null;
         message = "tau-fedimint-bot requires review skills from a pinned flake input";
-      }
-      {
-        assertion = cfg.fedimintSkillsSource != null;
-        message = "tau-fedimint-bot requires Fedimint project skills from a pinned flake input";
       }
       {
         assertion = cfg.githubTokenAgeFile != null;
@@ -1768,6 +1740,12 @@ in
       "d ${userSkillsDir} 0700 ${user} ${user} -"
       # Retire the old bot-managed name; do not leave stale policy discoverable.
       "r ${userSkillsDir}/github-cli - - - -"
+      # Project skills are discovered in the active repository workdir instead.
+      # Remove the old global links so upgrades cannot keep advertising copies.
+      "r ${userSkillsDir}/fedimint-codebase - - - -"
+      "r ${userSkillsDir}/fedimint-coding-style - - - -"
+      "r ${userSkillsDir}/fedimint-development - - - -"
+      "r ${userSkillsDir}/pr-submissions-checklist - - - -"
       "d ${home}/.config/isolate 0700 ${user} ${user} -"
       "d ${home}/.config/tau 0700 ${user} ${user} -"
       "d ${home}/.ssh 0700 ${user} ${user} -"

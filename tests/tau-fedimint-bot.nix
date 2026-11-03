@@ -8,7 +8,6 @@
   ghBrokerPackage,
   githubNotificationsPackage,
   skillsSource,
-  fedimintSkillsSource,
 }:
 
 let
@@ -51,7 +50,6 @@ let
             tauPackage
             ghBrokerPackage
             skillsSource
-            fedimintSkillsSource
             ;
           isolatePackage = dummyIsolatePackage;
           clankPackage = dummyPackage "clank";
@@ -112,10 +110,6 @@ let
     lib.findFirst (package: lib.getName package == "tau-fedimint-sandbox")
       (throw "tau-fedimint-sandbox package missing from the Tau bot user profile")
       disabled.config.users.users.tau-fedimint.packages;
-  codingStyleRule = lib.findFirst (
-    rule: lib.hasPrefix "L+ /home/tau-fedimint/.config/agents/skills/fedimint-coding-style " rule
-  ) (throw "fedimint-coding-style installation rule missing") disabled.config.systemd.tmpfiles.rules;
-  codingStyleSource = lib.last (lib.splitString " " codingStyleRule);
   configCheck =
     pkgs.runCommand "tau-fedimint-bot-config-check"
       {
@@ -129,12 +123,6 @@ let
       ''
         set -euo pipefail
 
-        style=${codingStyleSource}/SKILL.md
-        test -s "$style"
-        grep -Fxq 'name: fedimint-coding-style' "$style"
-        grep -Fxq 'advertise: true' "$style"
-        sed '/^advertise: true$/d' "$style" \
-          | cmp - ${fedimintSkillsSource}/.agents/skills/fedimint-coding-style/SKILL.md
         # Both public command names must select the same patched executable.
         test "$(command -v direnv)" -ef "$(command -v direnv-dpc)"
         direnv version
@@ -384,6 +372,29 @@ let
           "ln -s /tmp/public-target /tmp/public"
       )
       machine.succeed("systemd-tmpfiles --create")
+      # Simulate upgrading a host that still has the old global project links.
+      project_skills = [
+          "fedimint-codebase",
+          "fedimint-coding-style",
+          "fedimint-development",
+          "pr-submissions-checklist",
+      ]
+      skills_dir = "/home/tau-fedimint/.config/agents/skills"
+      for name in project_skills:
+          machine.fail(f"test -e {skills_dir}/{name} || test -L {skills_dir}/{name}")
+      machine.succeed("mkdir -p /tmp/project-skill && touch /tmp/project-skill/SKILL.md")
+      for name in project_skills:
+          machine.succeed(f"ln -s /tmp/project-skill {skills_dir}/{name}")
+      machine.succeed(f"ln -s /tmp/project-skill {skills_dir}/unrelated-skill")
+      machine.succeed("systemd-tmpfiles --remove --create")
+      for name in project_skills:
+          machine.fail(f"test -e {skills_dir}/{name} || test -L {skills_dir}/{name}")
+      machine.succeed(
+          f"test -f /tmp/project-skill/SKILL.md && "
+          f"test -L {skills_dir}/unrelated-skill && "
+          f"test -f {skills_dir}/fedimint-bot-github-cli/SKILL.md && "
+          f"test -f {skills_dir}/multipart-review/SKILL.md"
+      )
       machine.succeed(
           "test -L /tmp/public && "
           "test \"$(stat -Lc '%u:%g:%a' /tmp/public-target)\" = 0:0:700"
