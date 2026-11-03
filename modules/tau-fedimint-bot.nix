@@ -44,6 +44,7 @@ let
   ];
   fedimintSkillNames = [
     "fedimint-codebase"
+    "fedimint-coding-style"
     "fedimint-development"
     "pr-submissions-checklist"
   ];

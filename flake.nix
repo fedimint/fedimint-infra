@@ -55,7 +55,7 @@
     };
 
     fedimint-skills = {
-      url = "github:fedimint/fedimint?rev=57c7e8c57c584650b85eb55eb6d2f8ba605f4798";
+      url = "github:fedimint/fedimint?rev=36d64222761c1dccc0bb0002012c077e105f9d21";
       flake = false;
     };
   };

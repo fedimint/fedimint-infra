@@ -112,6 +112,10 @@ let
     lib.findFirst (package: lib.getName package == "tau-fedimint-sandbox")
       (throw "tau-fedimint-sandbox package missing from the Tau bot user profile")
       disabled.config.users.users.tau-fedimint.packages;
+  codingStyleRule = lib.findFirst (
+    rule: lib.hasPrefix "L+ /home/tau-fedimint/.config/agents/skills/fedimint-coding-style " rule
+  ) (throw "fedimint-coding-style installation rule missing") disabled.config.systemd.tmpfiles.rules;
+  codingStyleSource = lib.last (lib.splitString " " codingStyleRule);
   configCheck =
     pkgs.runCommand "tau-fedimint-bot-config-check"
       {
@@ -125,6 +129,12 @@ let
       ''
         set -euo pipefail
 
+        style=${codingStyleSource}/SKILL.md
+        test -s "$style"
+        grep -Fxq 'name: fedimint-coding-style' "$style"
+        grep -Fxq 'advertise: true' "$style"
+        sed '/^advertise: true$/d' "$style" \
+          | cmp - ${fedimintSkillsSource}/.agents/skills/fedimint-coding-style/SKILL.md
         # Both public command names must select the same patched executable.
         test "$(command -v direnv)" -ef "$(command -v direnv-dpc)"
         direnv version

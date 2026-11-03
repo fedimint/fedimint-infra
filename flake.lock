@@ -2673,17 +2673,17 @@
     "fedimint-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1790099718,
-        "narHash": "sha256-Cp0fetzG5HYWxfiUOocXthG76+MbKoBx6kMP04d2Tt8=",
+        "lastModified": 1790215614,
+        "narHash": "sha256-sqLM8T1iMAvMPf2rXNa04sNGvFlMiLrqWhCkBX8a+0c=",
         "owner": "fedimint",
         "repo": "fedimint",
-        "rev": "57c7e8c57c584650b85eb55eb6d2f8ba605f4798",
+        "rev": "36d64222761c1dccc0bb0002012c077e105f9d21",
         "type": "github"
       },
       "original": {
         "owner": "fedimint",
         "repo": "fedimint",
-        "rev": "57c7e8c57c584650b85eb55eb6d2f8ba605f4798",
+        "rev": "36d64222761c1dccc0bb0002012c077e105f9d21",
         "type": "github"
       }
     },
