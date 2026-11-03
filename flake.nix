@@ -27,30 +27,29 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=42495e547dc3299f86913f198ea5fd330b5a288b";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=da6131f235e8453db5725f9d9c7d87f612feda36";
     };
 
     tau-ext-github = {
-      # Keep protocol 14 until Tau and all deployed extensions upgrade together.
-      url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?ref=refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/compat/protocol14-team-admission&rev=86e945f5c2d687d1574bf38b6f7d226dc3ebdba9";
+      url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=c1d0ce97396572f650a308702831ec3076c2b29e";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
 
-    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=41fbc0c686b039fa2921a4c044f89afd87ae1252";
+    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=f190367474dbceb548eab96483498dc0f70029cd";
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f";
 
-    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=d740efce29b89f914e414a0d95d3c2917dece3b3";
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=ecf498630d9b74ea0f36bc48b36ed6ce612adfe8";
 
     clank = {
-      url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=56a03fecf62ca8090c3e5f5a089b6d9c62483c8d";
+      url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=88fbc570239e2e4cedea53c0e6ca24cce3e88fd9";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
 
     linked-specs-skills = {
-      url = "git+https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git?rev=efaaeb7df161fb0b2838b70f640490f01ec97221";
+      url = "git+https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git?rev=bcd053b4ba4d1d074594bd612db31a9d9412667d";
       flake = false;
     };
   };
@@ -65,8 +64,8 @@
       ...
     }@inputs:
     let
-      # Protocol-14 backport: remove once the Tau pin includes generation-bound
-      # papercut archival. Use the same patched binary for the bot and its checks.
+      # Retain generation-bound papercut archival until it lands upstream.
+      # Use the same patched binary for the bot and its checks.
       tauPackage =
         system:
         (inputs.tau.packages.${system}.tau.override { buildDirty = true; }).overrideAttrs (old: {

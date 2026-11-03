@@ -25,10 +25,21 @@ Inspect the existing conversation for completion before resending a `tau message
 A timeout does not cancel accepted work. Use read-only checks to assess health;
 a live prompt starts work.
 
-Every service start clears the fixed `tau-fedimint-bot` session and starts a fresh
-coordinator. Repositories, Clank, and other persistent state survive; the
-coordinator recovers its queue from them. Coordinate deployments around active
-work, since activation can restart the service and interrupt agents and tools.
+Every service start clears the fixed `tau-fedimint-bot` session. A separate
+`tau-fedimint-recovery.service` waits for a successful read-only roster request,
+then sends the recovery instruction once through the authenticated bare-session
+message route. This creates the canonical coordinator; later scheduled
+and admitted session-directed requests use the same main identity. The daemon
+does not create an ordinary bootstrap agent.
+
+Repositories, Clank, and other persistent state survive. Recovery reconciles
+those records with current remote state before resuming work. This is a real
+startup request, not a health probe. Delivery acknowledgement is not completion.
+Recovery has no durable at-most-once guarantee across fresh service starts.
+The recovery unit does not retry an uncertain send or restart the daemon:
+inspect a failed unit and existing activity before deciding whether to resend.
+Each daemon restart starts recovery for its new session. Coordinate
+deployments around active work, since activation can interrupt agents and tools.
 
 The installed `tau-fedimint-sandbox` wrapper supplies the service's isolate
 profile without running the launcher. Even `dev print-prompt` initializes
@@ -84,8 +95,8 @@ The notifier admits notifications from members of `fedimint/bot-access` (numeric
 team ID `19107422`) without changing repository permissions or granting general
 organization access to the shell broker. It refreshes the full team roster at
 startup and about every four hours. Admission and authenticated identity context
-use the same numeric-ID-bound
-roster; login names and notification admission alone do not authorize work.
+use the same numeric-ID-bound roster; login names and notification admission
+alone do not authorize work.
 The numeric pin prevents a deleted and recreated team from inheriting this
 authority. GitHub's team-member listing includes members of child teams; those
 inherited members receive the same limited authority.
@@ -165,7 +176,8 @@ not an automatic deletion service or enforced task barrier.
 Shell commands use the patched `direnv exec .` in the agent's effective workdir.
 `direnv-dpc` remains a compatibility alias for the same executable. For an
 unapproved file, direnv warns and runs the command without loading that environment.
-An explicit denial still prevents environment loading; deployment does not approve environments.
+An explicit denial still prevents environment loading; deployment does not
+approve environments.
 
 During authorized development, inspect each checkout's `.envrc` and the environment
 inputs it references, including `flake.nix`, `flake.lock`, sourced files, and
@@ -190,12 +202,12 @@ nix build .#nixosConfigurations.runner-01.config.system.build.toplevel
 
 The check exercises local scripts, startup preservation, and real sandbox,
 browser, SSH, scratch-cleanup, and broker file-import behavior. It also runs the
-real pinned GitHub notifier's protocol14 handshake and generated
+pinned GitHub notifier's protocol16 handshake and tests the generated
 notifications-enabled config with synthetic credentials in a network-isolated
-Nix build sandbox, stopping at startup ready to verify protocol/config
-compatibility. It does not verify live readiness, credentials, or external
-delivery. After an authorized deployment
-through `just apply-runner "01"`, follow the debugging skill for live checks.
+Nix build sandbox. These checks do not verify live readiness, credentials, or
+external delivery. After an
+authorized deployment through `just apply-runner "01"`, follow the debugging
+skill for live checks.
 
 When upgrading Tau's persistent-state format, stop writers and retain a
 consistent private backup of the **complete** state, including journals,
