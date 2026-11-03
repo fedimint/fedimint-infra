@@ -97,7 +97,7 @@ let
       ''
         harness=$(grep -Eo '/nix/store/[^ ]+-tau-fedimint-harness.yaml' ${notificationsStart})
         python3 ${./tau-github-startup.py} \
-          ${githubNotificationsPackage}/bin/tau-ext-github "$harness"
+          ${githubNotificationsPackage}/bin/tau-ext-github-standalone "$harness"
         touch "$out"
       '';
   githubRequesterPackage = lib.findFirst (

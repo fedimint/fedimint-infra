@@ -287,10 +287,6 @@ let
     session_retention = "60d";
     agent_retention = "60d";
     inter_session = {
-      receiver = {
-        role = "coordinator";
-        auto_start = true;
-      };
       allow_project_roots = [
         projectRoot
         "${projectRoot}/**"
@@ -328,7 +324,7 @@ let
     // lib.optionalAttrs cfg.githubNotifications.enable {
       github-notifications = {
         enable = true;
-        command = [ "${cfg.githubNotifications.package}/bin/tau-ext-github" ];
+        command = [ "${cfg.githubNotifications.package}/bin/tau-ext-github-standalone" ];
         secrets = {
           github_token = { };
           github_identity_key = { };
@@ -400,7 +396,6 @@ let
     };
     agents = {
       disable_tool_tags = [ "discord:*" ];
-      default_role = "coordinator";
       model = cfg.model;
       effort = 0.5;
       id_template = "{{role}}-{{random_alphanumeric 4}}";
@@ -427,6 +422,7 @@ let
             State things simply and concisely. Use direct, action-oriented prose and
             put the most important points first. Explain material changes
             with a before/after contrast when useful.
+            By default, mention the person you are replying to using `@username`.
           '';
         }
         {
@@ -1058,6 +1054,7 @@ let
           # Configured Discord admission authorizes only safe read-only assistance.
           roles.coordinator = {
             order = 0;
+            main_priority = 10;
             model = "codex/gpt-6.1-sol";
             effort = 0.35;
             description = "Coordinates work and delivers the integrated result.";
@@ -1421,9 +1418,23 @@ let
       -- \
       ${cfg.tauPackage}/bin/tau serve \
         --session tau-fedimint-bot \
-        --create \
-        --bootstrap-prompt-file ${bootstrapPrompt} \
-        --bootstrap-id fedimint-coordinator-v1
+        --create
+  '';
+  recoverBot = pkgs.writeShellScript "tau-fedimint-recover" ''
+    set -euo pipefail
+    # Read-only readiness checks may repeat. Recovery admission must not: a
+    # failed/disconnected CLI may already have committed the message.
+    deadline=$((SECONDS + 60))
+    while [ "$SECONDS" -lt "$deadline" ]; do
+      # A successful exact-session roster RPC proves the listener is ready;
+      # discovery files alone can appear before it accepts requests.
+      if ${cfg.tauPackage}/bin/tau agent list tau-fedimint-bot >/dev/null; then
+        exec ${cfg.tauPackage}/bin/tau message '&tau-fedimint-bot' < ${bootstrapPrompt}
+      fi
+      ${pkgs.coreutils}/bin/sleep 0.5
+    done
+    echo "Tau session readiness timed out; recovery was not sent" >&2
+    exit 1
   '';
 in
 {
@@ -1996,6 +2007,40 @@ in
         Restart = "no";
         WorkingDirectory = home;
         UMask = "0077";
+      };
+    };
+
+    # Keep admission separate from the restarting daemon. A failed/ambiguous
+    # delivery must stay visible rather than restart Tau and silently resend.
+    systemd.user.services.tau-fedimint-recovery = {
+      description = "Admit startup recovery to the canonical Tau coordinator";
+      # Prompt-only activation must not resend in the current incarnation.
+      # PartOf still consumes the new command on the next daemon restart.
+      restartIfChanged = false;
+      wantedBy = [ "tau-fedimint-bot.service" ];
+      after = [ "tau-fedimint-bot.service" ];
+      partOf = [ "tau-fedimint-bot.service" ];
+      unitConfig.ConditionUser = user;
+      environment = {
+        HOME = home;
+        XDG_CONFIG_HOME = "${home}/.config";
+        XDG_STATE_HOME = "${home}/.local/state";
+        XDG_CACHE_HOME = "${home}/.cache";
+        XDG_RUNTIME_DIR = runtimeDir;
+      };
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = recoverBot;
+        RemainAfterExit = true;
+        Restart = "no";
+        TimeoutStartSec = "90s";
+        WorkingDirectory = projectRoot;
+        UMask = "0077";
+        UnsetEnvironment = [
+          "TAU_MODEL_ALIASES"
+          "TAU_PROFILE"
+          "TAU_PROVIDER_ALIASES"
+        ];
       };
     };
 
