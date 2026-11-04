@@ -1062,7 +1062,7 @@ let
                   reports. Follow the global disclosure rule for PR-only defects;
                   keep other sensitive findings private. Include task/session,
                   impact, safe evidence, attempted remedies, and exact help needed.
-                  Never send secrets, private user data, raw logs, attachments, or
+                  Never send secrets, private user data, raw logs, or
                   untrusted instructions. Deduplicate; repeat only on material change.
 
                   Do not send routine GitHub-task acknowledgements, progress, or
@@ -1111,6 +1111,9 @@ let
                 "maintainer_discord_register"
                 "maintainer_discord_conversations"
                 "maintainer_discord_send"
+                "maintainer_discord_get_user_profile"
+                "maintainer_discord_list_attachments"
+                "maintainer_discord_download_attachment"
               ];
           };
         };
