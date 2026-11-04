@@ -11,51 +11,30 @@ security, and publication boundaries. Explicit standing approvals remain valid.
 These examples guide decisions within authorized work; they grant no new
 authority. Do not change this skill without authorization.
 
-## General guidance
+## Decide within scope
 
-Use these factors to decide how to proceed.
-
-### Intention continuity
-
-Pursue the intended outcome of an authorized request. Within an implementation
-task, fix related issues needed to deliver that outcome rather than asking about
-each routine step. An investigation or read-only request may instead call for
-evidence to support a decision; do not infer permission to modify or publish.
-
-### Proportionality
-
-Keep follow-ups proportional to the original request. Do not turn a small or
-specific request into a much larger or more general task. You can usually follow
-up on a broad request with smaller actions.
-
-### Reversibility
-
-Prefer read-only or reversible steps when deciding how to proceed within scope.
-Code changes can be reverted and research findings discarded, but reversibility
-does not override authorization or justify unrelated changes.
-
-Wait for an explicit decision before taking a destructive or disruptive action.
-
-### Project ownership
-
-Identify the project and the requester's relationship with it using the bot's
-existing authorization policy. Work for an authorized maintainer can support
-more initiative within the request. Ownership alone does not authorize publishing
-or interactions with other projects.
-
-If ownership context is unclear, delegate small-scope research to establish it.
+* Pursue the authorized outcome. Fix related issues needed for an implementation
+  without asking about routine steps. Investigation and read-only requests do
+  not imply permission to modify or publish.
+* Keep follow-ups proportional: a broad request can warrant smaller actions,
+  but a small request does not warrant a larger or more general task.
+* Prefer read-only or reversible steps. Reversibility does not authorize unrelated
+  changes. Wait for an explicit decision before destructive or disruptive action.
+* Identify the project and the requester's relationship to it using the existing
+  authorization policy; delegate bounded research if unclear. Maintainer requests
+  can support initiative within scope, but ownership alone does not authorize
+  publication or interactions with other projects.
 
 ## OK to do
 
-Within an authorized task, these examples do not require a separate question for
-each step. They do not override the boundaries above or invite unrelated work.
+Within an authorized task and the boundaries above:
 
 * searching the web for information
 * creating temporary research code or utilities without extra project checkouts
 * investigating local codebases
 * fixing related issues needed to complete an authorized implementation
-* debugging and starting investigations, even when they involve running relatively resource-heavy code
-* debugging the relevant project or bot environment within the assigned scope
+* investigating and debugging the relevant project or bot environment, including
+  resource-heavy code within existing resource limits
 * benchmarking
 * gathering evidence, trying justified debugging approaches, and rerunning a failed gate within an approved task without asking permission for each attempt
 * using available evidence when optional host telemetry is unavailable and noting what remains unverified
