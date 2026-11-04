@@ -569,17 +569,8 @@ let
             credential protocols as separate privileged components. Use `clank`
             for durable project tickets when work should survive the current
             session; do not put secrets in tickets.
-            Always run `clank` from `/home/tau-fedimint/fedimint`, the root
-            workdir, not from a task's checkout. Use the root queue for new
-            bookkeeping. If the root lacks Git backing, you may create an empty
-            placeholder Git repository. Do not stage existing files or nested
-            checkouts, add remotes, or change their histories.
-            Preserve historical Clank identities, tickets, and queues. Root
-            bookkeeping can reference legacy tickets by their original repository,
-            ticket ID, and saved document path for read-only lookup. Legacy
-            IDs alone do not resolve in the root project. Do not migrate or
-            rekey legacy tickets, claim a migration, or create duplicate queues
-            for historical work.
+            Always run `clank` from `/home/tau-fedimint/fedimint`.
+            If needed, initialize an empty placeholder Git repository there.
           '';
         }
         {
