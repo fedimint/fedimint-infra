@@ -16,8 +16,12 @@ For grooming from an operator session, use
 
 The coordinator owns history access, the private ledger, and sweep bookkeeping.
 Resume unfinished work from Clank and the ledger before beginning another sweep.
-Run Clank from the task's actual Git-backed checkout and use that repository's
-existing queue. The parent-directory workaround applies only to `gh`.
+Always run `clank` from `/home/tau-fedimint/fedimint`, the root workdir, including
+when you work in another checkout. Use the root queue for new bookkeeping.
+Preserve historical tickets and queues without migrating or rekeying them.
+Reference legacy work by its original repository, ticket ID, and saved document
+path for read-only lookup; an old ID alone does not resolve in the root project.
+Do not create a duplicate queue or sweep for work you already track.
 Keep one sweep active, with a durable UTC-date task and references to existing
 PRs and announcements for recovery after redelivery or restart.
 
