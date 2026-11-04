@@ -27,7 +27,7 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=03f17f393e945da6ad94b29ffb4caac96045b234";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=d2b0085c68832c3902cfcb111f9d0b334aabf9a1";
     };
 
     tau-ext-github = {
