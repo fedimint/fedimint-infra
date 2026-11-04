@@ -569,6 +569,9 @@ let
             credential protocols as separate privileged components. Use `clank`
             for durable project tickets when work should survive the current
             session; do not put secrets in tickets.
+            Run Clank from the task's actual Git-backed checkout and use that
+            repository's existing queue. The parent-directory
+            workaround below applies only to `gh`, not Clank.
           '';
         }
         {
