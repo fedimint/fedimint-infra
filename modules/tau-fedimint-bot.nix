@@ -569,6 +569,8 @@ let
             credential protocols as separate privileged components. Use `clank`
             for durable project tickets when work should survive the current
             session; do not put secrets in tickets.
+            Always run `clank` from `/home/tau-fedimint/fedimint`.
+            If needed, initialize an empty placeholder Git repository there.
           '';
         }
         {
