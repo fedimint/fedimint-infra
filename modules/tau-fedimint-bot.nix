@@ -336,6 +336,7 @@ let
             "fedimint/fedimint"
             "fedimint/fedimint-sdk"
             "fedimint/fedimint-infra"
+            "fedimint/fedimint-observer"
           ];
           actors = {
             mode = "repository_maintainers";
@@ -484,7 +485,7 @@ let
             verifies the provenance and exact target.
 
             The configured `fedimint/bot-access` team grants a separate, limited
-            exception across the three watched public repositories. Use only the
+            exception across the configured watched public repositories. Use only the
             notifier's authenticated team-membership facts, bound to the actor's
             numeric GitHub ID and the configured team ID 19107422. Require
             `status: member` in the `teams` facts for organization `fedimint`,
