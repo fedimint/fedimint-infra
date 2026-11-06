@@ -42,8 +42,6 @@
 
   users.users.root.openssh.authorizedKeys.keys = rootAuthorizedKeys;
 
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-
   networking = {
     inherit hostName;
     firewall = {

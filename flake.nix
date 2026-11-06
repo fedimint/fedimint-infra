@@ -84,6 +84,8 @@
       ];
 
       topLevelModule = {
+        imports = [ ./modules/security-kernel.nix ];
+
         # Match NixOS/nixpkgs#576401, including the Comodo cross-sign path.
         # This affects system trust only, not applications' independent bundles.
         security.pki.caCertificateBlacklist = [

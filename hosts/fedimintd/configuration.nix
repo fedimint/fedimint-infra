@@ -32,8 +32,6 @@
 
   users.users.root.openssh.authorizedKeys.keys = adminKeys;
 
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-
   networking = {
     inherit hostName;
     firewall = {
