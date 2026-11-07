@@ -117,6 +117,7 @@ let
           pkgs.coreutils
           pkgs.git
           pkgs.gnugrep
+          pkgs.python3
           patchedDirenvPackage
         ];
       }
@@ -127,6 +128,48 @@ let
         test "$(command -v direnv)" -ef "$(command -v direnv-dpc)"
         direnv version
         direnv-dpc version
+
+        harness=$(grep -Eo '/nix/store/[^ ]+-tau-fedimint-harness.yaml' ${disabledStart})
+        python3 - "$harness" <<'PY'
+        import json
+        import sys
+
+        with open(sys.argv[1]) as source:
+            harness = json.load(source)
+        shell = harness["extensions"]["core-shell"]["config"]
+        assert shell["working_directory"] == "/home/tau-fedimint/fedimint"
+        assert shell["shell"]["prefix"] == ["direnv", "exec", "."]
+        workflow = next(
+            prompt["text"] for prompt in harness["agents"]["prompt_fragments"]
+            if prompt["name"] == "fedimint-bot.project-workflow"
+        )
+        assert "explicitly set every" in workflow
+        assert "shell call's workdir to /home/tau-fedimint/fedimint" in workflow
+        assert "An already approved environment loads automatically" in workflow
+        PY
+
+        # Read-only parent calls must not load an approved child environment.
+        (
+          export HOME="$TMPDIR/direnv-home"
+          mkdir -p "$HOME" "$TMPDIR/projects/checkout"
+          project_parent="$TMPDIR/projects"
+          checkout="$project_parent/checkout"
+          marker="$TMPDIR/environment-loaded"
+          printf 'touch "%s"\n' "$marker" >"$checkout/.envrc"
+          git init -q "$checkout"
+          direnv allow "$checkout"
+          (
+            cd "$project_parent"
+            direnv exec . git -C "$checkout" status --porcelain
+            direnv exec . cat "$checkout/.envrc"
+          )
+          test ! -e "$marker"
+          (
+            cd "$checkout"
+            direnv exec . true
+          )
+          test -e "$marker"
+        )
 
         clear_session=$(
           grep -Eo '/nix/store/[^ ]+-tau-fedimint-clear-session' ${disabledStart}

@@ -621,15 +621,24 @@ let
             # Project work
 
             Before project work, use `workdir` to select the project's actual
-            checkout so shell integration can use its own tools.
+            checkout for instruction discovery.
 
             Shell commands use the patched `direnv exec .`; `direnv-dpc` remains
             a compatibility alias. An unapproved `.envrc` warns and runs the
             command without its environment. An explicit denial still prevents
             environment loading.
+            An already approved environment loads automatically, even for `cat`
+            or `git`; merely avoiding `direnv allow` does not prevent execution.
+            For read-only reviews, research and support, explicitly set every
+            shell call's workdir to ${projectRoot}, using `git -C` with the exact
+            checkout, exact `git show` objects, or absolute file paths for reads.
+            Do not inherit the checkout shell workdir, even after selecting it
+            for instruction discovery. This is workflow guidance, not containment.
             During authorized development, inspect `.envrc` and the environment
             inputs it references, including `flake.nix`, `flake.lock`, sourced
-            files and scripts. If they match the expected trusted environment,
+            files and scripts, using that same explicit parent shell workdir
+            before any checkout environment executes.
+            If they match the expected trusted environment,
             run `direnv allow` in that checkout before builds, tests, and Git
             commits that run project hooks. Run these commands in the inspected,
             approved checkout environment, not the parent GitHub-only shell.
