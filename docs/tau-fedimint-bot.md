@@ -179,11 +179,21 @@ unapproved file, direnv warns and runs the command without loading that environm
 An explicit denial still prevents environment loading; deployment does not
 approve environments.
 
+An approved environment loads even for `cat` or `git`; avoiding `direnv allow`
+alone does not prevent execution. For read-only reviews, research, and support,
+set every shell call's workdir to `/home/tau-fedimint/fedimint`. Use `git -C` with
+the exact checkout, exact `git show` objects, or absolute file paths. Selecting a
+checkout with `workdir` for instruction discovery does not change this rule.
+Treat this as workflow guidance, not containment or permission to execute project
+code.
+
 During authorized development, inspect each checkout's `.envrc` and the environment
 inputs it references, including `flake.nix`, `flake.lock`, sourced files, and
-scripts. If they match the expected trusted environment, run `direnv allow` there
-as the bot account before builds and tests. Changed `.envrc` content needs renewed
-approval. Recheck changed inputs even if `.envrc` still says `use flake`; approval
+scripts, from that explicit parent shell workdir before running any command in a
+checkout environment. If they match the expected trusted environment, approve
+that checkout with `direnv allow` as the bot account before builds and tests.
+Changed `.envrc` content needs renewed approval. Recheck changed inputs even if
+`.envrc` still says `use flake`; approval
 of unchanged `.envrc` content does not cover changed flake inputs. Do not approve
 PR-controlled code or environment changes without inspection. This procedure
 grants no extra authority: during read-only reviews, team-only requests, and
