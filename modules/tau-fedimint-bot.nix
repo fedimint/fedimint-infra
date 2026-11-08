@@ -336,6 +336,7 @@ let
             "fedimint/fedimint"
             "fedimint/fedimint-sdk"
             "fedimint/fedimint-infra"
+            "fedimint/fedimint-observer"
           ];
           actors = {
             mode = "repository_maintainers";
@@ -484,7 +485,7 @@ let
             verifies the provenance and exact target.
 
             The configured `fedimint/bot-access` team grants a separate, limited
-            exception across the three watched public repositories. Use only the
+            exception across the configured watched public repositories. Use only the
             notifier's authenticated team-membership facts, bound to the actor's
             numeric GitHub ID and the configured team ID 19107422. Require
             `status: member` in the `teams` facts for organization `fedimint`,
@@ -1078,7 +1079,8 @@ let
                   Use full GitHub issue/PR URLs, not bare numbers, in every post.
 
                   Send acceptance does not mean a maintainer read the message or
-                  received a ping; the bridge suppresses mentions.
+                  received a ping. Native user, role, and everyone mentions can
+                  notify recipients; automatic reply-author pings are disabled.
                   Never retry an uncertain send: record it and escalate through the
                   normal user-facing path. If receiver designation is missing, use
                   maintainer_discord_register {}; this does not prove network readiness.
@@ -1114,8 +1116,10 @@ let
               ++ lib.optionals cfg.discord.enable [
                 "maintainer_discord_register"
                 "maintainer_discord_conversations"
+                "maintainer_discord_list_room_participants"
                 "maintainer_discord_send"
                 "maintainer_discord_get_user_profile"
+                "maintainer_discord_update_self_profile"
                 "maintainer_discord_list_attachments"
                 "maintainer_discord_download_attachment"
               ];

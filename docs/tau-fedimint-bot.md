@@ -208,12 +208,11 @@ nix build .#nixosConfigurations.runner-01.config.system.build.toplevel
 
 The check exercises local scripts, startup preservation, and real sandbox,
 browser, SSH, scratch-cleanup, and broker file-import behavior. It also runs the
-pinned GitHub notifier's protocol16 handshake and tests the generated
+pinned GitHub notifier's protocol 21.0 handshake and tests the generated
 notifications-enabled config with synthetic credentials in a network-isolated
 Nix build sandbox. These checks do not verify live readiness, credentials, or
-external delivery. After an
-authorized deployment through `just apply-runner "01"`, follow the debugging
-skill for live checks.
+external delivery. After an authorized deployment through `just apply-runner "01"`,
+follow the debugging skill for live checks.
 
 When upgrading Tau's persistent-state format, stop writers and retain a
 consistent private backup of the **complete** state, including journals,
