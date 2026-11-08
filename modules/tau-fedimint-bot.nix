@@ -337,6 +337,7 @@ let
             "fedimint/fedimint-sdk"
             "fedimint/fedimint-infra"
             "fedimint/fedimint-observer"
+            "fedimint/fedimint.org"
           ];
           actors = {
             mode = "repository_maintainers";
