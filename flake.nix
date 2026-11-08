@@ -27,7 +27,7 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=d2b0085c68832c3902cfcb111f9d0b334aabf9a1";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=5f67ae187d49b323c35581b41812cba178cfd74c";
     };
 
     tau-ext-github = {
@@ -36,7 +36,7 @@
       inputs.flake-utils.follows = "flake-utils";
     };
 
-    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=c26d1c06520f0130b1f75c802071e2e74b719a90";
+    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=f36340f1ec534241a888e15a0eef5ffb397faed7";
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f";
 
@@ -64,13 +64,8 @@
       ...
     }@inputs:
     let
-      # Retain generation-bound papercut archival until it lands upstream.
-      # Use the same patched binary for the bot and its checks.
-      tauPackage =
-        system:
-        (inputs.tau.packages.${system}.tau.override { buildDirty = true; }).overrideAttrs (old: {
-          patches = (old.patches or [ ]) ++ [ ./nix/patches/tau-papercut-generation.patch ];
-        });
+      # Use the same upstream binary for the bot and its checks.
+      tauPackage = system: inputs.tau.packages.${system}.tau;
 
       overlays = [
         (final: prev: {
