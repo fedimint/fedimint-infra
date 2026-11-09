@@ -1851,12 +1851,8 @@ in
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "tau-self-pr-grooming" ''
           exec ${cfg.tauPackage}/bin/tau message '&tau-fedimint-bot' <<'EOF'
-          Scheduled daily self-PR grooming. Load and execute the installed
-          self-pr-grooming skill: review the bot's own open PRs, close those that
-          are no longer useful or relevant, and remind maintainers of pending
-          dispositions through the configured maintainers Discord destination.
-          Use today's UTC date for the durable sweep record; resume existing work
-          rather than duplicate it. Delivery is not completion.
+          Add a scheduled daily self-PR grooming task to your work queue:
+          use the self-pr-grooming skill with today's UTC date.
           EOF
         '';
         TimeoutStartSec = "90s";
@@ -1895,15 +1891,9 @@ in
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "tau-papercut-grooming" ''
           exec ${cfg.tauPackage}/bin/tau message '&tau-fedimint-bot' <<'EOF'
-          Scheduled daily papercut grooming. Load and execute the installed
-          fedimint-bot-self-improvement skill. Privately account for every report,
-          automatically fix actionable bot issues within its scope, and propose
-          tested, independently reviewed PRs to fedimint/fedimint-infra.
-          Report only resulting PRs to the configured maintainers Discord destination.
-          Use today's UTC date for the durable sweep record; resume unfinished
-          work before a new sweep, and never overlap sweeps or duplicate PRs.
-          Delivery is not completion. No self-merge, deployment, service restart,
-          credential expansion, sandbox weakening, or raw report publication.
+          Add a scheduled daily papercut-grooming task to your work queue:
+          use the fedimint-bot-self-improvement skill for
+          fedimint/fedimint-infra using today's UTC date.
           EOF
         '';
         TimeoutStartSec = "90s";
@@ -1941,47 +1931,21 @@ in
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "tau-workdir-cleanup" ''
           exec ${cfg.tauPackage}/bin/tau message '&tau-fedimint-bot' <<'EOF'
-          Scheduled weekly working directory cleanup. First finish all started
-          work, including delegates and builds. Do not start new tasks until
-          cleanup is complete; defer incoming tasks during cleanup. Wait until
-          cleanup cannot affect active work. Resume any existing cleanup instead
-          of starting another.
-
-          Clean only within ${projectRoot}. The configured main repositories are
-           ${fedimintCheckout}, ${fedimintSdkCheckout}, and
-           ${fedimintInfraCheckout}; preserve them.
-          Delete disposable temporary repositories you cloned, but only after
-          checking for unfinished or unpublished work (including branches,
-          commits, working-copy changes and untracked files). Preserve uncertain
-          repositories and worktrees with unfinished or unpublished source.
-
-          Inventory and remove generated target/ and target-nix/
-          directories throughout ${projectRoot}, including both main repositories
-          and ALL retained legacy task checkouts, clones and worktrees. Preserving
-          source does not require preserving rebuildable output. Check
-          that each directory contains generated output, not tracked source or
-          unique runtime data, and that no active build or process uses it.
-          Preserve any specific non-rebuildable evidence you identify; do not keep
-          an entire build tree merely because its source task is unfinished or
-          might need another build. If uncertain, name the exact retained path,
-          size and concrete dependency or unresolved question in the report.
-          Do not follow symlinks outside the cleanup scope or delete shared
-          Git/Jujutsu storage.
-
-          Run `nix run nixpkgs#dust -- -R ${projectRoot}` to inspect remaining
-          large items. Remove other items only after confirming they are
-          non-essential and disposable; skip uncertain items and report them.
-          Protect unfinished or unpublished work, active repositories/builds,
-          bookkeeping, credentials and Tau persistent state. This is not permission
-          for broad deletion or cleanup outside the working directory.
-
-          Report what you removed, space recovered, total remaining usage and the
-          largest retained build directories with reasons. Account for large
-          build trees before reporting cleanup complete.
-          Resume the normal task queue after cleanup completes, reusing the main
-          repositories under the one-engineer-per-repository locking policy.
-          If cleanup is blocked, report the blocker and leave uncertain data intact.
-          Delivery is not completion.
+          Add a scheduled weekly working-directory cleanup task to your work queue:
+          when safe for active work, clean disposable files within ${projectRoot}.
+          Preserve the main repositories ${fedimintCheckout},
+          ${fedimintSdkCheckout}, and ${fedimintInfraCheckout}.
+          Check temporary clones for unfinished or unpublished work, including
+          branches, commits, working-copy changes and untracked files, before deletion.
+          Remove verified rebuildable target/ and target-nix/ output throughout
+          the scope, including retained clones and worktrees, when unused by active
+          builds or processes. Preserve source, unique runtime data, non-rebuildable
+          evidence, bookkeeping, credentials, Tau state and shared Git/Jujutsu storage.
+          Do not follow symlinks outside the scope.
+          Run `nix run nixpkgs#dust -- -R ${projectRoot}` to inspect remaining large
+          items; remove other verified disposable files and leave uncertain data intact.
+          Report removals, recovered space, remaining usage, blockers and the paths,
+          sizes and reasons for retained large build directories.
           EOF
         '';
         TimeoutStartSec = "90s";
