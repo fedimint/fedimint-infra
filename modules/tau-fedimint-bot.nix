@@ -889,6 +889,10 @@ let
                 by the installed self-pr-grooming skill. This is not authority for
                 unsolicited code changes or other authors' PRs.
 
+                Scheduled stale-triage requests authorize the project skills
+                `github-stale-issue-triage` and `github-stale-pr-triage` from
+                current upstream trunk in `fedimint/fedimint`.
+
                 Scheduled papercut grooming is separate standing authority to
                 execute `fedimint-bot-self-improvement`: privately account for
                 reports, fix actionable bot issues through tested, independently
@@ -1437,6 +1441,14 @@ in
         description = "systemd calendar for self-PR grooming requests.";
       };
     };
+    staleTriage = {
+      enable = lib.mkEnableOption "weekly stale issue and pull-request triage";
+      onCalendar = lib.mkOption {
+        type = lib.types.str;
+        default = "Sat *-*-* 09:00:00 America/Los_Angeles";
+        description = "systemd calendar for stale triage requests to the existing coordinator.";
+      };
+    };
     papercutGrooming = {
       enable = lib.mkEnableOption "daily private papercut grooming and reviewed infra PR proposals";
       onCalendar = lib.mkOption {
@@ -1857,6 +1869,47 @@ in
           dispositions through the configured maintainers Discord destination.
           Use today's UTC date for the durable sweep record; resume existing work
           rather than duplicate it. Delivery is not completion.
+          EOF
+        '';
+        TimeoutStartSec = "90s";
+        Restart = "no";
+        WorkingDirectory = home;
+        UMask = "0077";
+      };
+    };
+
+    systemd.user.timers.tau-fedimint-stale-triage = lib.mkIf cfg.staleTriage.enable {
+      description = "Request weekly stale issue and pull-request triage";
+      wantedBy = [ "timers.target" ];
+      unitConfig.ConditionUser = user;
+      timerConfig = {
+        OnCalendar = cfg.staleTriage.onCalendar;
+        Persistent = false;
+        AccuracySec = "1min";
+        Unit = "tau-fedimint-stale-triage.service";
+      };
+    };
+
+    systemd.user.services.tau-fedimint-stale-triage = lib.mkIf cfg.staleTriage.enable {
+      description = "Deliver one stale-triage instruction to the existing bot";
+      unitConfig.ConditionUser = user;
+      # Delivery must not start/restart the bot or retry uncertain sends.
+      after = [ "tau-fedimint-bot.service" ];
+      environment = {
+        HOME = home;
+        XDG_CONFIG_HOME = "${home}/.config";
+        XDG_STATE_HOME = "${home}/.local/state";
+        XDG_CACHE_HOME = "${home}/.cache";
+        XDG_RUNTIME_DIR = runtimeDir;
+      };
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writeShellScript "tau-stale-triage" ''
+          exec ${cfg.tauPackage}/bin/tau message '&tau-fedimint-bot' <<'EOF'
+          Add a scheduled weekly stale-triage task to your work queue: in
+          fedimint/fedimint (${fedimintCheckout}) on current upstream trunk,
+          execute the project skills github-stale-issue-triage and
+          github-stale-pr-triage once each.
           EOF
         '';
         TimeoutStartSec = "90s";
