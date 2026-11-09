@@ -29,13 +29,13 @@ with subprocess.Popen(
         decoder = cbor2.CBORDecoder(process.stdout)
         hello = decoder.decode()
         assert hello["message"] == "hello", hello
-        assert hello["payload"]["protocol_version"] == {"major": 21, "minor": 0}, hello
+        assert hello["payload"]["protocol_version"] == {"major": 23, "minor": 1}, hello
         cbor2.dump(
             {
                 "message": "configure",
                 "payload": {
                     "instance_name": "github-notifications",
-                    "harness_protocol_version": {"major": 21, "minor": 0},
+                    "harness_protocol_version": {"major": 23, "minor": 1},
                     "config": config,
                     "secrets": {
                         config["token_secret"]: "offline-test-token",
