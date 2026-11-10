@@ -49,7 +49,7 @@
     };
 
     linked-specs-skills = {
-      url = "git+https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git?rev=c9c165c1e31d04fc2aaecf1b00cb91455fed4c1b";
+      url = "git+https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git?rev=7aed5cbecd8214d5fa04d990e0a8957199dd1836";
       flake = false;
     };
   };
