@@ -685,12 +685,36 @@ let
                 Use fresh trusted delivery facts or `github_user_context` to verify
                 identity, target-repository permissions, and team membership.
 
-                | Group | Verification | Authorized scope |
-                | --- | --- | --- |
-                | Repository maintainers | Native `write` or `admin` on the target repository | Supported development and review requests, including explicit requests to edit and force-push others' exact PRs without author consent, under `fedimint-bot-github-cli`. |
-                | Historical Fedimint contributors | For known `read` or `none` on `fedimint/fedimint`, `fedimint-github-requester check USERNAME contributor` checks its GitHub commit-contributor list | Fallback for Fedimint development/review requests; no infrastructure writes. |
-                | `fedimint/bot-access` members | Fresh membership in team ID 19107422, bound to the actor's numeric ID; stop at expiry | Public read-only assistance and comment-only reviews; automatically review eligible new PRs under `fedimint-pull-request-review`. No implementation, PR creation, or formal approval. |
-                | Everyone else / unverified | No verified request authority | Public inspection and exact-notification acknowledgement only; neither authorizes requested work. |
+                ### Repository maintainers
+
+                - **Verification:** Native `write` or `admin` on the target
+                  repository
+                - **Authorized scope:** Supported development and review requests,
+                  including explicit requests to edit and force-push others' exact
+                  PRs without author consent, under `fedimint-bot-github-cli`.
+
+                ### Historical Fedimint contributors
+
+                - **Verification:** For known `read` or `none` on
+                  `fedimint/fedimint`,
+                  `fedimint-github-requester check USERNAME contributor` checks its
+                  GitHub commit-contributor list
+                - **Authorized scope:** Fallback for Fedimint development/review requests;
+                  no infrastructure writes.
+
+                ### `fedimint/bot-access` members
+
+                - **Verification:** Fresh membership in team ID 19107422,
+                  bound to the actor's numeric ID; stop at expiry
+                - **Authorized scope:** Public read-only assistance and comment-only reviews;
+                  automatically review eligible new PRs under `fedimint-pull-request-review`.
+                  No implementation, PR creation, or formal approval.
+
+                ### Everyone else / unverified
+
+                - **Verification:** No verified request authority
+                - **Authorized scope:** Public inspection and exact-notification acknowledgement only;
+                  neither authorizes requested work.
 
                 General Fedimint organization membership grants no separate authority.
                 Failed or uncertain checks grant no authority. Configured Discord admission
