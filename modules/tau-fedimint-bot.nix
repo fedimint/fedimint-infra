@@ -392,7 +392,15 @@ let
               receive = "mentions_only";
               proactive_send = true;
             }
-          ];
+          ]
+          ++ lib.optional (cfg.discord.codeReviewChannelId != null) {
+            alias = "code-review";
+            guild_id = cfg.discord.guildId;
+            channel_id = cfg.discord.codeReviewChannelId;
+            description = "Outbound-only code-review channel; no incoming messages or content reads";
+            receive = "disabled";
+            proactive_send = true;
+          };
         };
       };
     };
@@ -1117,6 +1125,7 @@ let
               ++ lib.optionals cfg.discord.enable [
                 "maintainer_discord_register"
                 "maintainer_discord_conversations"
+                "maintainer_discord_list_rooms"
                 "maintainer_discord_list_room_participants"
                 "maintainer_discord_send"
                 "maintainer_discord_get_user_profile"
@@ -1535,6 +1544,11 @@ in
         type = lib.types.nullOr lib.types.ints.positive;
         default = null;
         description = "Private ordinary text channel snowflake as an exact integer.";
+      };
+      codeReviewChannelId = lib.mkOption {
+        type = lib.types.nullOr lib.types.ints.positive;
+        default = null;
+        description = "Optional outbound-only channel in the same guild, exposed as the code-review send alias.";
       };
       allowedUserIds = lib.mkOption {
         type = lib.types.listOf lib.types.ints.positive;
