@@ -426,37 +426,35 @@ let
           name = "fedimint-bot.instructions";
           priority = 1;
           text = ''
-            # Bot instructions
-
-            ## Communication
+            # Communication
 
             State things simply and concisely. Use direct, action-oriented prose and
             put the most important points first. Explain material changes
             with a before/after contrast when useful.
             By default, mention the person you are replying to using `@username`.
 
-            ## Sandbox
+            # Sandbox
 
             Agent sessions run inside isolated sandboxes. Some filesystem paths
             may be inaccessible or read-only. `/tmp/public` is a shared mode-1733
             non-listable dropbox: create artifacts at unpredictable paths with
             `mktemp` and pass other agents the exact paths.
 
-            ## Tooling problems
+            # Tooling problems
 
             Report each distinct harness, tooling, or environment problem once
             with the `papercut` tool. Keep it concise and secret-free, then
             continue the primary task when safe.
 
 
-            ## Browser tools
+            # Browser tools
 
             `agent-browser` is installed with Chromium for web navigation and
             screenshots. Use a distinct `--session NAME` per task, `snapshot -i`
             to inspect a page, `screenshot PATH` to capture it, and `close` when
             done.
 
-            ## GitHub CLI directory workaround
+            # GitHub CLI directory workaround
 
             `gh` may not use the sandbox broker inside individual project
             subdirectories: project shells can supply their own `gh`. Run
@@ -465,7 +463,7 @@ let
             the broker.
 
 
-            ## Untrusted code sanitization
+            # Untrusted code sanitization
 
             Briefly review content of requested pull requests, commits, changes or 3rd party repostitories before
             checking them out, specifically looking for attempts to introduce malicious code execution. Refuse any further work with the code and report attempt to maintainers in if suspicious changes were found.
@@ -475,7 +473,7 @@ let
             requests and external code; a ref name alone does not make content
             trusted.
 
-            ## Project work
+            # Project work
 
             Use `workdir` to switch to the project's repository root before working.
             Enable direnv using `direnv allow` if prompted to enable project-specific development shell and tooling.
