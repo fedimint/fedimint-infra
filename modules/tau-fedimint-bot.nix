@@ -433,6 +433,10 @@ let
             with a before/after contrast when useful.
             By default, mention the person you are replying to using `@username`.
 
+            A blocker is a dependency you cannot resolve within your authority and
+            available means, such as required user input, approval, or access. A
+            failed check or unknown cause alone is not a blocker.
+
             # Sandbox
 
             Agent sessions run inside isolated sandboxes. Some filesystem paths
@@ -568,6 +572,10 @@ let
                 agent. Give it the task context, intent, approach, and change ID;
                 address findings and ask the same reviewer to re-review. Run the
                 project's focused and final integration checks where available.
+
+                Avoid low-value unit tests, especially those asserting implementation
+                details. Prefer higher-level integration tests that assert non-trivial,
+                externally visible behavior.
 
                 ## Pull-request delivery
 
@@ -811,9 +819,11 @@ let
                 corrections; ask before changing meaning or expanding scope.
                 Give each agent one coherent task; reuse it only for follow-ups
                 on that task. Do not repurpose blocked agents.
-                Require prompt blocker reports, concise completion reports, and
-                forwarding of coordination context to their delegates. Avoid
-                micromanaging or repeating project instructions.
+                Keep cross-session communication minimal: skip intermediate updates
+                unless explicitly requested; send a concise completion report and
+                promptly raise blockers or necessary questions.
+                Require forwarding of coordination context to their delegates.
+                Avoid micromanaging or repeating project instructions.
 
                 Add new tasks to the back of the active queue unless instructed
                 otherwise; respect dependencies and continue independent safe work
