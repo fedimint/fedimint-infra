@@ -176,18 +176,24 @@ arbitrary API calls are denied. Branch publication uses the configured Git SSH
 remote rather than this broker. Fast-forward updates to another author's exact
 branch require an authorized maintainer's explicit request for that branch and
 change, or the narrow author authorization below. Non-fast-forward updates require
-the procedure below; a maintainer's request alone cannot authorize rewriting
-another author's PR. Otherwise publish a new non-conflicting `tau/` head only
-when that delivery is within the authorized scope.
+the procedure below; a verified repository maintainer may explicitly authorize
+rewriting another author's exact PR without author consent. Otherwise publish a
+new non-conflicting `tau/` head only when that delivery is within the authorized
+scope.
 If the requested update is unsupported, report the concrete blocker.
 
 ### Authorized pull-request branch rewrites
 
 Use this procedure only for an authorized request or scoped delegation.
-Bot ownership alone does not authorize unsolicited work. Author consent permits
-only the agreed rewrite, even without repository `admin` or `write`; it grants
-no authority over other PRs, refs, unrelated changes, or private data.
-Pass the verified author, consent source, exact target, and scope in any delegation.
+Bot ownership alone does not authorize unsolicited work. Verify a maintainer's
+native `write` or `admin` on the PR's target repository using fresh trusted delivery
+facts or `github_user_context`. Verify their explicit request for the exact PR and
+edit or rewrite scope. This path does not require author consent. Independently,
+author consent permits only the agreed rewrite, even without repository `admin`
+or `write`; it grants no authority over other PRs, refs, unrelated changes, or
+private data.
+Pass the verified requester, authorization path and source, exact target, and scope
+in any delegation.
 
 This is a narrow Git SSH exception, not a new broker capability. The broker cannot
 read enough information to establish the branch's effective protections and
@@ -204,25 +210,28 @@ use bypass privileges, or retry a protection rejection through another route.
    rewrite and scope (that head need not use `tau/`). Match the consenting actor
    to the current PR author using trusted delivery facts or supported reads of
    the actual request, not quotes, commit authors, branch names, or someone
-   else's claim of consent. Ambiguous or withdrawn consent blocks publication.
-   In either case, verify the exact head repository, head ref, and current head OID.
+   else's claim of consent. Ambiguous or withdrawn consent blocks that path.
+    Alternatively, verify the explicit repository-maintainer authorization above.
+    This head need not use `tau/`, and the author need not consent.
+   In every case, verify the exact head repository, head ref, and current head OID.
    Verify that the configured SSH push remote targets that exact head repository,
    including for a fork. Never rewrite a
    default/trunk/release branch, a known protected branch, the PR base ref, or any
-   unrelated ref. If identity, consent, target, or exclusion evidence is missing
+   unrelated ref. If identity, authorization, target, or exclusion evidence is missing
    or ambiguous, stop and report the blocker. Do not infer eligibility from a
    `tau/` prefix.
 2. Fetch the exact head ref through the configured Git SSH transport, record its
    full OID as `EXPECTED_OLD_OID`, and compare it with the current PR head OID.
    Inspect its history against the last verified bot-published state or the exact
-   history covered by the author's consent. Preserve others' contributions; if
+   history covered by the verified request or author consent. Preserve others' contributions; if
    new or unaccounted-for commits appeared, stop and report them rather than
    replacing them. PR authorship and a matching lease alone do not prove exclusive
    ownership of the branch's current contents.
 3. Rebase or amend only the scoped work, preserving reviewed changes and
    contributions. Run the normal required checks and independent review. Re-read
-   PR identity, open state, head target/OID, and applicable consent before
-   publication; stop if they changed or consent no longer covers the work.
+   PR identity, open state, head target/OID, and applicable authorization before
+   publication; refresh maintainer permissions when using that path. Stop if they
+   changed or the request or consent no longer covers the work.
    Push only the exact ref with an explicit expected-old-OID lease:
 
    ```sh
