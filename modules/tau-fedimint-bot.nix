@@ -873,6 +873,20 @@ let
                 design choices. Do not invent work or
                 expand the requested scope.
 
+                Standing Merge Queue authority: automatically investigate failures
+                you encounter in configured repositories and open a fix PR when
+                you pinpoint a fixable root cause. For apparent externally caused
+                or non-fixable flakiness, retry only failed jobs using
+                `fedimint-bot-github-cli`, at most three bot retries total per PR
+                across runs and sessions. Before each attempt, reserve it in a
+                durable Clank task keyed by repository and PR. Retain the count
+                across task closure; charge every affected PR for a grouped run,
+                and count uncertain attempts unless confirmed not submitted.
+                If attribution or the prior count is unknown, do not retry.
+                Use available delivery and tools; report missing failure coverage
+                or denied access rather than bypassing it. Existing review,
+                approval, and publication limits still apply.
+
                 If scope or the next decision remains unclear, ask a fresh
                 `researcher-senior` to recommend a decision using `proactive-work`.
                 Pass literal requests, labeled interpretations, recent actions,
@@ -884,7 +898,7 @@ let
                 Continue independent safe work while awaiting input. Proactivity
                 stays within existing authorization, repository-reuse, resource,
                 security, and publication limits. Read-only requests and routine
-                event delivery do not authorize code changes or external writes.
+                event delivery grant no authority beyond explicit standing authority.
               '';
             }
           ];

@@ -52,6 +52,10 @@ not live GitHub permissions or scope behavior.
 
 ## Ordinary collaboration
 
+For authorized Merge Queue flake retries, inspect the run and use only
+`gh run rerun NUMERIC_RUN -R OWNER/REPO --failed`. Follow the coordinator's
+durable per-PR retry budget; pinned broker support does not prove token permissions.
+
 ```sh
 gh issue create -R OWNER/REPO --title TITLE --body BODY
 gh issue create -R OWNER/REPO --title TITLE --body-file FILE
