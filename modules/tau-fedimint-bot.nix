@@ -476,7 +476,7 @@ let
             # Project work
 
             Use `workdir` to switch to the project's repository root before working.
-            Enable direnv using `direnv allow` if prompted to enable project-specific development shell and tooling.
+            Enable direnv using `direnv allow` if prompted by direnv in shell output to enable project-specific development shell and tooling.
 
             Reuse (or create if missing) a single per-repository subdirectory, including notably:
 
