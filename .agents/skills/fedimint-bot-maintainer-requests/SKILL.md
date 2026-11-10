@@ -1,5 +1,5 @@
 ---
-name: fedimint-maintainer-requests
+name: fedimint-bot-maintainer-requests
 description: Use for delivered Fedimint issue activity and authorized requests, including limited bot-access assistance and maintainer development requests.
 user-invocable: true
 advertise: true
@@ -44,7 +44,7 @@ For requests authorized only by fresh `fedimint/bot-access` membership, delegate
 public read-only inspection or research, not implementation. Include the authenticated
 numeric ID, team, observation and expiry times, exact target, and limited scope.
 Reply substantively on that target. For review requests, follow
-`fedimint-pull-request-review` and publish only comments. Do not run untrusted code,
+`fedimint-bot-pull-request-review` and publish only comments. Do not run untrusted code,
 change source or history, create a PR, or treat a request to implement findings
 as authorized. Stop at expiry and obtain fresh membership facts before continuing
 or publishing. The development and PR-delivery instructions below apply only

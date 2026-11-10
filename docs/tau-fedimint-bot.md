@@ -82,8 +82,8 @@ stops. Notification admission and permission lookup are separate from outbound
 broker authority.
 
 For task policy, use
-[`fedimint-maintainer-requests`](../.agents/skills/fedimint-maintainer-requests/SKILL.md)
-and [`fedimint-pull-request-review`](../.agents/skills/fedimint-pull-request-review/SKILL.md).
+[`fedimint-bot-maintainer-requests`](../.agents/skills/fedimint-bot-maintainer-requests/SKILL.md)
+and [`fedimint-bot-pull-request-review`](../.agents/skills/fedimint-bot-pull-request-review/SKILL.md).
 Write-capable infra requests require native `write` or `admin` on **infra itself**. The
 historical-contributor helper is not a substitute for that permission.
 Repository access also does not prove that each dedicated token selects the
@@ -148,7 +148,7 @@ instructions:
 
 | Task | Instructions |
 | --- | --- |
-| Weekly development summary | [`fedimint-weekly-dev-summary`](../.agents/skills/fedimint-weekly-dev-summary/SKILL.md) |
+| Weekly development summary | [`fedimint-bot-weekly-dev-summary`](../.agents/skills/fedimint-bot-weekly-dev-summary/SKILL.md) |
 | Own-PR grooming | [`self-pr-grooming`](../.agents/skills/self-pr-grooming/SKILL.md) |
 | Stale issue and PR triage | `fedimint/fedimint` checkout: `.agents/skills/github-stale-issue-triage/SKILL.md` and `.agents/skills/github-stale-pr-triage/SKILL.md` on current upstream trunk |
 | Papercut self-improvement | [`fedimint-bot-self-improvement`](../.agents/skills/fedimint-bot-self-improvement/SKILL.md) |

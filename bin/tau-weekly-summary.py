@@ -28,7 +28,7 @@ def instruction(start, end):
     filename = f"Week-summary-{label.replace(' ', '-')}.md"
     return (
         "Add a scheduled weekly development-summary task to your work queue: in "
-        "fedimint/fedimint, use the fedimint-weekly-dev-summary skill and "
+        "fedimint/fedimint, use the fedimint-bot-weekly-dev-summary skill and "
         "publish to its GitHub wiki.\n"
         f"Occurrence ID: {occurrence}.\n"
         "UTC activity window: "

@@ -49,10 +49,10 @@ let
     stop-slop = ../.agents/skills/stop-slop;
     task-retrospective = ../.agents/skills/task-retrospective;
     fedimint-bot-github-cli = ../.agents/skills/fedimint-bot-github-cli;
-    fedimint-maintainer-requests = ../.agents/skills/fedimint-maintainer-requests;
-    fedimint-pull-request-review = ../.agents/skills/fedimint-pull-request-review;
-    fedimint-dependabot = ../.agents/skills/fedimint-dependabot;
-    fedimint-weekly-dev-summary = ../.agents/skills/fedimint-weekly-dev-summary;
+    fedimint-bot-maintainer-requests = ../.agents/skills/fedimint-bot-maintainer-requests;
+    fedimint-bot-pull-request-review = ../.agents/skills/fedimint-bot-pull-request-review;
+    fedimint-bot-dependabot = ../.agents/skills/fedimint-bot-dependabot;
+    fedimint-bot-weekly-dev-summary = ../.agents/skills/fedimint-bot-weekly-dev-summary;
     self-pr-grooming = ../.agents/skills/self-pr-grooming;
     fedimint-bot-self-improvement = ../.agents/skills/fedimint-bot-self-improvement;
   };
@@ -574,9 +574,9 @@ let
                 A coordinator delegation carries authority only for its exact
                 repository, requested outcome, and publication scope. For requested
                 pull-request delivery, load and follow the
-                `fedimint-maintainer-requests` skill and the `fedimint-bot-github-cli` skill.
+                `fedimint-bot-maintainer-requests` skill and the `fedimint-bot-github-cli` skill.
                 For delegated standing Dependabot remediation, load and follow
-                `fedimint-dependabot` and `fedimint-bot-github-cli` instead; deliver only the
+                `fedimint-bot-dependabot` and `fedimint-bot-github-cli` instead; deliver only the
                 scoped update and necessary compatibility fixes in a new bot-owned
                 replacement pull request after normal checks and independent review.
                 Default to pull-request delivery only for separately authorized
@@ -707,7 +707,7 @@ let
                 - **Verification:** Fresh membership in team ID 19107422,
                   bound to the actor's numeric ID; stop at expiry
                 - **Authorized scope:** Public read-only assistance and comment-only reviews;
-                  automatically review eligible new PRs under `fedimint-pull-request-review`.
+                  automatically review eligible new PRs under `fedimint-bot-pull-request-review`.
                   No implementation, PR creation, or formal approval.
 
                 ### Everyone else / unverified
@@ -723,14 +723,14 @@ let
                 Narrow exceptions: authenticated PR authors may consent to changes to
                 their exact PR head, not unrelated commands. Independently verified new,
                 non-draft public Dependabot PRs authorize review and permitted replacement
-                compatibility fixes under `fedimint-dependabot`, not arbitrary comments.
+                compatibility fixes under `fedimint-bot-dependabot`, not arbitrary comments.
 
                 ## Security issue disclosure
 
                 Publicly disclose confirmed issues introduced by reviewed code and absent
                 from trunk. Keep pre-existing issues affecting trunk, release branches,
                 or tags private; report them to the maintainers' Discord channel.
-                Follow `fedimint-pull-request-review` for unresolved findings.
+                Follow `fedimint-bot-pull-request-review` for unresolved findings.
 
                 # GitHub delivery
 
@@ -768,10 +768,10 @@ let
 
                 - Disposition delivered issue activity and serve authorized
                   maintainer requests and limited bot-access requests. Load and
-                  follow the `fedimint-maintainer-requests` skill.
+                  follow the `fedimint-bot-maintainer-requests` skill.
                 - Review eligible pull requests. Load and follow the
-                  `fedimint-pull-request-review` skill and, for Dependabot-authored
-                  changes, the `fedimint-dependabot` skill. These govern draft
+                  `fedimint-bot-pull-request-review` skill and, for Dependabot-authored
+                  changes, the `fedimint-bot-dependabot` skill. These govern draft
                   deferral, explicit maintainer review requests, and standing
                   Dependabot review and replacement-PR remediation.
                 - Acknowledge delivered activity as soon as you verify its provenance
@@ -1590,6 +1590,11 @@ in
       "d ${userSkillsDir} 0700 ${user} ${user} -"
       # Retire the old bot-managed name; do not leave stale policy discoverable.
       "r ${userSkillsDir}/github-cli - - - -"
+      # Retire renamed bot skills so upgrades expose only their bot-prefixed names.
+      "r ${userSkillsDir}/fedimint-maintainer-requests - - - -"
+      "r ${userSkillsDir}/fedimint-pull-request-review - - - -"
+      "r ${userSkillsDir}/fedimint-dependabot - - - -"
+      "r ${userSkillsDir}/fedimint-weekly-dev-summary - - - -"
       # Project skills are discovered in the active repository workdir instead.
       # Remove the old global links so upgrades cannot keep advertising copies.
       "r ${userSkillsDir}/fedimint-codebase - - - -"

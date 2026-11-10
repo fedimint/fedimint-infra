@@ -44,7 +44,7 @@ when needed; `gh pr diff --stat` and diff pathspecs are unsupported.
 These recipes do not authorize arbitrary API reads. Repository
 `commits`, `contents`, and `compare` endpoints and reaction-list GETs are
 unsupported. Repository-wide commit reads are unsupported, unlike the bounded
-PR-scoped commits collection documented in `fedimint-weekly-dev-summary`.
+PR-scoped commits collection documented in `fedimint-bot-weekly-dev-summary`.
 If a required read is unavailable,
 report the blocker rather than trying endpoint variants or another client.
 Synthetic missing-token tests verify accepted grammar and denied neighbors,

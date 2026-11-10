@@ -372,16 +372,30 @@ let
           "ln -s /tmp/public-target /tmp/public"
       )
       machine.succeed("systemd-tmpfiles --create")
-      # Simulate upgrading a host that still has the old global project links.
+      # Simulate upgrading a host with old global project and renamed bot links.
       project_skills = [
           "fedimint-codebase",
           "fedimint-coding-style",
           "fedimint-development",
           "pr-submissions-checklist",
+          "fedimint-maintainer-requests",
+          "fedimint-pull-request-review",
+          "fedimint-dependabot",
+          "fedimint-weekly-dev-summary",
       ]
       skills_dir = "/home/tau-fedimint/.config/agents/skills"
       for name in project_skills:
           machine.fail(f"test -e {skills_dir}/{name} || test -L {skills_dir}/{name}")
+      for name in [
+          "fedimint-bot-maintainer-requests",
+          "fedimint-bot-pull-request-review",
+          "fedimint-bot-dependabot",
+          "fedimint-bot-weekly-dev-summary",
+      ]:
+          machine.succeed(
+              f"test -L {skills_dir}/{name} && "
+              f"grep -Fx 'name: {name}' {skills_dir}/{name}/SKILL.md"
+          )
       machine.succeed("mkdir -p /tmp/project-skill && touch /tmp/project-skill/SKILL.md")
       for name in project_skills:
           machine.succeed(f"ln -s /tmp/project-skill {skills_dir}/{name}")
