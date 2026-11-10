@@ -298,6 +298,7 @@
                 enable = true;
                 weeklySummary.enable = true;
                 selfPrGrooming.enable = true;
+                staleTriage.enable = true;
                 papercutGrooming.enable = true;
                 workdirCleanup.enable = true;
                 # Operator-approved private channel, humans and encrypted
