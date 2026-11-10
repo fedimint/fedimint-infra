@@ -1,5 +1,5 @@
 ---
-name: fedimint-weekly-dev-summary
+name: fedimint-bot-weekly-dev-summary
 description: Use when asked to create or publish the weekly fedimint/fedimint development summary, covering the past 7 days plus 16 hours, on the GitHub wiki.
 user-invocable: true
 advertise: true

@@ -27,20 +27,20 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=03f17f393e945da6ad94b29ffb4caac96045b234";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=dcf0f58e7561490e993c51d1b100e5bb7b1adf9a";
     };
 
     tau-ext-github = {
-      url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=c1d0ce97396572f650a308702831ec3076c2b29e";
+      url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=734b18342509246252c6a923a0bacb1662742cdd";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
 
-    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=c26d1c06520f0130b1f75c802071e2e74b719a90";
+    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=433d42d0c52bb7a21f3e7d726e71f16167ad9f98";
 
-    isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f";
+    isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=5df086953e60e29e70afac60bb268a31f054f787";
 
-    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=ecf498630d9b74ea0f36bc48b36ed6ce612adfe8";
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=4a6f947eb0d25d3ec41ed07c49fd5b91f7c494f0";
 
     clank = {
       url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=88fbc570239e2e4cedea53c0e6ca24cce3e88fd9";
@@ -49,7 +49,7 @@
     };
 
     linked-specs-skills = {
-      url = "git+https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git?rev=bcd053b4ba4d1d074594bd612db31a9d9412667d";
+      url = "git+https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git?rev=c9c165c1e31d04fc2aaecf1b00cb91455fed4c1b";
       flake = false;
     };
   };
@@ -64,13 +64,8 @@
       ...
     }@inputs:
     let
-      # Retain generation-bound papercut archival until it lands upstream.
-      # Use the same patched binary for the bot and its checks.
-      tauPackage =
-        system:
-        (inputs.tau.packages.${system}.tau.override { buildDirty = true; }).overrideAttrs (old: {
-          patches = (old.patches or [ ]) ++ [ ./nix/patches/tau-papercut-generation.patch ];
-        });
+      # Use the same upstream binary for the bot and its checks.
+      tauPackage = system: inputs.tau.packages.${system}.tau;
 
       overlays = [
         (final: prev: {
@@ -308,6 +303,7 @@
                   package = inputs.tau-ext-discord.packages.x86_64-linux.tau-ext-discord;
                   guildId = 990354215060795454;
                   channelId = 1023312920634994838;
+                  codeReviewChannelId = 1075857804692295720;
                   displayName = "Fedimint maintainers";
                   senderAliases = [
                     {

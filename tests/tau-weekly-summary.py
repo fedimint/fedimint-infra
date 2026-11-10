@@ -26,6 +26,7 @@ class WeeklySummaryTests(unittest.TestCase):
             self.assertEqual(weekly.main(), 0)
             send.assert_called_once()
             message = send.call_args.kwargs["input"]
+            self.assertIn("use the fedimint-bot-weekly-dev-summary skill", message)
             self.assertIn(
                 "2026-09-28T08:36:23Z <= activity time < 2026-10-06T00:36:23Z",
                 message,

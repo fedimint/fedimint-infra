@@ -9,6 +9,11 @@ advertise: true
 
 Propose reviewed papercut fixes to `fedimint/fedimint-infra` and announce the PRs
 on Discord. Operators decide whether to merge and deploy.
+Scheduled delivery authorizes this workflow only: no self-merge, host deployment,
+service restart, credential or permission expansion, sandbox weakening, or
+arbitrary changes in other repositories. Only the coordinator reads and archives
+papercut history; the existing private Tau state mount is allowed for snapshots
+and coverage ledgers.
 For grooming from an operator session, use
 `fedimint-tau-bot-papercuts-grooming` instead.
 
@@ -31,8 +36,11 @@ mkdir -p "$XDG_STATE_HOME/tau/ext/core-shell/papercut-grooming"
 private_dir=$(mktemp -d "$XDG_STATE_HOME/tau/ext/core-shell/papercut-grooming/sweep.XXXXXXXX") || exit 1
 ```
 
-Use native `papercut_read` to review history. Keep its generation, report count,
-agent/tool-call reference, deployed build, and a sanitized per-report coverage
+Call native `papercut_list()` without arguments to get numbered report metadata
+and a snapshot generation. Read each report with
+`papercut_read({"index":1,"expected_generation":"<generation>"})`, using its
+one-based index and the listed generation. Keep that generation, report count,
+agent/tool-call references, deployed build, and a sanitized per-report coverage
 ledger in the private directory. Access hidden Tau history through native tools;
 shell-launched history commands cannot access it. Record the private directory
 in Clank for recovery. Account for every report, including duplicates and reports
@@ -50,16 +58,15 @@ their findings in the private ledger and record sanitized outcomes in Clank.
 
 ## Archive the reviewed batch
 
-The coordinator's `papercut_list` and `papercut_read` take no arguments.
-Use list for metadata and read for validated active bodies and, on a complete
-read, an opaque generation. Archive once coverage is complete and actionable
-work is proposed or durably tracked. A generation identifies a batch; a complete
-read and coverage ledger establish what you reviewed.
+Archive only after you have read and covered every listed report and proposed or
+durably tracked actionable work. The generation identifies the batch; per-report
+reads and the coverage ledger establish what you reviewed.
 
-Call `papercut_archive` with `expected_generation` from the exact read you
-reviewed. A stale generation leaves history untouched: reread, reconcile the ledger,
-and cover added reports before retrying, or defer the sweep. Keep the sweep
-blocked if the read is incomplete, truncated, or lacks a generation.
+Call `papercut_archive` with `expected_generation` from the exact listing you
+reviewed. A stale generation leaves history untouched: list again, reconcile the
+ledger, and read and cover every report in the new snapshot before retrying, or
+defer the sweep. Keep the sweep blocked if any read is incomplete or truncated,
+or the listing lacks a generation.
 
 Record archive intent before calling, then save the receipt before
 completing the sweep. After a restart before archival, reread history and
@@ -72,7 +79,7 @@ once afterward and leave new arrivals for the next sweep.
 ## Announce and finish
 
 For created or substantively updated PRs, send one concise summary with full PR
-URLs through `maintainer_discord_send` to `fedimint_maintainers`. Keep no-PR
+URLs through `discord_send` to `fedimint_maintainers`. Keep no-PR
 sweeps in Clank. Record the PR head and send result durably; reconcile uncertain
 delivery with conversation history before retrying.
 

@@ -5536,16 +5536,16 @@
         "nixpkgs": "nixpkgs_10"
       },
       "locked": {
-        "lastModified": 1793234800,
-        "narHash": "sha256-HIuvUmn/yX9BPKuBbKtIfO3FQTbv2M2j948k6nhY0Ho=",
+        "lastModified": 1793994543,
+        "narHash": "sha256-mCdDg3pFy8enfSyNbDosBeXDZdK7PVRvyidhNBCjTwo=",
         "ref": "refs/heads/master",
-        "rev": "ecf498630d9b74ea0f36bc48b36ed6ce612adfe8",
-        "revCount": 44,
+        "rev": "4a6f947eb0d25d3ec41ed07c49fd5b91f7c494f0",
+        "revCount": 48,
         "type": "git",
         "url": "https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git"
       },
       "original": {
-        "rev": "ecf498630d9b74ea0f36bc48b36ed6ce612adfe8",
+        "rev": "4a6f947eb0d25d3ec41ed07c49fd5b91f7c494f0",
         "type": "git",
         "url": "https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git"
       }
@@ -5557,16 +5557,16 @@
         "nixpkgs": "nixpkgs_11"
       },
       "locked": {
-        "lastModified": 1790191704,
-        "narHash": "sha256-DaaTwGveU+OHIPdLnHxWha7WUcKZo8NYJDx9beI421s=",
+        "lastModified": 1794109034,
+        "narHash": "sha256-FU3uL0/e7byP/4tDsA8G5VdQGPXkYwrrxnJf9UXu2n8=",
         "ref": "refs/heads/master",
-        "rev": "0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f",
-        "revCount": 97,
+        "rev": "5df086953e60e29e70afac60bb268a31f054f787",
+        "revCount": 99,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git"
       },
       "original": {
-        "rev": "0ecb5af2b5f584cb2f126d0c76f03508ac93ed4f",
+        "rev": "5df086953e60e29e70afac60bb268a31f054f787",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git"
       }
@@ -5574,16 +5574,16 @@
     "linked-specs-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1793405772,
-        "narHash": "sha256-brAJWSZgmkNkKdSrfl/iMYsjtQybTAHSQILdvd1Wcp8=",
+        "lastModified": 1794028901,
+        "narHash": "sha256-H1gsv+bAy26PRpAnTlpD0qI5SR6qIJcIoJ4AXqzzjGI=",
         "ref": "refs/heads/master",
-        "rev": "bcd053b4ba4d1d074594bd612db31a9d9412667d",
-        "revCount": 135,
+        "rev": "c9c165c1e31d04fc2aaecf1b00cb91455fed4c1b",
+        "revCount": 141,
         "type": "git",
         "url": "https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git"
       },
       "original": {
-        "rev": "bcd053b4ba4d1d074594bd612db31a9d9412667d",
+        "rev": "c9c165c1e31d04fc2aaecf1b00cb91455fed4c1b",
         "type": "git",
         "url": "https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git"
       }
@@ -8954,16 +8954,16 @@
         "tau-ext-zulip": "tau-ext-zulip"
       },
       "locked": {
-        "lastModified": 1793815994,
-        "narHash": "sha256-AhvLs4g68MoXWvlDxYv68H8CmrWed8cvDJAXuFh0Lu4=",
+        "lastModified": 1794217355,
+        "narHash": "sha256-wwf7+bBIay0gvPtjkCkhwTnNJXkZxXtt6//DUQZPfXY=",
         "ref": "refs/heads/master",
-        "rev": "03f17f393e945da6ad94b29ffb4caac96045b234",
-        "revCount": 3715,
+        "rev": "dcf0f58e7561490e993c51d1b100e5bb7b1adf9a",
+        "revCount": 3807,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       },
       "original": {
-        "rev": "03f17f393e945da6ad94b29ffb4caac96045b234",
+        "rev": "dcf0f58e7561490e993c51d1b100e5bb7b1adf9a",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       }
@@ -8976,16 +8976,16 @@
         "selfci": "selfci_9"
       },
       "locked": {
-        "lastModified": 1793815147,
-        "narHash": "sha256-CjwYqFazTtML3bjWdWl0vPs35whNRjBCdwIQf9V9wMQ=",
+        "lastModified": 1794282328,
+        "narHash": "sha256-6Deru135I47IPw/VKHCz3qeUr4w2+gS8m5y/+h6OBrQ=",
         "ref": "refs/heads/main",
-        "rev": "c26d1c06520f0130b1f75c802071e2e74b719a90",
-        "revCount": 43,
+        "rev": "433d42d0c52bb7a21f3e7d726e71f16167ad9f98",
+        "revCount": 58,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git"
       },
       "original": {
-        "rev": "c26d1c06520f0130b1f75c802071e2e74b719a90",
+        "rev": "433d42d0c52bb7a21f3e7d726e71f16167ad9f98",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git"
       }
@@ -9002,16 +9002,16 @@
         "selfci": "selfci_10"
       },
       "locked": {
-        "lastModified": 1793243876,
-        "narHash": "sha256-G2eAEd2cIgZWB0MD7Nuyjq8zhRsib7ZAt7smonX5BfM=",
+        "lastModified": 1794215059,
+        "narHash": "sha256-JpIIyHpxzN0wPNa1R/KM6JbHnuF5F1ouPYUH6WEkK9U=",
         "ref": "refs/heads/master",
-        "rev": "c1d0ce97396572f650a308702831ec3076c2b29e",
-        "revCount": 21,
+        "rev": "734b18342509246252c6a923a0bacb1662742cdd",
+        "revCount": 26,
         "type": "git",
         "url": "https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git"
       },
       "original": {
-        "rev": "c1d0ce97396572f650a308702831ec3076c2b29e",
+        "rev": "734b18342509246252c6a923a0bacb1662742cdd",
         "type": "git",
         "url": "https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git"
       }
@@ -9024,11 +9024,11 @@
         "selfci": "selfci_2"
       },
       "locked": {
-        "lastModified": 1793221358,
-        "narHash": "sha256-dzFP866458ueDkBcCTtAhmounnmIBcQDUgMnb1VDd9Q=",
+        "lastModified": 1794214997,
+        "narHash": "sha256-3Kxm/O+pptt629opvT6I9XecGADRLdoqHqcjmk7UqUw=",
         "ref": "main",
-        "rev": "13e4ccfb4df5995d1b19195e5e261f0ce42b8c4e",
-        "revCount": 41,
+        "rev": "0f18fb5ab1c6d868e1c69bcc56a09f9b44645f92",
+        "revCount": 45,
         "type": "git",
         "url": "https://radicle.dpc.pw/z4FCuiVzFns5iTquhsYCntZyVWCqi.git"
       },
@@ -9046,11 +9046,11 @@
         "selfci": "selfci_3"
       },
       "locked": {
-        "lastModified": 1793221318,
-        "narHash": "sha256-xGIrvFhYh/+2QPr3ZLEO+elgmngnSPs+xK2yVhLWhnc=",
+        "lastModified": 1794214957,
+        "narHash": "sha256-wmQCAs7w041tHwJ87v1CNXK9QMZiZbONIPbLQVZSEvw=",
         "ref": "main",
-        "rev": "1155bc61a4d0020cff19e302f370b14f8d6f6408",
-        "revCount": 59,
+        "rev": "c35f9099a02cae68b5e17eda48378186b68daba9",
+        "revCount": 64,
         "type": "git",
         "url": "https://radicle.dpc.pw/z4LrrRivcgNjJii5wzbjTvA8ttt6o.git"
       },
@@ -9068,11 +9068,11 @@
         "selfci": "selfci_4"
       },
       "locked": {
-        "lastModified": 1793221367,
-        "narHash": "sha256-qBNgToKHVs1D0TAxK3ZFqtaz4+BjILWn7QhRSiOopPI=",
+        "lastModified": 1794214976,
+        "narHash": "sha256-1rgWlfCNPHLp7qQj+lD+/8GLPvC7CVC+W4TWiAVkGkA=",
         "ref": "master",
-        "rev": "57ac2291ce86ee746c6ee752184f10fa1a18ad54",
-        "revCount": 153,
+        "rev": "0e0858987ee16c9b6fe8be2b363aa7ffb8080c5e",
+        "revCount": 179,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3NJhEtKWCbHPa28wDQSYJ8eEfBjg.git"
       },
@@ -9090,11 +9090,11 @@
         "selfci": "selfci_5"
       },
       "locked": {
-        "lastModified": 1793221221,
-        "narHash": "sha256-Nrcy37HNyyDCCRtoGhjVe2WZzAOVQRwv8YRyqrxvnHU=",
+        "lastModified": 1794214134,
+        "narHash": "sha256-08c9glyT1XhktCCCEeTpgOhclu65PiJobYkPaQO6evo=",
         "ref": "master",
-        "rev": "aa737c4b8aabfae41b8e87383ac91b6576a78af0",
-        "revCount": 67,
+        "rev": "585ade26b2f287ea73c2309208e9257f0e3c2007",
+        "revCount": 72,
         "type": "git",
         "url": "https://radicle.dpc.pw/z38my9x3Rmn6VYtDMiLKgjK3tRv8o.git"
       },
@@ -9112,11 +9112,11 @@
         "selfci": "selfci_6"
       },
       "locked": {
-        "lastModified": 1793221406,
-        "narHash": "sha256-8KVp6C9YvVIHxAzIA5DuaTgXnA3LaGivK2LX2tH21bk=",
+        "lastModified": 1794214939,
+        "narHash": "sha256-bLBZ5kKw3PKxZ0foV8dJG3rTPO40ruX2c7DUspsVFfo=",
         "ref": "main",
-        "rev": "f7866283ffc092edaeddfee7f76b7a0dc0653ffd",
-        "revCount": 149,
+        "rev": "cf9b688e9eb149199585572f386fb3837853357d",
+        "revCount": 154,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3sPdSePnxtBvP9pTLwUwVgpMU68r.git"
       },
@@ -9134,11 +9134,11 @@
         "selfci": "selfci_7"
       },
       "locked": {
-        "lastModified": 1793221143,
-        "narHash": "sha256-wLBQxrNBxgHfFClC2GXPb7FyYWnX/n5Bs6+HKRmzDz8=",
+        "lastModified": 1794214880,
+        "narHash": "sha256-dHw3A65kuAJp7FymZDnH5iZw5yl94wcMxorViO61ioQ=",
         "ref": "master",
-        "rev": "0c1e98d71acd382732eacd1209da4de84ce8064b",
-        "revCount": 102,
+        "rev": "e5ece945cf619e3b17e85739ebf2b0e4737d9c6b",
+        "revCount": 108,
         "type": "git",
         "url": "https://radicle.dpc.pw/zpN6uwkd6ok9qRAX5yZaF7w8xzDd.git"
       },
@@ -9156,11 +9156,11 @@
         "selfci": "selfci_8"
       },
       "locked": {
-        "lastModified": 1793221252,
-        "narHash": "sha256-hzl/BWJy8LNpRsHWBFhIarxWXAqZchpeH6NVkj9F4SY=",
+        "lastModified": 1794214883,
+        "narHash": "sha256-q4oDMFdGQLN34QZQLBF7RsUOehPY16MbGiIPGcWYgvw=",
         "ref": "main",
-        "rev": "c4bac0154c14cdb6077afa294e468eaa10c696a4",
-        "revCount": 79,
+        "rev": "05808cfb6ee75dd10fc93760a58356ca1804cd7a",
+        "revCount": 101,
         "type": "git",
         "url": "https://radicle.dpc.pw/z2LFTBWK7VpAwC3Bpxohkh91aqXd.git"
       },

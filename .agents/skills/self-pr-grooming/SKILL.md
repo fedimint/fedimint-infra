@@ -26,7 +26,7 @@ changes, update branches, merge PRs, or groom other authors' PRs. Load
    verify the result. Age, inactivity, or failing checks alone do not justify
    closure. Leave uncertain cases open and ask maintainers to decide.
 3. For useful PRs still waiting on maintainers, send one concise consolidated
-   reminder via `maintainer_discord_send` to the configured
+   reminder via `discord_send` to the configured
    `fedimint_maintainers` destination: full PR URLs, why each still matters, and
    the decision needed. Include uncertain closure candidates; omit PRs waiting
    only on the bot. Never add destinations or post repetitive PR comments.
