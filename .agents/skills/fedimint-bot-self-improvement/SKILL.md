@@ -9,6 +9,11 @@ advertise: true
 
 Propose reviewed papercut fixes to `fedimint/fedimint-infra` and announce the PRs
 on Discord. Operators decide whether to merge and deploy.
+Scheduled delivery authorizes this workflow only: no self-merge, host deployment,
+service restart, credential or permission expansion, sandbox weakening, or
+arbitrary changes in other repositories. Only the coordinator reads and archives
+papercut history; the existing private Tau state mount is allowed for snapshots
+and coverage ledgers.
 For grooming from an operator session, use
 `fedimint-tau-bot-papercuts-grooming` instead.
 
@@ -74,7 +79,7 @@ once afterward and leave new arrivals for the next sweep.
 ## Announce and finish
 
 For created or substantively updated PRs, send one concise summary with full PR
-URLs through `maintainer_discord_send` to `fedimint_maintainers`. Keep no-PR
+URLs through `discord_send` to `fedimint_maintainers`. Keep no-PR
 sweeps in Clank. Record the PR head and send result durably; reconcile uncertain
 delivery with conversation history before retrying.
 

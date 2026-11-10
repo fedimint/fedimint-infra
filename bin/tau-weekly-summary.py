@@ -36,7 +36,7 @@ def instruction(start, end):
         f"Markdown heading: '# Week summary: {label}'. "
         f"Wiki filename: '{filename}'.\n"
         "After verified publication, announce the published page URL via "
-        "maintainer_discord_send to fedimint_maintainers.\n"
+        "discord_send to fedimint_maintainers.\n"
     )
 
 
