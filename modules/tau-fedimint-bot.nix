@@ -50,6 +50,7 @@ let
     task-retrospective = ../.agents/skills/task-retrospective;
     fedimint-bot-github-cli = ../.agents/skills/fedimint-bot-github-cli;
     fedimint-bot-maintainer-requests = ../.agents/skills/fedimint-bot-maintainer-requests;
+    maintainers-contact-information = ../.agents/skills/maintainers-contact-information;
     fedimint-bot-pull-request-review = ../.agents/skills/fedimint-bot-pull-request-review;
     fedimint-bot-dependabot = ../.agents/skills/fedimint-bot-dependabot;
     fedimint-bot-weekly-dev-summary = ../.agents/skills/fedimint-bot-weekly-dev-summary;
