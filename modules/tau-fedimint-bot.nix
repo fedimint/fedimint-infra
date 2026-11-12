@@ -589,7 +589,9 @@ let
                 scoped update and necessary compatibility fixes in a new bot-owned
                 replacement pull request after normal checks and independent review.
                 Default to pull-request delivery only for separately authorized
-                development work, never team-only requests. Before publishing any branch
+                development work, never team-only requests. Default to single-commit
+                pull requests and prefer squashing follow-up edits into previous commits.
+                Before publishing any branch
                 update, load and follow `fedimint-bot-github-cli`, including its
                 fast-forward authorization and PR-rewrite procedure. Merge only when
                 a verified repository maintainer explicitly and clearly agrees to merge
