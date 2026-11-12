@@ -1,6 +1,6 @@
 # Tau Fedimint bot
 
-The bot runs as `tau-fedimint` on runner-01, in the user systemd service
+The bot runs as `tau-fedimint` on runner-01, in the systemd system service
 `tau-fedimint-bot.service`. It handles GitHub work, admitted Discord requests,
 and scheduled maintenance through one coordinator.
 
@@ -59,10 +59,59 @@ credentials are separate agenix secrets. See
 [`fedimint-bot-github-cli`](../.agents/skills/fedimint-bot-github-cli/SKILL.md)
 for supported commands, body-file imports, and branch publication.
 
-Isolate guards against accidental agent actions, not hostile code. It shares the
-host network and exposes the configured runtime, state, and agent socket. Browser
-CDP uses unauthenticated host loopback; this is accepted for this trusted
-single-user deployment, not a safe default for a shared host.
+Isolate guards against accidental agent actions, not hostile code. It exposes
+the configured runtime, state, and agent socket. Browser CDP uses unauthenticated
+bot-namespace loopback, shared with other bot tasks.
+
+## Bot network and service lifecycle
+
+The bot, SSH agent, and startup recovery are system services running as
+`tau-fedimint`, not user services. The bot enters `/run/netns/tau-fedimint`
+before its launcher invokes isolate. Ordinary shells, tests, extensions, and the
+GitHub broker inherit this namespace. Their TCP/UDP binds do not collide with
+host/CI binds. Runners are unchanged. All bot tasks share one bind table.
+
+`tau-fedimint-network.service` creates loopback and a veth pair:
+`veth-tau` on the host is `10.203.0.1/30`; `eth0` in the namespace is
+`10.203.0.2/30`. Reserve this subnet for the bot. IPv4 forwarding and masquerading
+provide outbound access; return traffic is allowed, but no inbound ports are
+published. IPv6 loopback works; public IPv6 routing is not configured.
+The iptables firewall owns these rules, so firewall reloads restore them,
+including when Docker uses a default-drop forwarding policy.
+The veth is not a trusted firewall interface.
+
+DNS uses the host's systemd-resolved through a listener on `10.203.0.1:53`,
+allowed only on the veth. `/etc/netns/tau-fedimint/resolv.conf` points there.
+The system service and isolate both mount that resolver configuration at the
+host stub's usual path, so the sandbox's `/etc/resolv.conf` symlink still works.
+DHCP resolver updates remain the host resolver's responsibility.
+
+Stopping the network unit stops the bot before deleting the namespace.
+Restarting it also restarts the bot and admits startup recovery. A bot restart
+alone keeps the namespace. The lingering user manager continues to own
+`/run/user/<uid>`; the system SSH-agent unit waits for it and retires any legacy
+user bot/recovery/SSH-agent units before creating its socket. Scheduled delivery
+units remain user services and use filesystem Unix sockets, as do host-side
+`tau message` and `tau attach`. They need no network-namespace entry.
+
+An SSH login uses the host network. `tau-fedimint-sandbox` refuses to
+run outside the bot namespace; it does not grant namespace-entry privileges.
+An authorized root operator can use:
+
+```sh
+ip netns exec tau-fedimint runuser -u tau-fedimint -- \
+  /etc/profiles/per-user/tau-fedimint/bin/tau-fedimint-sandbox TAU_ARGUMENT...
+```
+
+Keep the normal prohibition on duplicate live harnesses/notifiers. This command
+does not attach automatically or make a mutating Tau command read-only.
+
+This isolates binds, not access to host services or all resource contention.
+Host localhost services are no longer bot localhost services. Host
+`nix-daemon` jobs do not inherit the client's network namespace; no separate
+daemon is configured. If host Docker access is added later, its daemon also
+remains outside this namespace, including published ports and host-network jobs.
+CPU, memory, disk, and filesystem allocator state remain shared.
 
 Use `mktemp` to allocate unpredictable paths in the shared, non-listable
 `/tmp/public` dropbox and pass exact paths to delegates. Keep secrets and raw

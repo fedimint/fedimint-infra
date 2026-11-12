@@ -71,7 +71,7 @@ let
         python3 ${./tau-github-collect.py} ${../bin/tau-github-collect.py}
         mkdir "$out"
       '';
-  disabledStart = disabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  disabledStart = disabled.config.systemd.services.tau-fedimint-bot.serviceConfig.ExecStart;
   notificationsEnabled = disabled.extendModules {
     modules = [
       {
@@ -85,7 +85,7 @@ let
     ];
   };
   notificationsStart =
-    notificationsEnabled.config.systemd.user.services.tau-fedimint-bot.serviceConfig.ExecStart;
+    notificationsEnabled.config.systemd.services.tau-fedimint-bot.serviceConfig.ExecStart;
   notifierStartupCheck =
     pkgs.runCommand "tau-github-startup-check"
       {
@@ -305,6 +305,29 @@ let
       system.stateVersion = "26.05";
       virtualisation.memorySize = 4096;
       services.resolved.enable = true;
+      services.resolved.settings = disabled.config.services.resolved.settings;
+      environment.etc."netns/tau-fedimint/resolv.conf".text =
+        disabled.config.environment.etc."netns/tau-fedimint/resolv.conf".text;
+      systemd.services.tau-fedimint-network = {
+        inherit (disabled.config.systemd.services.tau-fedimint-network)
+          description
+          wantedBy
+          before
+          after
+          script
+          ;
+        serviceConfig = {
+          inherit (disabled.config.systemd.services.tau-fedimint-network.serviceConfig)
+            Type
+            RemainAfterExit
+            ExecStopPost
+            ;
+        };
+      };
+      networking.firewall = {
+        inherit (disabled.config.networking.firewall) extraCommands extraStopCommands interfaces;
+      };
+      boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
       users.groups.tau-fedimint.gid = 991;
       users.users.tau-fedimint = {
         isNormalUser = true;
@@ -324,6 +347,7 @@ let
         pkgs.bubblewrap
         pkgs.git
         pkgs.jq
+        pkgs.iproute2
         (pkgs.python3.withPackages (python: [
           python.pillow
         ]))
@@ -516,11 +540,13 @@ let
       )
       machine.succeed("systemctl stop tau-grooming-shell-test")
       machine.fail("${tauSandboxPackage}/bin/tau-fedimint-sandbox --version")
+      machine.wait_for_unit("tau-fedimint-network.service")
+      machine.fail("runuser -u tau-fedimint -- ${tauSandboxPackage}/bin/tau-fedimint-sandbox --version")
       machine.succeed(
           "set -eu\n"
           "capture=/tmp/tau-sandbox-args\n"
           "expected=/tmp/tau-sandbox-expected\n"
-          "runuser -u tau-fedimint -- env "
+          "ip netns exec tau-fedimint runuser -u tau-fedimint -- env "
           "HOME=/tmp/wrong-home "
           "XDG_CONFIG_HOME=/tmp/wrong-config "
           "XDG_STATE_HOME=/tmp/wrong-state "

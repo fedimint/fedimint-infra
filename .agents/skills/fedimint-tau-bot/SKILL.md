@@ -62,7 +62,7 @@ tau_as_bot() {
 id tau-fedimint
 tau_as_bot --version
 readlink /run/current-system
-systemctl --user --machine=tau-fedimint@.host show \
+systemctl show \
   tau-fedimint-bot.service \
   -p ActiveState -p SubState -p MainPID -p ExecStart \
   -p FragmentPath -p ActiveEnterTimestamp
@@ -70,7 +70,7 @@ tau_as_bot session list --json
 tau_as_bot agent list tau-fedimint-bot
 ```
 
-This is a user service, not a system-level `tau-fedimint-bot.service`. Re-run
+This is a system service with `User=tau-fedimint`, not a user-manager unit. Re-run
 these commands after every deployment. Discover the current numeric UID, binary,
 session, and root coordinator agent ID; never hard-code an old PID, socket hash,
 UID, or agent ID. A stable session name does not identify one daemon incarnation.
@@ -146,19 +146,23 @@ automatically retry an ambiguous request.
 
 ## Use the service sandbox when needed
 
-For an operator command that must use the bot's complete isolate profile, log in
-as `tau-fedimint` and use the installed wrapper:
+For an authorized operator command that must use the bot's complete isolate
+profile, enter the bot's network namespace as root, then drop to `tau-fedimint`
+and use the installed wrapper:
 
 ```sh
-tau-fedimint-sandbox TAU_ARGUMENT...
+ip netns exec tau-fedimint runuser -u tau-fedimint -- \
+  /etc/profiles/per-user/tau-fedimint/bin/tau-fedimint-sandbox TAU_ARGUMENT...
 ```
 
 The wrapper uses the service's `fedimint-bot` profile, project-root working
 directory, fixed HOME/XDG environment, config and state mounts, runtime
-directory, SSH agent, and managed secret sources. It passes every
-Tau argument literally. It does not call the service launcher, clear the fixed
-session, or attach to the running daemon automatically, and it refuses to run as
-another user or without the installed managed isolate config.
+directory, SSH agent, and managed secret sources. It passes Tau arguments
+literally. It does not call the service launcher, clear the fixed session, or
+automatically attach to the running daemon. It refuses to run as another user,
+outside the bot network namespace, or without the installed managed isolate config.
+Ordinary SSH logins still use the host network. Host-side
+`tau message` and `tau attach` use filesystem sockets and need no namespace entry.
 
 Tau's `dev print-prompt` command configures ordinary extensions, which retain
 their normal persistent state and startup side effects. Do not start a second
@@ -166,7 +170,8 @@ live GitHub notifier to inspect a prompt. Disable that extension
 explicitly:
 
 ```sh
-tau-fedimint-sandbox \
+ip netns exec tau-fedimint runuser -u tau-fedimint -- \
+  /etc/profiles/per-user/tau-fedimint/bin/tau-fedimint-sandbox \
   --disable-extension github-notifications \
   --role coordinator \
   dev print-prompt

@@ -1096,7 +1096,8 @@ let
           kind = "socket";
         }
         {
-          path = "/run/systemd/resolve/stub-resolv.conf";
+          path = "/etc/netns/tau-fedimint/resolv.conf";
+          target = "/run/systemd/resolve/stub-resolv.conf";
           required = true;
           kind = "file";
         }
@@ -1249,6 +1250,10 @@ let
         echo "usage: tau-fedimint-sandbox TAU_ARGUMENT..." >&2
         exit 64
       fi
+      if [ "$(stat -Lc %i /proc/self/ns/net)" != "$(stat -Lc %i /run/netns/tau-fedimint)" ]; then
+        echo "enter the tau-fedimint network namespace as an operator before using this wrapper" >&2
+        exit 1
+      fi
 
       export HOME=${lib.escapeShellArg home}
       export XDG_CONFIG_HOME=${lib.escapeShellArg "${home}/.config"}
@@ -1325,6 +1330,8 @@ let
   '';
 in
 {
+  imports = [ ./tau-fedimint-network.nix ];
+
   options.services.tau-fedimint-bot = {
     enable = lib.mkEnableOption "the isolated Tau Fedimint bot";
     weeklySummary = {
@@ -1696,13 +1703,30 @@ in
     ++ lib.optional cfg.githubNotifications.enable cfg.githubNotifications.package
     ++ lib.optional cfg.discord.enable cfg.discord.package;
 
-    systemd.user.services.tau-fedimint-ssh-agent = {
+    systemd.services.tau-fedimint-ssh-agent = {
       description = "SSH agent for the Tau Fedimint bot identity";
-      wantedBy = [ "default.target" ];
-      unitConfig.ConditionUser = user;
+      requires = [ "user@${toString cfg.uid}.service" ];
+      after = [ "user@${toString cfg.uid}.service" ];
+      environment.XDG_RUNTIME_DIR = runtimeDir;
       serviceConfig = {
+        User = user;
+        Group = user;
         Type = "simple";
-        ExecStart = "${pkgs.openssh}/bin/ssh-agent -D -a %t/tau-fedimint-ssh-agent.sock";
+        # Retire the old user-manager units before creating the shared socket
+        # or starting a second daemon. This also covers an in-place upgrade.
+        ExecStartPre = [
+          "+${pkgs.writeShellScript "tau-fedimint-retire-user-services" ''
+            set -eu
+            for unit in tau-fedimint-recovery tau-fedimint-bot tau-fedimint-ssh-agent; do
+              state=$(${pkgs.util-linux}/bin/runuser -u ${user} -- ${pkgs.systemd}/bin/systemctl --user show --property=LoadState --value "$unit.service")
+              if [ "$state" != not-found ]; then
+                ${pkgs.util-linux}/bin/runuser -u ${user} -- ${pkgs.systemd}/bin/systemctl --user stop "$unit.service"
+              fi
+            done
+          ''}"
+          "${pkgs.coreutils}/bin/rm -f ${runtimeDir}/tau-fedimint-ssh-agent.sock"
+        ];
+        ExecStart = "${pkgs.openssh}/bin/ssh-agent -D -a ${runtimeDir}/tau-fedimint-ssh-agent.sock";
         ExecStartPost = pkgs.writeShellScript "tau-fedimint-ssh-add" ''
           export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/tau-fedimint-ssh-agent.sock"
           exec ${pkgs.openssh}/bin/ssh-add ${sshPrivateKey}
@@ -1728,7 +1752,6 @@ in
       description = "Deliver one weekly-summary instruction to the existing bot";
       unitConfig.ConditionUser = user;
       # Do not start/restart the bot as a side effect of delivering a message.
-      after = [ "tau-fedimint-bot.service" ];
       environment = {
         HOME = home;
         XDG_CONFIG_HOME = "${home}/.config";
@@ -1763,7 +1786,6 @@ in
       description = "Deliver one self-PR grooming instruction to the existing bot";
       unitConfig.ConditionUser = user;
       # Delivery must not start/restart the bot or retry uncertain sends.
-      after = [ "tau-fedimint-bot.service" ];
       environment = {
         HOME = home;
         XDG_CONFIG_HOME = "${home}/.config";
@@ -1802,7 +1824,6 @@ in
       description = "Deliver one stale-triage instruction to the existing bot";
       unitConfig.ConditionUser = user;
       # Delivery must not start/restart the bot or retry uncertain sends.
-      after = [ "tau-fedimint-bot.service" ];
       environment = {
         HOME = home;
         XDG_CONFIG_HOME = "${home}/.config";
@@ -1844,7 +1865,6 @@ in
       unitConfig.ConditionUser = user;
       # A missed calendar firing may catch up, but never start the bot or retry
       # an uncertain send. The durable sweep owns recovery and deduplication.
-      after = [ "tau-fedimint-bot.service" ];
       environment = {
         HOME = home;
         XDG_CONFIG_HOME = "${home}/.config";
@@ -1884,7 +1904,6 @@ in
       description = "Deliver one working directory cleanup instruction to the existing bot";
       unitConfig.ConditionUser = user;
       # Delivery must not start/restart the bot or retry uncertain sends.
-      after = [ "tau-fedimint-bot.service" ];
       environment = {
         HOME = home;
         XDG_CONFIG_HOME = "${home}/.config";
@@ -1922,7 +1941,7 @@ in
 
     # Keep admission separate from the restarting daemon. A failed/ambiguous
     # delivery must stay visible rather than restart Tau and silently resend.
-    systemd.user.services.tau-fedimint-recovery = {
+    systemd.services.tau-fedimint-recovery = {
       description = "Admit startup recovery to the canonical Tau coordinator";
       # Prompt-only activation must not resend in the current incarnation.
       # PartOf still consumes the new command on the next daemon restart.
@@ -1930,7 +1949,6 @@ in
       wantedBy = [ "tau-fedimint-bot.service" ];
       after = [ "tau-fedimint-bot.service" ];
       partOf = [ "tau-fedimint-bot.service" ];
-      unitConfig.ConditionUser = user;
       environment = {
         HOME = home;
         XDG_CONFIG_HOME = "${home}/.config";
@@ -1939,6 +1957,8 @@ in
         XDG_RUNTIME_DIR = runtimeDir;
       };
       serviceConfig = {
+        User = user;
+        Group = user;
         Type = "oneshot";
         ExecStart = recoverBot;
         RemainAfterExit = true;
@@ -1954,10 +1974,11 @@ in
       };
     };
 
-    systemd.user.services.tau-fedimint-bot = {
+    systemd.services.tau-fedimint-bot = {
       description = "Fixed isolated Tau Fedimint bot session";
-      wantedBy = [ "default.target" ];
-      unitConfig.ConditionUser = user;
+      wantedBy = [ "multi-user.target" ];
+      bindsTo = [ "tau-fedimint-network.service" ];
+      partOf = [ "tau-fedimint-network.service" ];
       path = [
         pkgs.bubblewrap
         direnvDpc
@@ -1966,6 +1987,8 @@ in
       after = [
         "network-online.target"
         "tau-fedimint-ssh-agent.service"
+        "tau-fedimint-network.service"
+        "systemd-resolved.service"
       ];
       wants = [ "network-online.target" ];
       requires = [ "tau-fedimint-ssh-agent.service" ];
@@ -1977,6 +2000,12 @@ in
         XDG_RUNTIME_DIR = runtimeDir;
       };
       serviceConfig = {
+        User = user;
+        Group = user;
+        NetworkNamespacePath = "/run/netns/tau-fedimint";
+        BindReadOnlyPaths = [
+          "/etc/netns/tau-fedimint/resolv.conf:/run/systemd/resolve/stub-resolv.conf"
+        ];
         Type = "simple";
         ExecStart = startBot;
         Restart = "on-failure";

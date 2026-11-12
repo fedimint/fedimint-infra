@@ -70,9 +70,9 @@ tau_as_bot() {
 }
 
 tau_as_bot --version
-systemctl --user --machine=tau-fedimint@.host show \
+systemctl show \
   tau-fedimint-bot.service -p ActiveState -p SubState -p ExecStart
-systemctl --user --machine=tau-fedimint@.host show \
+systemctl show \
   tau-fedimint-bot.service --value -p Environment |
   tr ' ' '\n' | grep -E '^(HOME|XDG_STATE_HOME)='
 tau_as_bot dev papercut --help
