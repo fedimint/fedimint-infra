@@ -58,6 +58,8 @@ fast-forward authorization, new `tau/` heads, and the PR-rewrite procedure.
 
 A local commit, patch, artifact, or comment containing a diff does not satisfy
 pull-request delivery. Post the delivered pull-request URL on the originating
-discussion. Never merge or change an existing pull request's base or head identity.
+discussion. Merge only when a verified repository maintainer explicitly and clearly
+agrees to merge or requests merging that specific PR in a GitHub comment. Never change an
+existing pull request's base or head identity.
 If blocked, preserve local work and ask about an in-scope fast-forward update or
 new PR instead of silently substituting delivery.

@@ -174,7 +174,9 @@ deprecated positions, pending-review arrays, or raw whole-review API writes.
 
 ## Boundaries and troubleshooting
 
-Permanent deletion, merge, changing an existing pull request's base or
+Merge only when a verified repository maintainer explicitly and clearly agrees to merge
+or requests merging that specific PR in a GitHub comment.
+Permanent deletion, changing an existing pull request's base or
 head, moderation, administration, review dismissal, auth/config access, and
 arbitrary API calls are denied. Branch publication uses the configured Git SSH
 remote rather than this broker. Fast-forward updates to another author's exact
