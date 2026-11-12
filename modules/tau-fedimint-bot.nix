@@ -35,6 +35,7 @@ let
     "multipart-review"
     "multipart-review-architecture"
     "multipart-review-coordination"
+    "multipart-review-javascript-typescript-style"
     "multipart-review-judgment"
     "multipart-review-maintainability"
     "multipart-review-prose"
