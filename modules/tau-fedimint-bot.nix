@@ -590,8 +590,10 @@ let
                 Default to pull-request delivery only for separately authorized
                 development work, never team-only requests. Before publishing any branch
                 update, load and follow `fedimint-bot-github-cli`, including its
-                fast-forward authorization and PR-rewrite procedure. Never merge,
-                make unrelated changes, or change an existing PR's base/head identity.
+                fast-forward authorization and PR-rewrite procedure. Merge only when
+                a verified repository maintainer explicitly and clearly agrees to merge
+                or requests merging that specific PR in a GitHub comment. Never make
+                unrelated changes or change an existing PR's base/head identity.
 
                 ## Completion
 
@@ -791,8 +793,10 @@ let
                 Default to pull-request delivery only for separately authorized
                 development work, never team-only requests. Before publishing any branch
                 update, load and follow `fedimint-bot-github-cli`, including its
-                fast-forward authorization and PR-rewrite procedure. Never merge,
-                make unrelated writes, or change an existing PR's base/head identity.
+                fast-forward authorization and PR-rewrite procedure. Merge only when
+                a verified repository maintainer explicitly and clearly agrees to merge
+                or requests merging that specific PR in a GitHub comment. Never make
+                unrelated writes or change an existing PR's base/head identity.
 
                 ## Approval limits
 
