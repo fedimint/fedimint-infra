@@ -387,6 +387,7 @@ let
       for name in project_skills:
           machine.fail(f"test -e {skills_dir}/{name} || test -L {skills_dir}/{name}")
       for name in [
+          "multipart-review-javascript-typescript-style",
           "maintainers-contact-information",
           "fedimint-bot-maintainer-requests",
           "fedimint-bot-pull-request-review",
