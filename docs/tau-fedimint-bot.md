@@ -132,6 +132,9 @@ private channel. Admission permits safe read-only assistance and a reply; it
 does not authorize source or GitHub mutations. Display names and aliases are
 presentation, not identity.
 
+The installed [`maintainers-contact-information`](../.agents/skills/maintainers-contact-information/SKILL.md)
+skill lists GitHub usernames and Discord user IDs.
+
 The coordinator sends configured announcements and alerts needing external help
 to Discord; keep ordinary GitHub updates on GitHub. Use full issue/PR URLs in
 Discord. Sends suppress mentions, and provider acceptance does not imply that a
