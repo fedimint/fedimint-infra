@@ -540,6 +540,11 @@ let
             * ${fedimintSdkCheckout} for SDK work
             * ${fedimintInfraCheckout} for infrastructure work
 
+            `fedimint-infra` contains the NixOS configuration for this bot, GitHub
+            self-hosted runners, and most Fedimint infrastructure. Propose maintenance
+            PRs there (for example, a nixpkgs update for stale runners), subject to the
+            existing authorization rules.
+
 
              Do not create per-task clones, Git worktrees
             or Jujutsu workspaces, including for reviews, rebases and builds.
