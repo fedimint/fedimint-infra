@@ -21,12 +21,12 @@ def timestamp(value):
     return value.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def instruction(start, end):
+def instruction(start, end, announce_channel):
     occurrence = f"fedimint-weekly-{end.strftime('%Y%m%dT%H%M%SZ')}"
     date = end.astimezone(ZoneInfo("America/Los_Angeles"))
     label = f"{date.day} {MONTHS[date.month - 1]}, {date.year}"
     filename = f"Week-summary-{label.replace(' ', '-')}.md"
-    return (
+    message = (
         "Add a scheduled weekly development-summary task to your work queue: in "
         "fedimint/fedimint, use the fedimint-bot-weekly-dev-summary skill and "
         "publish to its GitHub wiki.\n"
@@ -35,14 +35,23 @@ def instruction(start, end):
         f"{timestamp(start)} <= activity time < {timestamp(end)}.\n"
         f"Markdown heading: '# Week summary: {label}'. "
         f"Wiki filename: '{filename}'.\n"
-        "After verified publication, announce the published page URL via "
-        "discord_send to fedimint_maintainers.\n"
     )
+    if announce_channel:
+        message += (
+            "After verified publication, send the public wiki page URL via "
+            f"discord_send to {announce_channel} as a plain link without mentions.\n"
+        )
+    return message
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("tau", help="absolute path to the installed Tau binary")
+    parser.add_argument(
+        "--announce-channel",
+        choices=("general", "fedimint_maintainers"),
+        help="configured Discord alias for the verified public wiki link",
+    )
     parser.add_argument(
         "--window-end",
         help="original captured UTC end for an operator-approved rerun "
@@ -64,7 +73,7 @@ def main():
     # No --wait-response, no harness startup, and no retry on any failure.
     result = subprocess.run(
         [args.tau, "message", "&tau-fedimint-bot"],
-        input=instruction(start, end),
+        input=instruction(start, end, args.announce_channel),
         text=True,
         check=False,
     )
