@@ -79,6 +79,8 @@
       ];
 
       topLevelModule = {
+        imports = [ ./modules/nginx2root.nix ];
+
         # The emSign roots from NixOS/nixpkgs#576401 are gone upstream;
         # keep blocking the Comodo cross-sign path that remains in the bundle.
         # This affects system trust only, not applications' independent bundles.
