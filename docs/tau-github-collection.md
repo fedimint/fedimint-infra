@@ -29,11 +29,13 @@ deadline is a backstop, not a guarantee of a particular request count.
 Do not wait automatically across quota resets or restart budgets on resume.
 Synthesis delegates read saved evidence without issuing network requests.
 
-Keep private evidence, ledger, and draft below the persistent bot checkout;
-record paths and delivered/collecting/blocked/published state in the durable
-task. The launcher clears the live session on restart; it does not clear these
-checkout files or durable task records. Preserve them during deployment and
-verify them read-only before/after restart. Restart loses live conversations;
+Keep private evidence, ledger, and draft below the matching persistent repository
+checkout. Run the helper from the managed bot project root and pass absolute
+capture filenames. Record the repository, exact UTC window, paths, and
+delivered/collecting/blocked/drafted/published state in the durable task. On restart,
+the launcher clears the live session but leaves checkout files and durable task
+records intact. Preserve them during deployment and verify them read-only
+before/after restart. Restart loses live conversations;
 it is not a request to publish or resume a report.
 
 Create an owner-private directory with `mktemp -d`, then provide a new filename

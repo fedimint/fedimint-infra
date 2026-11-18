@@ -226,9 +226,26 @@ repository does not install copies of those skills.
 The weekly summary covers the preceding **184 hours**, not a calendar week.
 Its overlapping window is intentional. The summary skill owns page naming,
 reruns, publication, and announcement details.
-On runner-01, the coordinator verifies wiki publication before posting the
-public link to `#general`. The Discord route permits sends and excludes messages
-and thread content from delivery and reads.
+On runner-01, both timers run on Monday in `America/Los_Angeles`:
+
+| Repository | Local time | Wiki | Discord link destination |
+| --- | --- | --- | --- |
+| `fedimint/fedimint` | 06:00 | `fedimint/fedimint/wiki` | `#general` |
+| `fedimint/fedimint-sdk` | 07:00 | `fedimint/fedimint-sdk/wiki` | `#sdk` |
+
+The coordinator verifies publication on the matching wiki before posting the
+public link. `#general` remains outbound-only. `#sdk` also admits mentions from
+the existing maintainer allowlist for public read-only assistance. It does not
+grant additional GitHub authority. The Discord bot needs View Channel and Send
+Messages in `#sdk`; the SDK wiki must have a first page and allow the existing bot
+account to write via managed Git SSH.
+
+For an authorized one-off, attach to the existing session and submit the
+request in the operator UI. Ask the existing coordinator to use the weekly
+summary skill with `fedimint/fedimint-sdk` as its repository argument. Specify
+whether to publish and whether to announce. For a rerun, also supply the
+original UTC endpoint so the coordinator can reuse the same durable task and
+page. Do not start the timer or a second bot to validate delivery.
 
 Only the coordinator has papercut history tools. Follow the self-improvement
 skill to archive the exact reviewed generation and handle concurrent arrivals.
