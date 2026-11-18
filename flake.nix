@@ -27,16 +27,16 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=dcf0f58e7561490e993c51d1b100e5bb7b1adf9a";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=1fd69c5f3b2c6bcc0982a4ba79b12e62b557ad7b";
     };
 
     tau-ext-github = {
-      url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=734b18342509246252c6a923a0bacb1662742cdd";
+      url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=2995c24614f631c7f80f6926128fd3ed1450c077";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
 
-    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=433d42d0c52bb7a21f3e7d726e71f16167ad9f98";
+    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=c438486c018a0d5b799c7648822818a1ae1a2808";
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=5df086953e60e29e70afac60bb268a31f054f787";
 
