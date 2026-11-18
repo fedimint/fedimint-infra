@@ -113,6 +113,19 @@
 
       fedimintAutomationPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ3EKT3vVlYnZ4v3jBBlt+ug6Q+msgQEFT+ErT6ZDEs5 fedimint-infra-agent@dpc.pw";
 
+      addOperatorAutomationKey =
+        name: keys:
+        keys
+        ++ nixpkgs.lib.optional (builtins.elem name [
+          "fedimintd-01"
+          "fedimintd-02"
+          "fedimintd-03"
+          "fedimintd-04"
+          "irohrelay-eu-01"
+          "irohrelay-us-01"
+          "recurringdv2-01"
+        ]) fedimintAutomationPublicKey;
+
       makeRunner =
         {
           system,
@@ -216,7 +229,7 @@
           specialArgs = {
             inherit inputs;
             hostName = name;
-            adminKeys = adminKeysFedimintd;
+            adminKeys = addOperatorAutomationKey name adminKeysFedimintd;
           };
         };
 
@@ -256,7 +269,7 @@
           ];
           specialArgs = {
             inherit inputs;
-            inherit adminKeys;
+            adminKeys = addOperatorAutomationKey name adminKeys;
             hostName = name;
           };
         };
@@ -276,7 +289,7 @@
           ];
           specialArgs = {
             inherit inputs;
-            inherit adminKeys;
+            adminKeys = addOperatorAutomationKey name adminKeys;
             hostName = name;
           };
         };

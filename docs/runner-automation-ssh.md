@@ -1,23 +1,18 @@
-# CI runner automation SSH access
+# Infrastructure automation SSH access
 
-The dedicated Fedimint automation public key is authorized for `root` on the
-configured CI runners: `runner-01`, `runner-02`, `runner-04`, and
-`runner-arm-01`. It is added alongside the shared administrator keys only in
-the runner configuration; it does not authorize the unprivileged `tau-fedimint`
-account or non-runner hosts.
+The dedicated Fedimint infrastructure operator key is authorized for `root`
+alongside the shared administrator keys on these hosts:
 
-The key is SHA256:8jVZ5eJVh1aHisetDzl1o3g+BB26PpQ1QEn5cRRBnJo. This
-configuration does not grant access until activated on each runner. In
-particular, the automation identity cannot bootstrap `runner-02`, `runner-04`,
-or `runner-arm-01` using that same key. An administrator with existing root
-access must deploy the reviewed configuration to each host first, for example:
+- CI runners: `runner-01`, `runner-02`, `runner-04`, and `runner-arm-01`
+- Test federation: `fedimintd-01` through `fedimintd-04`
+- Iroh relays: `irohrelay-eu-01` and `irohrelay-us-01`
+- Recurring payments proxy: `recurringdv2-01`
 
-```sh
-just apply-runner 02
-just apply-runner 04
-just apply-runner arm-01
-```
+The key fingerprint is `SHA256:8jVZ5eJVh1aHisetDzl1o3g+BB26PpQ1QEn5cRRBnJo`.
+This key is not the deployed Tau bot's key. It grants no access to the
+`tau-fedimint` account or to the Iroh DNS hosts.
 
-Run these from the reviewed checkout with an authorized administrator SSH
-identity. Confirm activation and key authentication on each host before
-considering automation access live.
+An administrator must activate the configuration on each new host using
+an already-authorized identity. The operator key cannot bootstrap its own
+access. Before connecting, verify the SSH host key through a trusted channel.
+After deployment, verify public-key authentication.
