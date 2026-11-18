@@ -304,7 +304,10 @@
             {
               services.tau-fedimint-bot = {
                 enable = true;
-                weeklySummary.enable = true;
+                weeklySummary = {
+                  enable = true;
+                  sdkOnCalendar = "Mon *-*-* 07:00:00 America/Los_Angeles";
+                };
                 selfPrGrooming.enable = true;
                 staleTriage.enable = true;
                 papercutGrooming.enable = true;
@@ -318,6 +321,7 @@
                   channelId = 1023312920634994838;
                   maintainerRoleId = 1009176569895473223;
                   generalChannelId = 990354215878688860;
+                  sdkChannelId = 1299044197805985954;
                   codeReviewChannelId = 1075857804692295720;
                   alerts = {
                     channelId = 1092891381124579349;
@@ -356,7 +360,7 @@
                 # The automation key is root-only. This unprivileged bot account
                 # remains reachable only with the shared administrator keys.
                 sshAuthorizedKeys = adminKeys;
-                # Startup subscribes the dedicated bot account to both configured
+                # Startup subscribes the dedicated bot account to all configured
                 # repositories and clears their ignored state. Those persistent
                 # GitHub-side effects are explicitly approved for this deployment.
                 githubNotifications = {
