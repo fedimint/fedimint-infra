@@ -276,6 +276,9 @@ Nix build sandbox. These checks do not verify live readiness, credentials, or
 external delivery. After an authorized deployment through `just apply-runner "01"`,
 follow the debugging skill for live checks.
 
+Synthetic missing-token broker tests check accepted grammar and denied neighboring
+forms; they do not verify live GitHub permissions or token scopes.
+
 When upgrading Tau's persistent-state format, stop writers and retain a
 consistent private backup of the **complete** state, including journals,
 artifacts, extension state, and repository/Clank recovery data. Retain the old
