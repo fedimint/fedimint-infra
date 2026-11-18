@@ -117,11 +117,23 @@ let
           pkgs.coreutils
           pkgs.git
           pkgs.gnugrep
+          pkgs.jq
           patchedDirenvPackage
         ];
       }
       ''
         set -euo pipefail
+
+        # Check the installed host handler, not a separately assembled broker command.
+        isolate_config=$(
+          grep -Eo '/nix/store/[^ ]+-tau-fedimint-isolate.yaml' ${disabledStart}
+        )
+        jq -er '.profiles["fedimint-bot"].exec_priv.allow[]
+          | select(.name == "gh-host") | .handler.script' "$isolate_config" > handler
+        grep -F -- '--merge-credential fedimint' handler
+        grep -F -- '--workflow-run-approval-credential fedimint' handler
+        grep -F -- '--team-read-org fedimint=fedimint' handler
+        grep -F -- '--public-gist-account fedimint=332691140' handler
 
         # Both public command names must select the same patched executable.
         test "$(command -v direnv)" -ef "$(command -v direnv-dpc)"
@@ -413,6 +425,7 @@ let
       for name in [
           "multipart-review-javascript-typescript-style",
           "maintainers-contact-information",
+          "fedimint-bot-pr-branch-rewrite",
           "fedimint-bot-maintainer-requests",
           "fedimint-bot-pull-request-review",
           "fedimint-bot-dependabot",
@@ -692,19 +705,27 @@ let
           "gh pr review 1 -R fedimint/fedimint --comment --body-file \"$1\""
           "' sh "
       )
-      # Team membership belongs to the notifier, not the agent shell. Even the
-      # configured team must remain inaccessible through the general gh broker.
-      status, output = machine.execute(
-          "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
-          "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
-          "isolate -c /home/tau-fedimint/fedimint "
-          "exec --profile fedimint-bot -- ${pkgs.runtimeShell} -c "
-          "'cd /home/tau-fedimint/fedimint && "
-          "gh api orgs/fedimint/teams/bot-access/members' 2>&1"
-      )
-      assert status == 126, (status, output)
-      assert "gh invocation denied by isolate policy" in output, output
-      assert "open GitHub token secret" not in output, output
+      # Configured organization team reads reach credential loading; other
+      # organizations remain denied before any credential access.
+      for endpoint, accepted in [
+          ("orgs/fedimint/teams/lightning/members --paginate", True),
+          ("orgs/fedimint/teams/lightning/memberships/dpc", True),
+          ("orgs/other-org/teams/lightning/members --paginate", False),
+      ]:
+          status, output = machine.execute(
+              "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+              "XDG_RUNTIME_DIR=/home/tau-fedimint/.runtime "
+              "isolate -c /home/tau-fedimint/fedimint "
+              "exec --profile fedimint-bot -- ${pkgs.runtimeShell} -c "
+              "'cd /home/tau-fedimint/fedimint && "
+              "gh api " + endpoint + "' 2>&1"
+          )
+          assert status == (125 if accepted else 126), (endpoint, status, output)
+          if accepted:
+              assert "open GitHub token secret: No such file or directory" in output, output
+          else:
+              assert "gh invocation denied by isolate policy" in output, output
+              assert "open GitHub token secret" not in output, output
 
       for name, body in [
           ("nested-relative", "review.md"),

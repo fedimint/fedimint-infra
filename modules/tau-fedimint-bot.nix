@@ -50,6 +50,7 @@ let
     stop-slop = ../.agents/skills/stop-slop;
     task-retrospective = ../.agents/skills/task-retrospective;
     fedimint-bot-github-cli = ../.agents/skills/fedimint-bot-github-cli;
+    fedimint-bot-pr-branch-rewrite = ../.agents/skills/fedimint-bot-pr-branch-rewrite;
     fedimint-bot-maintainer-requests = ../.agents/skills/fedimint-bot-maintainer-requests;
     maintainers-contact-information = ../.agents/skills/maintainers-contact-information;
     fedimint-bot-pull-request-review = ../.agents/skills/fedimint-bot-pull-request-review;
@@ -545,17 +546,22 @@ let
           ];
           roles = {
             researcher = {
-              model = "codex/gpt-6.1-sol";
+              model = "codex/gpt-6.2-sol";
               effort = 0.5;
               description = "Default researcher for separate research.";
             };
             researcher-senior = {
-              model = "codex/gpt-6-astra";
+              model = "codex/gpt-6.2-astra";
               effort = 0.5;
               description = "Deep-thinking researcher for complex work.";
             };
+            researcher-ultra = {
+              model = "codex/gpt-6.2-astra";
+              effort = 0.75;
+              description = "Researcher for the most demanding work.";
+            };
             reviewer = {
-              model = "codex/gpt-6-astra";
+              model = "codex/gpt-6.2-sol";
               effort = 0.5;
               description = "Independent code reviewer; review without editing.";
               required_skills = [ "multipart-review" ];
@@ -647,20 +653,20 @@ let
           roles = {
             engineer-junior = {
               order = 10;
-              model = "codex/gpt-6.1-sol";
-              effort = 0.25;
+              model = "codex/gpt-6.1-terra";
+              effort = 0.5;
               description = "Fast contributor for straightforward tasks.";
             };
             engineer = {
               order = 20;
-              model = "codex/gpt-6.1-sol";
+              model = "codex/gpt-6.2-sol";
               effort = 0.5;
               description = "Default software engineer.";
             };
             engineer-senior = {
               order = 30;
-              model = "codex/gpt-6-astra";
-              effort = 0.25;
+              model = "codex/gpt-6.2-astra";
+              effort = 0.5;
               description = "Senior engineer for the hardest tasks.";
             };
           };
@@ -669,7 +675,10 @@ let
           effort = 0.5;
           required_skills = [ "stop-slop" ];
           disable_tools = [ "agent_start" ];
-          roles.editor.description = "Polishes longer prose in delegated temporary copies.";
+          roles.editor = {
+            model = "codex/gpt-6.1-terra";
+            description = "Polishes longer prose in delegated temporary copies.";
+          };
           prompt_fragments = [
             {
               name = "editor.instructions";
@@ -825,9 +834,10 @@ let
 
                 ## Approval limits
 
-                - Bot-access-only reviews remain comment-only: no APPROVE or
-                  REQUEST_CHANGES. Independent PASS does not expand authority.
-                - Approve only after independent PASS for the exact inspected SHA,
+                - Publish formal reviews as COMMENT, never REQUEST_CHANGES; APPROVE
+                  requires an authenticated target-repository maintainer's explicit
+                  request to approve that PR. Independent PASS does not grant authority.
+                - Requested approvals also require independent PASS for the exact inspected SHA,
                   using `fedimint-bot-github-cli`'s SHA-bound procedure. Publish
                   feedback naming that SHA; otherwise use comment-only feedback.
                 - Never approve Fedimint consensus changes in `fedimint/fedimint`
@@ -910,19 +920,24 @@ let
                 design choices. Do not invent work or
                 expand the requested scope.
 
-                Standing Merge Queue authority: automatically investigate failures
-                you encounter in configured repositories and open a fix PR when
-                you pinpoint a fixable root cause. For apparent externally caused
-                or non-fixable flakiness, retry only failed jobs using
-                `fedimint-bot-github-cli`, at most three bot retries total per PR
-                across runs and sessions. Before each attempt, reserve it in a
-                durable Clank task keyed by repository and PR. Retain the count
-                across task closure; charge every affected PR for a grouped run,
-                and count uncertain attempts unless confirmed not submitted.
-                If attribution or the prior count is unknown, do not retry.
-                Use available delivery and tools; report missing failure coverage
-                or denied access rather than bypassing it. Existing review,
-                approval, and publication limits still apply.
+                Automatically investigate suspected PR CI flakes and all Merge
+                Queue failures you encounter in configured repositories, even
+                if a retry passes or is unavailable. Use the original failure
+                evidence and compare attempts when available. Propose a root-cause
+                fix or, if the cause is unclear, targeted diagnostics to narrow
+                it next time. For Merge Queue failures, open a fix PR when you
+                pinpoint a fixable root cause, within existing review and
+                publication limits.
+
+                When evidence suggests a flake, you may retry failed jobs under
+                `fedimint-bot-github-cli` only for runs tied to approved current
+                PR heads. Reserve each attempt in a durable Clank task keyed by
+                repository and PR, with at most three bot retries per PR across
+                runs, heads, sessions, and task closure. Charge every affected PR
+                for a grouped run; count uncertain attempts unless confirmed not
+                submitted. If attribution, approval, or prior count is unknown,
+                do not retry. Report missing failure coverage or denied access;
+                do not bypass it.
 
                 If scope or the next decision remains unclear, ask a fresh
                 `researcher-senior` to recommend a decision using `proactive-work`.
@@ -944,7 +959,7 @@ let
           roles.coordinator = {
             order = 0;
             main_priority = 10;
-            model = "codex/gpt-6.1-sol";
+            model = "codex/gpt-6.2-astra";
             effort = 0.35;
             description = "Coordinates work and delivers the integrated result.";
             compactions = {
@@ -1040,6 +1055,10 @@ let
                   without GitHub identity checks. No mutations, code execution, builds,
                   installs, administration, other communications, private data, or broker
                   bypass. Other work requires normal authorization.
+                  These admission limits do not cancel standing authority to approve
+                  eligible fork workflow runs after an independent PASS on the
+                  exact current PR head under `fedimint-bot-github-cli`; a Discord
+                  message alone does not authorize that review or approval.
                 '';
               }
             ];
@@ -1192,9 +1211,17 @@ let
                 *) exit 125 ;;
               esac
               export GH_BROKER_RUNTIME_ROOT
+              # Operator-approved reuse of the existing classic action PAT:
+              # its broader scopes (including private repo access) remain intact.
+              # This grant restricts only the broker's gist path to public gists
+              # owned by the checked-in Git identity, independently API-verified.
               exec ${cfg.ghBrokerPackage}/bin/gh-broker \
                 --credential fedimint=${githubToken} \
                 --default-credential fedimint \
+                --merge-credential fedimint \
+                --workflow-run-approval-credential fedimint \
+                --team-read-org fedimint=fedimint \
+                --public-gist-account fedimint=332691140 \
                 --pr-head-prefix tau/ \
                 --import-context-fd 3 \
                 "$@"
@@ -1550,7 +1577,7 @@ in
     };
     model = lib.mkOption {
       type = lib.types.str;
-      default = "codex/gpt-6.1-sol";
+      default = "codex/gpt-6.2-astra";
       description = "Provider-neutral default model inherited by roles without an override.";
     };
     providerProfile = lib.mkOption {

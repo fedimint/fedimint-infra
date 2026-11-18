@@ -40,7 +40,7 @@
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=5df086953e60e29e70afac60bb268a31f054f787";
 
-    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=4a6f947eb0d25d3ec41ed07c49fd5b91f7c494f0";
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=22ff806f2fa8613f7c40f080d724af93367531ba";
 
     clank = {
       url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=88fbc570239e2e4cedea53c0e6ca24cce3e88fd9";
@@ -316,9 +316,9 @@
                   package = inputs.tau-ext-discord.packages.x86_64-linux.tau-ext-discord;
                   guildId = 990354215060795454;
                   channelId = 1023312920634994838;
+                  maintainerRoleId = 1009176569895473223;
                   generalChannelId = 990354215878688860;
                   codeReviewChannelId = 1075857804692295720;
-                  maintainerRoleId = 1009176569895473223;
                   alerts = {
                     channelId = 1092891381124579349;
                     botId = 1092891130166792254;
