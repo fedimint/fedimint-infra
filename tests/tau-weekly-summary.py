@@ -32,6 +32,7 @@ class WeeklySummaryTests(unittest.TestCase):
                 message,
             )
             self.assertIn("fedimint-weekly-20261006T003623", message)
+            self.assertNotIn("discord_send", message)
 
     def test_single_send_and_failure(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -48,7 +49,8 @@ class WeeklySummaryTests(unittest.TestCase):
                 fake.chmod(0o700)
                 result = subprocess.run(
                     [sys.executable, str(SCRIPT), str(fake),
-                     "--window-end", "2026-10-06T00:36:23Z"],
+                     "--window-end", "2026-10-06T00:36:23Z",
+                     "--announce-channel", "general"],
                     capture_output=True, text=True,
                 )
                 self.assertEqual(result.returncode, status)
@@ -61,6 +63,7 @@ class WeeklySummaryTests(unittest.TestCase):
             self.assertIn("fedimint-weekly-20261006T003623Z", message)
             self.assertIn("2026-09-28T08:36:23Z <= activity time < 2026-10-06T00:36:23Z", message)
             self.assertIn("Week-summary-5-October,-2026.md", message)
+            self.assertIn("discord_send to general as a plain link without mentions", message)
 
     def test_bad_window_never_sends(self):
         for end in ("bad", "2026-10-06", "2026-10-05T09:00:00+01:00"):

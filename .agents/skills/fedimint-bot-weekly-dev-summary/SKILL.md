@@ -179,7 +179,7 @@ draft plus the precise blocker. Do not request permission to hide that failure.
 Resolve it within the retry budget, or wait for an authorized recovery decision.
 An exit code alone does not diagnose quota exhaustion or execution congestion.
 Do not expose raw stderr, credentials, private paths, or private task details in
-the public page or maintainer announcement.
+the public page or Discord announcement.
 
 Maintain durable lifecycle: **delivered** (request accepted), **collecting**
 (active work), **blocked** (specific cause and next action), **published**

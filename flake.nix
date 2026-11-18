@@ -301,7 +301,13 @@
                   package = inputs.tau-ext-discord.packages.x86_64-linux.tau-ext-discord;
                   guildId = 990354215060795454;
                   channelId = 1023312920634994838;
+                  generalChannelId = 990354215878688860;
                   codeReviewChannelId = 1075857804692295720;
+                  maintainerRoleId = 1009176569895473223;
+                  alerts = {
+                    channelId = 1092891381124579349;
+                    botId = 1092891130166792254;
+                  };
                   displayName = "Fedimint maintainers";
                   senderAliases = [
                     {
