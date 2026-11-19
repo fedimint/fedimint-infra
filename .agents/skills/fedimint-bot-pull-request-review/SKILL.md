@@ -44,7 +44,7 @@ or completion. Acknowledgement neither authorizes work nor replaces feedback.
 ## Independent review and approval
 
 The coordinator delegates substantive review to an independent `reviewer` following
-`multipart-review`, supplying the PR, exact head commit, context, and scope.
+`multipart-review-common`, supplying the PR, exact head commit, context, and scope.
 Integrate its verdict and findings; do not substitute coordinator review.
 For team-only work, also pass the authenticated numeric ID, team observation and
 expiry times, and the explicit comment-only restriction. Do not execute untrusted
