@@ -3436,16 +3436,16 @@
     "linked-specs-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1794341569,
-        "narHash": "sha256-zhVsXm4wQqB72yH/8oSpZxn2oohp8F7Oz+qdKCxYT6M=",
+        "lastModified": 1795122703,
+        "narHash": "sha256-Vs9OoPC6L5CEd2eBYRNcNqLaz3K8R3OFdUa/dqFpNXc=",
         "ref": "refs/heads/master",
-        "rev": "7aed5cbecd8214d5fa04d990e0a8957199dd1836",
-        "revCount": 144,
+        "rev": "96602266488833ccddbf28eabbd79191f7758c01",
+        "revCount": 148,
         "type": "git",
         "url": "https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git"
       },
       "original": {
-        "rev": "7aed5cbecd8214d5fa04d990e0a8957199dd1836",
+        "rev": "96602266488833ccddbf28eabbd79191f7758c01",
         "type": "git",
         "url": "https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git"
       }

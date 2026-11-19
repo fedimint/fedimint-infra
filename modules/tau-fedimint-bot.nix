@@ -32,7 +32,7 @@ let
     "linked-specs"
     "linked-specs-updating"
     "linked-specs-review"
-    "multipart-review"
+    "multipart-review-common"
     "multipart-review-architecture"
     "multipart-review-coordination"
     "multipart-review-javascript-typescript-style"
@@ -576,7 +576,7 @@ let
               model = "codex/gpt-6.2-sol";
               effort = 0.5;
               description = "Independent code reviewer; review without editing.";
-              required_skills = [ "multipart-review" ];
+              required_skills = [ "multipart-review-common" ];
               prompt_fragments = [
                 {
                   name = "reviewer.default-multipart-review";
@@ -584,7 +584,7 @@ let
                   text = ''
                     # Independent review
 
-                    Follow `multipart-review` unless explicitly asked otherwise.
+                    Follow `multipart-review-common` unless explicitly asked otherwise.
                     Judge the change primarily by reading it. Do not rerun
                     broad CI, builds, or linters. Use only small, targeted
                     probes needed to resolve a concrete review question.
@@ -1873,6 +1873,8 @@ in
       "d ${home}/.config 0700 ${user} ${user} -"
       "d ${home}/.config/agents 0700 ${user} ${user} -"
       "d ${userSkillsDir} 0700 ${user} ${user} -"
+      # Remove the renamed upstream skill so stale instructions are not discoverable.
+      "r ${userSkillsDir}/multipart-review - - - -"
       # Retire the old bot-managed name; do not leave stale policy discoverable.
       "r ${userSkillsDir}/github-cli - - - -"
       # Retire renamed bot skills so upgrades expose only their bot-prefixed names.

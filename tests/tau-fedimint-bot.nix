@@ -410,6 +410,7 @@ let
       machine.succeed("systemd-tmpfiles --create")
       # Simulate upgrading a host with old global project and renamed bot links.
       project_skills = [
+          "multipart-review",
           "fedimint-codebase",
           "fedimint-coding-style",
           "fedimint-development",
@@ -423,6 +424,7 @@ let
       for name in project_skills:
           machine.fail(f"test -e {skills_dir}/{name} || test -L {skills_dir}/{name}")
       for name in [
+          "multipart-review-common",
           "multipart-review-javascript-typescript-style",
           "maintainers-contact-information",
           "fedimint-bot-pr-branch-rewrite",
@@ -446,7 +448,7 @@ let
           f"test -f /tmp/project-skill/SKILL.md && "
           f"test -L {skills_dir}/unrelated-skill && "
           f"test -f {skills_dir}/fedimint-bot-github-cli/SKILL.md && "
-          f"test -f {skills_dir}/multipart-review/SKILL.md"
+          f"test -f {skills_dir}/multipart-review-common/SKILL.md"
       )
       machine.succeed(
           "test -L /tmp/public && "
