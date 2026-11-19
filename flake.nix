@@ -123,6 +123,8 @@
           "fedimintd-02"
           "fedimintd-03"
           "fedimintd-04"
+          "irohdns-eu-01"
+          "irohdns-us-01"
           "irohrelay-eu-01"
           "irohrelay-us-01"
           "recurringdv2-01"
@@ -250,7 +252,7 @@
           ];
           specialArgs = {
             inherit inputs;
-            inherit adminKeys;
+            adminKeys = addOperatorAutomationKey name adminKeys;
             inherit serverIp;
             hostName = name;
           };
