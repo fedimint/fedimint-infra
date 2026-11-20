@@ -27,16 +27,10 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=a0e3531f2b728f8b0601960b013ebe2f22d0bd42";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=882c77f7bdeeb279210cedec875e73b862c84ac6";
+      inputs.tau-ext-github-standalone.inputs.nixpkgs.follows = "nixpkgs";
+      inputs.tau-ext-github-standalone.inputs.flake-utils.follows = "flake-utils";
     };
-
-    tau-ext-github = {
-      url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=2995c24614f631c7f80f6926128fd3ed1450c077";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
-
-    tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=c438486c018a0d5b799c7648822818a1ae1a2808";
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=5df086953e60e29e70afac60bb268a31f054f787";
 
@@ -315,10 +309,10 @@
                 papercutGrooming.enable = true;
                 workdirCleanup.enable = true;
                 # Operator-approved private channel, humans and encrypted
-                # credentials; the extension source is independently pinned.
+                # credentials; Tau supplies the extension package.
                 discord = {
                   enable = true;
-                  package = inputs.tau-ext-discord.packages.x86_64-linux.tau-ext-discord;
+                  package = inputs.tau.packages.x86_64-linux.tau-ext-discord;
                   guildId = 990354215060795454;
                   channelId = 1023312920634994838;
                   maintainerRoleId = 1009176569895473223;
@@ -367,7 +361,7 @@
                 # GitHub-side effects are explicitly approved for this deployment.
                 githubNotifications = {
                   enable = true;
-                  package = inputs.tau-ext-github.packages.x86_64-linux.default;
+                  package = inputs.tau.packages.x86_64-linux.tau-ext-github-standalone;
                   tokenAgeFile = ./secrets/tau-fedimint-github-notifications-token.age;
                   identityKeyAgeFile = ./secrets/tau-fedimint-github-notifications-identity-key.age;
                 };
@@ -434,7 +428,7 @@
               tauPackage = tauPackage system;
               isolatePackage = inputs.isolate.packages.${system}.default;
               ghBrokerPackage = inputs.gh-isolate.packages.${system}.default;
-              githubNotificationsPackage = inputs.tau-ext-github.packages.${system}.default;
+              githubNotificationsPackage = inputs.tau.packages.${system}.tau-ext-github-standalone;
               skillsSource = inputs.linked-specs-skills;
             };
           };
