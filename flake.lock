@@ -96,17 +96,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1774654405,
-        "narHash": "sha256-71jT3XLRInSfbXiBgucWwEufe79N3i5FgAAJ1jCiQWg=",
+        "lastModified": 1794278156,
+        "narHash": "sha256-0aTbhd2JwqZSQAfb3+aRlJ1rmFQB5PEBqRuYq9k/jJw=",
         "owner": "tadfisher",
         "repo": "android-nixpkgs",
-        "rev": "0afc63ee6baf0914918169427744cc09ee651ebc",
+        "rev": "1d5e41f183a3e69cc99678bfa82483adf3a60b0a",
         "type": "github"
       },
       "original": {
         "owner": "tadfisher",
         "repo": "android-nixpkgs",
-        "rev": "0afc63ee6baf0914918169427744cc09ee651ebc",
+        "rev": "1d5e41f183a3e69cc99678bfa82483adf3a60b0a",
         "type": "github"
       }
     },
@@ -1108,11 +1108,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1768818222,
-        "narHash": "sha256-460jc0+CZfyaO8+w8JNtlClB2n4ui1RbHfPTLkpwhU8=",
+        "lastModified": 1791918082,
+        "narHash": "sha256-oN9JrhRfHa7MUTdUq+11dHn7u0Z4WfEA4mhzBq0/zoQ=",
         "owner": "numtide",
         "repo": "devshell",
-        "rev": "255a2b1725a20d060f566e4755dbf571bbbb5f76",
+        "rev": "9e29c63dde99a2d80c94b3d024c9768c01544558",
         "type": "github"
       },
       "original": {
@@ -1627,22 +1627,22 @@
         "nixpkgs": [
           "tau",
           "tau-ext-discord",
-          "flakebox",
           "nixpkgs"
         ],
         "rust-analyzer-src": "rust-analyzer-src_10"
       },
       "locked": {
-        "lastModified": 1783844668,
-        "narHash": "sha256-3MOpw4y3reoErRLvFBDz0t9aG6FWXUj7leKvUns5eQA=",
+        "lastModified": 1795015517,
+        "narHash": "sha256-hudxF5BuipTDnLpklD965NQYHbKjRzXG4HeZhlm3It8=",
         "owner": "nix-community",
         "repo": "fenix",
-        "rev": "4e49ef62eedaa5c149d62b63b3f53844e1cc45d7",
+        "rev": "99a75e53c977fe7c3934e8a4a7a0d3000efd6a33",
         "type": "github"
       },
       "original": {
         "owner": "nix-community",
         "repo": "fenix",
+        "rev": "99a75e53c977fe7c3934e8a4a7a0d3000efd6a33",
         "type": "github"
       }
     },
@@ -2932,7 +2932,11 @@
       "inputs": {
         "android-nixpkgs": "android-nixpkgs_10",
         "crane": "crane_11",
-        "fenix": "fenix_10",
+        "fenix": [
+          "tau",
+          "tau-ext-discord",
+          "fenix"
+        ],
         "flake-utils": "flake-utils_26",
         "nixpkgs": [
           "tau",
@@ -2942,17 +2946,17 @@
         "systems": "systems_29"
       },
       "locked": {
-        "lastModified": 1785524886,
-        "narHash": "sha256-TfVuYBOkbl1TZ4oG43+ICHGykBvr6LfRkSgqwFDsxBY=",
+        "lastModified": 1794465920,
+        "narHash": "sha256-m0N0k+ldIY+CAxCSGE4sJ1TncskzgnSVWtXoKBZmJLM=",
         "owner": "rustshop",
         "repo": "flakebox",
-        "rev": "e402950dbedc4021d41222c913bc9a7ef0a5fab2",
+        "rev": "35d966d748541a1bbc96ba7c75bfca8678b43d95",
         "type": "github"
       },
       "original": {
         "owner": "rustshop",
         "repo": "flakebox",
-        "rev": "e402950dbedc4021d41222c913bc9a7ef0a5fab2",
+        "rev": "35d966d748541a1bbc96ba7c75bfca8678b43d95",
         "type": "github"
       }
     },
@@ -4152,11 +4156,11 @@
     "rust-analyzer-src_10": {
       "flake": false,
       "locked": {
-        "lastModified": 1783779020,
-        "narHash": "sha256-vpm418WZa9l1KUl6HRs+Ga+SIfE+D2/sV4olwTlilYc=",
+        "lastModified": 1794935100,
+        "narHash": "sha256-5KrGEWd+RmBkwHmBScKmAUwIpQzdbR1BnAzL6QkSgC4=",
         "owner": "rust-lang",
         "repo": "rust-analyzer",
-        "rev": "5be5e89cf0145d73a85c805726821b4adfc3af48",
+        "rev": "ff7105dd728897503481c79727cd6ead881d80a6",
         "type": "github"
       },
       "original": {
@@ -5162,37 +5166,38 @@
         "tau-ext-zulip": "tau-ext-zulip"
       },
       "locked": {
-        "lastModified": 1795140416,
-        "narHash": "sha256-GyjR1mHRt7q0uqKxGZY/ZPnqo6rXdm0FSyQCaUZz5q8=",
+        "lastModified": 1795143673,
+        "narHash": "sha256-0S8oIDR3u2Px2sJM9tQySCXayh9VHa/vmFzDAqfD9wE=",
         "ref": "refs/heads/master",
-        "rev": "882c77f7bdeeb279210cedec875e73b862c84ac6",
-        "revCount": 3973,
+        "rev": "b674557fadee1e1e60fdbb043154178edd189ffa",
+        "revCount": 3974,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       },
       "original": {
-        "rev": "882c77f7bdeeb279210cedec875e73b862c84ac6",
+        "rev": "b674557fadee1e1e60fdbb043154178edd189ffa",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       }
     },
     "tau-ext-discord": {
       "inputs": {
+        "fenix": "fenix_10",
         "flake-utils": "flake-utils_25",
         "flakebox": "flakebox_10",
         "nixpkgs": "nixpkgs_16"
       },
       "locked": {
-        "lastModified": 1794961029,
-        "narHash": "sha256-46qic8R6RfJq+XqMlv+1DWQpgG+ZDuto4saYZTdAPDk=",
+        "lastModified": 1795143354,
+        "narHash": "sha256-CSwTVPx+qdpYIm/5AzUFgnSOtfyfCCsYGkFdtvmIyKs=",
         "ref": "refs/heads/main",
-        "rev": "c438486c018a0d5b799c7648822818a1ae1a2808",
-        "revCount": 69,
+        "rev": "0d43fec9c39855d574266cba767dd2cf6a86794e",
+        "revCount": 71,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git"
       },
       "original": {
-        "rev": "c438486c018a0d5b799c7648822818a1ae1a2808",
+        "rev": "0d43fec9c39855d574266cba767dd2cf6a86794e",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git"
       }
