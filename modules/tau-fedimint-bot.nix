@@ -296,7 +296,7 @@ let
       ];
     };
     tau_state_access = "hidden";
-    aliases.providers.codex = cfg.providerProfile;
+    aliases.providers.codex = cfg.providerProfiles;
     extensions = {
       core-shell = {
         enable = true;
@@ -1701,10 +1701,13 @@ in
       default = "codex/gpt-6.2-astra";
       description = "Provider-neutral default model inherited by roles without an override.";
     };
-    providerProfile = lib.mkOption {
-      type = lib.types.str;
-      default = "chatgpt-dpc";
-      description = "Canonical Tau provider profile targeted by the codex alias.";
+    providerProfiles = lib.mkOption {
+      type = lib.types.nonEmptyListOf lib.types.str;
+      default = [
+        "chatgpt-dpcpw"
+        "chatgpt-dciez"
+      ];
+      description = "Tau provider profiles targeted by the load-balanced codex alias.";
     };
     uid = lib.mkOption {
       type = lib.types.ints.positive;
