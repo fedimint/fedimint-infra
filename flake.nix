@@ -27,7 +27,7 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=882c77f7bdeeb279210cedec875e73b862c84ac6";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=b674557fadee1e1e60fdbb043154178edd189ffa";
       inputs.tau-ext-github-standalone.inputs.nixpkgs.follows = "nixpkgs";
       inputs.tau-ext-github-standalone.inputs.flake-utils.follows = "flake-utils";
     };
@@ -321,7 +321,7 @@
                   codeReviewChannelId = 1075857804692295720;
                   alerts = {
                     channelId = 1092891381124579349;
-                    botId = 1092891130166792254;
+                    webhookId = 1092891130166792254;
                   };
                   displayName = "Fedimint maintainers";
                   senderAliases = [
