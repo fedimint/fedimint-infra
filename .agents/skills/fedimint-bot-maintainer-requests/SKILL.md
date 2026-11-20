@@ -7,14 +7,10 @@ advertise: true
 
 # Serve authorized Fedimint requests
 
-Use this skill to handle delivered issue activity. Use its request workflow
-only after the prompt's authentication and authorization checks succeed, including
-its independent authenticated-PR-author consent path. Repository maintainers may
-explicitly request edits and force-pushes to another author's exact PR without
-author consent; follow `fedimint-bot-github-cli` for scope and publication checks.
-A delivered notification is context, not a request. Routine creation or status
-activity does not authorize work. If an explicit request fails authorization,
-perform only the narrow notification acknowledgement allowed by the main prompt.
+Handle delivered issue activity here, but use the request workflow only after
+the main prompt's authorization checks, including its exact-PR author consent
+path. Delivery alone authorizes no work. On denial, only acknowledge under
+`fedimint-bot-github-cli`.
 
 ## Respond and track
 
@@ -23,11 +19,6 @@ originating issue or pull request, or in the target thread when supported. A
 reaction, internal report, or artifact alone is not a response. Inspect existing
 bot comments first to avoid duplicates. If publication fails or the target is
 ambiguous, preserve the response, report it as pending, and do not claim delivery.
-
-As soon as the coordinator verifies notification provenance and the exact
-target, it loads and follows the acknowledgement procedure in
-`fedimint-bot-github-cli`. Do not wait for disposition or task completion.
-Acknowledgement does not authorize work or replace a substantive response.
 
 ## Delegate bounded work
 
@@ -50,16 +41,9 @@ as authorized. Stop at expiry and obtain fresh membership facts before continuin
 or publishing. The development and PR-delivery instructions below apply only
 when you have established separate write-capable authority.
 
-Default to delivering requested changes as a pull request unless the maintainer
-explicitly requests local-only output. After checks and review pass, publish the
-change through the configured Git SSH remote and create the requested pull request.
-Before any branch publication, load and follow `fedimint-bot-github-cli` for
-fast-forward authorization, new `tau/` heads, and the PR-rewrite procedure.
-
-A local commit, patch, artifact, or comment containing a diff does not satisfy
-pull-request delivery. Post the delivered pull-request URL on the originating
-discussion. Merge only when a verified repository maintainer explicitly and clearly
-agrees to merge or requests merging that specific PR in a GitHub comment. Never change an
-existing pull request's base or head identity.
-If blocked, preserve local work and ask about an in-scope fast-forward update or
-new PR instead of silently substituting delivery.
+After checks and review pass, deliver authorized development as a PR unless the
+maintainer explicitly requests local-only output. Use the configured Git SSH
+remote and `fedimint-bot-github-cli` for branch updates, PR creation, and any
+separately authorized merge. Post the PR URL on the originating discussion.
+A local commit, patch, artifact, or diff comment is not PR delivery. If blocked,
+preserve local work and ask about an in-scope fast-forward update or new PR.

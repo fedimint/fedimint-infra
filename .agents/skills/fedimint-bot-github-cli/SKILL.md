@@ -7,26 +7,17 @@ advertise: true
 
 # GitHub CLI in the Fedimint bot sandbox
 
-Use `gh` for GitHub interaction. A sandbox broker intercepts the installed
-command and accepts only a bounded grammar for reads and writes. Use the
-documented forms below. If a form is denied, do not try another
-client, credential path, raw API variant, reordered flags, mutation `--help`, or
-another executable path.
-
-Use explicit `-R OWNER/REPO` for repository CLI commands and the exact repository
-in API paths. Inspect current state before mutation, perform one mutation at a
-time, and verify remote state afterward. After an ambiguous result, inspect remote
-state before deciding whether a retry is safe; never retry blindly.
+Use the brokered `gh` from `/home/tau-fedimint/fedimint`; subcheckouts may supply
+another `gh`. Use the forms below with explicit `-R OWNER/REPO` or the exact
+repository in API paths. If denied, don't try other clients, credential or
+executable paths, API variants, reordered flags, or mutation `--help`.
+Inspect state before each mutation, mutate one at a time, and verify afterward.
+After an ambiguous result, verify remote state before deciding whether to retry.
 
 ## Bounded reads
 
-Run `gh` from `/home/tau-fedimint/fedimint`, not a project subcheckout: project
-shells can supply a different `gh` that does not use the sandbox broker.
-
-For PR inspection, request only the JSON fields you need for the task. This
-metadata recipe avoids organization-dependent fields such as `reviewRequests`;
-default PR views and `--comments` can request fields that require unavailable
-`read:org` scope.
+Request only needed JSON fields. Default PR views, `--comments`, and fields such
+as `reviewRequests` can require unavailable `read:org`.
 
 ```sh
 gh pr view NUMBER -R OWNER/REPO --json number,state,isDraft,author,headRefOid,headRefName,baseRefName,title,body,files
@@ -37,16 +28,11 @@ gh api --paginate repos/OWNER/REPO/pulls/NUMBER/reviews
 gh api repos/OWNER/REPO/issues/comments/COMMENT_ID
 ```
 
-Use the `files` metadata or paginated PR-files response to identify changed
-paths, and the full PR diff to inspect changes. Filter saved output locally
-when needed; `gh pr diff --stat` and diff pathspecs are unsupported.
-
-These recipes do not authorize arbitrary API reads. Repository
-`commits`, `contents`, and `compare` endpoints and reaction-list GETs are
-unsupported. Repository-wide commit reads are unsupported, unlike the bounded
-PR-scoped commits collection documented in `fedimint-bot-weekly-dev-summary`.
-If a required read is unavailable,
-report the blocker rather than trying endpoint variants or another client.
+Use `files` or paginated PR files for paths; filter the full diff locally
+(`gh pr diff --stat` and pathspecs are unsupported). No arbitrary API reads:
+repository `commits`, `contents`, `compare`, and reaction-list GETs are unsupported.
+Bounded PR-scoped commits are documented in `fedimint-bot-weekly-dev-summary`.
+Report blocked reads; don't try alternatives.
 
 ## Team membership reads
 
@@ -57,27 +43,18 @@ gh api orgs/fedimint/teams/lightning/members --paginate
 gh api orgs/fedimint/teams/lightning/memberships/USERNAME
 ```
 
-Substitute the team slug and username. Only an `active` membership
-confirms current membership; `pending` does not. A 404, hidden team, inaccessible
-roster, or any error means unknown, not nonmembership. Do not infer
-absence from an incomplete roster. Membership facts do not grant authority
-beyond the applicable authorization policy.
-
-The existing classic action token needs `read:org` and visibility into the team.
-Enabling these routes does not add token permissions.
-Report missing access; do not change credentials or try another client.
+Substitute the slug and username. Only `active` confirms membership; `pending`
+does not. Errors or missing visibility mean unknown, not nonmembership; an
+incomplete roster cannot establish absence. The existing classic action token
+needs `read:org` and team visibility. Membership facts do not expand authority.
 
 ## Public gists
 
-The broker permits only public gists owned by `fedimint-tau` (`332691140`) and
-verifies the account on every call. The existing classic action token retains its
-broader account-scoped authority; this public-only route does not make the token
-repository-scoped. Other scopes do not enable Projects, Discussions, audit-log,
-key, hook, or administrative commands.
-
-Publication requires an explicit request and safe content: no secrets, raw private
-logs, or private conversations in filenames, descriptions, or files. Gist edits
-retain history; replacing content does not retract it.
+Only public gists owned by `fedimint-tau` (`332691140`) are supported; the broker
+verifies the account on every call. The classic token remains account-scoped.
+Other scopes do not enable Projects, Discussions, audit-log, key, hook, or admin
+commands. Publish only on explicit request, with no secrets, raw private logs,
+or private conversations in names, descriptions, or files. Edits retain history.
 
 ```sh
 gh gist list --limit 20
@@ -101,19 +78,18 @@ removal/rename, visibility changes, URLs, and editors are denied.
 
 ## PR CI flake retries
 
-For PR CI or Merge Queue failures, inspect the failed attempt with
+Inspect the failed PR CI or Merge Queue attempt with
 `gh run view NUMERIC_RUN -R OWNER/REPO --attempt ATTEMPT --log-failed`. Use trusted
-run and PR metadata to tie the run to each affected open PR's exact current head.
-Require an effective GitHub APPROVE review bound to each of those SHAs; a comment,
-an independent PASS, or fork workflow-run approval is not PR approval.
+metadata to tie the run to each affected open PR's exact current head and require
+effective SHA-bound GitHub APPROVE for each, not a comment, independent PASS, or
+fork workflow approval.
 
-Only retry a completed failed run when evidence suggests a flake and the failed
-jobs and their dependents are safe to re-execute. Reserve the coordinator's
-durable per-PR budget, then recheck the run, attempt, affected heads, and approvals
-immediately before `gh run rerun NUMERIC_RUN -R OWNER/REPO --failed`. The broker
-allows only this rerun form; the default credential still needs Actions write.
-Verify the attempt afterward. Preserve the original failure evidence and continue
-the investigation even if the retry passes or is denied.
+Retry only a completed failure with evidence of a flake and safe-to-repeat jobs
+and dependents. Reserve the coordinator's durable per-PR budget, then recheck
+run, attempt, heads, and approvals immediately before the only supported rerun,
+`gh run rerun NUMERIC_RUN -R OWNER/REPO --failed` (requires Actions write).
+Verify the attempt; preserve the original evidence and investigate even if the
+retry passes or is denied.
 
 ## Ordinary collaboration
 
@@ -158,97 +134,75 @@ enable raw API writes.
 
 ## Pull-request merging
 
-Merge only when a verified repository maintainer explicitly requests or agrees to
-merge the exact PR in a GitHub comment. Verify their native `write` or `admin`
-permission on the target repository using fresh trusted delivery facts or `github_user_context`; team membership, a bot
-review, and CI success alone do not authorize merging.
-
-Read current PR state and checks. Confirm the request still covers the current
-head, then use the inspected full lowercase head SHA:
+Require a GitHub comment explicitly requesting or agreeing to merge the exact PR
+from a target-repository maintainer (native `write` or `admin`, verified with fresh
+trusted delivery facts or `github_user_context`). Team membership, a bot review,
+and CI cannot substitute. Inspect PR state and checks; confirm authorization
+covers the current full lowercase head SHA:
 
 ```sh
 gh pr merge NUMBER -R OWNER/REPO --match-head-commit FULL_SHA
 gh pr merge NUMBER -R OWNER/REPO --squash --match-head-commit FULL_SHA
 ```
 
-The first form uses the repository's merge queue when required; for a direct
-merge, select one repository-supported method (`--merge`, `--squash`, or
-`--rebase`). Never bypass protections, use admin flags, or weaken checks.
-`--match-head-commit` provides an atomic head check for direct merges, but queue
-and auto-merge paths do not provide the same guarantee. Do not use a queue path
-when the authorization requires an exact-SHA guarantee. Recheck remote state after the
-operation and report whether it merged, queued, or enabled auto-merge; command
-success alone does not mean merged. Stop on a changed head or protection failure.
+Use the first form for a required queue, or one supported direct method
+(`--merge`, `--squash`, `--rebase`). No admin flags or protection/check bypasses.
+Only direct merging provides an atomic head check; do not use queue or auto-merge
+when authorization requires an exact-SHA guarantee. Verify and report whether
+it merged, queued, or enabled auto-merge. Stop on head change or protection failure.
 
 ## Fork workflow-run approval
 
-This procedure approves a fork PR workflow run, not a PR review, deployment, or
-environment approval. After an independent PASS on the PR's exact current head, automatically
-approve needed gated runs for that revision without a separate maintainer request.
-PR activity or bot-access membership alone is not a passing review. Include the
-passing review, exact SHA, and target in any delegation.
+Automatically approve needed gated fork runs after independent PASS on the exact
+current PR head; no separate maintainer request. This is not PR, deployment, or
+environment approval. Pass the review, SHA, and target in any delegation.
 
-Before approval, inspect the run's repository, event, workflow, and head SHA.
-Use trusted metadata to associate it with the reviewed PR and current head. An
-empty `pull_requests` list is not a veto; correlate repository, fork, branch, SHA,
-and event/workflow metadata instead. Confirm the run actually awaits fork workflow
-approval: `completed` with `action_required` alone does not establish that gate.
-Review all code that will execute, including workflow changes and scripts, for
-safe execution on the target runners. If safety, gate eligibility, or the
-run-to-head association is uncertain, stop and report the blocker.
+Use trusted run repository, event, workflow, and SHA to tie the run to the reviewed
+PR/current head. If `pull_requests` is empty, correlate repository, fork, branch,
+SHA, and event/workflow instead. Verify it awaits fork approval (`completed` plus
+`action_required` is insufficient) and all executable code, workflows, and scripts
+are safe on the target runners. Stop and report uncertainty about safety, gate, or head.
 
 ```sh
 gh api repos/OWNER/REPO/actions/runs/RUN_ID
 gh api --method POST repos/OWNER/REPO/actions/runs/RUN_ID/approve
 ```
 
-Use one concrete numeric run ID, with no payload or extra API options. Recheck the
-run and PR immediately before approval; this endpoint has no expected-head
-parameter. Inspect the run state afterward before reporting success or retrying
-an ambiguous result. This capability does not authorize deployment approvals,
-workflow dispatch, broader reruns, or changes to Actions settings.
+Use one numeric run ID, no payload or extra options. Recheck run and PR immediately
+before approval (no expected-head parameter); verify run state afterward. No
+deployment approvals, dispatch, broader reruns, or Actions settings changes.
 
 ## SHA-bound approval and review forms
 
-Publish formal reviews as COMMENT, never REQUEST_CHANGES. APPROVE requires an
-authenticated target-repository maintainer's explicit request to approve that PR,
-not merely `fedimint/bot-access` membership. Require fresh
-membership before publishing; independent PASS and a pinned SHA do not expand
-the requester's authority. The formal approval procedure below applies only
-when separate authority and all approval limits permit it.
-
-Formal reviews use:
+Use COMMENT, never REQUEST_CHANGES. APPROVE requires an authenticated
+target-repository maintainer's explicit request to approve that PR, independent
+PASS for the exact inspected SHA, and all main-prompt limits. Before publishing
+APPROVE, verify fresh target-repository `write` or `admin` permission; fresh
+`fedimint/bot-access` membership alone never authorizes APPROVE.
 
 ```sh
 gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
 gh pr review NUMBER -R OWNER/REPO --approve --commit-id FULL_SHA
 ```
 
-Formally approve eligible changes only after independent PASS for the exact
-inspected SHA and satisfaction of all main-prompt approval limits. `FULL_SHA` is
-that full 40-character lowercase hexadecimal commit. This broker-specific form submits
-`event=APPROVE` and `commit_id=FULL_SHA`; it accepts no body or extra flags.
-Never use unpinned approval or a raw API write. Publish substantive feedback
-separately, naming the full inspected SHA; use comment-only feedback when approval
-limits prevent approval.
+Use the inspected full 40-character lowercase hex SHA. Pinned approval submits
+`event=APPROVE` and `commit_id=FULL_SHA`, with no body or extra flags. No unpinned
+or raw API approval. Publish substantive feedback separately, naming the full
+SHA; use COMMENT alone when approval limits prevent approval.
 
 Immediately before approval, recheck the head with
-`gh pr view NUMBER -R OWNER/REPO --json headRefOid`. If it changed, obtain independent
-review of the new SHA first. Binding prevents approval attaching to a different
-unreviewed commit; it is not an atomic current-head comparison and does not prevent
-concurrent pushes or replace stale-review protection.
+`gh pr view NUMBER -R OWNER/REPO --json headRefOid`. If changed, get independent
+review of the new SHA. Binding pins the review, not the current head; concurrent
+pushes remain possible and stale-review protection still matters.
 
-Verify the submitted review's `state` is `APPROVED` and `commit_id` equals the
-inspected SHA. Inspect the returned review and confirm remote state using:
+Inspect the response and confirm remote `state=APPROVED` and `commit_id=FULL_SHA`:
 
 ```sh
 gh api --paginate repos/OWNER/REPO/pulls/NUMBER/reviews
 ```
 
-Identify the bot's review by its returned review ID and author, not another
-reviewer's approval. After an ambiguous result, use that read before retrying;
-if delivery cannot be established, preserve the uncertainty and do not claim
-approval or blindly submit a duplicate.
+Match the bot's returned review ID and author. On uncertain delivery, verify with
+that read; if still unknown, report uncertainty without claiming or resubmitting approval.
 
 Review files must be regular, single-link files no larger than 1 MiB, reached
 without symlinks or nested mounts. Keep them below the project root or in an
@@ -259,17 +213,12 @@ directory; use an absolute path when crossing between those roots.
 
 ### Notification acknowledgement
 
-The coordinator acknowledges each independently authenticated notification as
-soon as it verifies the exact target, including requests denied authorization.
-Do not wait for disposition or task completion.
-React on the exact delivered object only if it has a supported form below.
-Use `+1` when action is warranted and `-1` when policy prevents action.
-If no better reaction applies yet, use `eyes` as an “I've seen it” placeholder.
-Send each reaction with one raw `content` field. Submitted reviews
-(distinct from inline review comments) and other unsupported objects receive no
-reaction. Do not substitute the PR root or create an acknowledgement comment.
-A reaction neither claims completion nor authorizes work; substantive responses
-remain a separate obligation.
+The coordinator acknowledges independently authenticated notifications as soon as
+it verifies the exact target, even when authorization fails. Use `+1` for warranted
+action, `-1` for policy denial, or `eyes` if not yet clear. Send one raw `content`
+field on the exact supported object. No fallback reaction or comment for submitted
+reviews or other unsupported objects. Acknowledgement is not authorization,
+completion, or substantive feedback.
 
 ```sh
 gh api -X POST repos/OWNER/REPO/issues/NUMBER/reactions -f content='+1'
@@ -312,8 +261,6 @@ new non-conflicting `tau/` head only when that delivery is within the authorized
 scope.
 If the requested update is unsupported, report the concrete blocker.
 
-Before reporting a blocker, inspect installed skill guidance and applicable
-configuration or available state. Installed grammar establishing an unsupported
-operation is sufficient evidence; otherwise use an observed broker, Git SSH,
-permission, or configuration failure. Do not invent a denial, probe forbidden commands,
-or repeat failed mutations in a loop.
+Ground blockers in the installed grammar, applicable configuration, or observed
+broker, Git SSH, permission, or configuration failures. No forbidden probes or
+repeated failed mutations.
