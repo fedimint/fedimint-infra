@@ -25,21 +25,23 @@ Inspect the existing conversation for completion before resending a `tau message
 A timeout does not cancel accepted work. Use read-only checks to assess health;
 a live prompt starts work.
 
-Every service start clears the fixed `tau-fedimint-bot` session. A separate
-`tau-fedimint-recovery.service` waits for a successful read-only roster request,
-then sends the recovery instruction once through the authenticated bare-session
-message route. This creates the canonical coordinator; later scheduled
-and admitted session-directed requests use the same main identity. The daemon
-does not create an ordinary bootstrap agent.
+The launcher keeps the fixed `tau-fedimint-bot` session across restarts. Tau
+creates it if absent and resets it only for a recognized legacy or older
+journal protocol. Malformed or locked state and newer journal protocol majors
+fail without resetting.
 
-Repositories, Clank, and other persistent state survive. Recovery reconciles
-those records with current remote state before resuming work. This is a real
-startup request, not a health probe. Delivery acknowledgement is not completion.
-Recovery has no durable at-most-once guarantee across fresh service starts.
-The recovery unit does not retry an uncertain send or restart the daemon:
-inspect a failed unit and existing activity before deciding whether to resend.
-Each daemon restart starts recovery for its new session. Coordinate
-deployments around active work, since activation can interrupt agents and tools.
+`tau-fedimint-recovery.service` waits for a successful read-only roster request.
+It sends one recovery instruction through the bare-session route only if the
+session has no current or historical agents. The request creates the canonical
+coordinator; a retained coordinator keeps its identity and does not receive
+another bootstrap. Recovery reconciles local work and Clank with current remote
+state. An acknowledgment does not mean recovery is finished. The unit
+does not retry an uncertain send; inspect the existing session before resending.
+Coordinate deployments around active work: restarting can interrupt tools.
+
+The coordinator's native `clank-grooming` timer runs at 09:30 UTC daily.
+It does not replay missed occurrences on restart. The installed skill
+reconciles the canonical queue with open bot tickets and does not dispatch work.
 
 The installed `tau-fedimint-sandbox` wrapper supplies the service's isolate
 profile without running the launcher. Even `dev print-prompt` initializes
@@ -87,7 +89,7 @@ host stub's usual path, so the sandbox's `/etc/resolv.conf` symlink still works.
 DHCP resolver updates remain the host resolver's responsibility.
 
 Stopping the network unit stops the bot before deleting the namespace.
-Restarting it also restarts the bot and admits startup recovery. A bot restart
+Restarting it also restarts the bot and checks whether recovery is needed. A bot restart
 alone keeps the namespace. The lingering user manager continues to own
 `/run/user/<uid>`; the system SSH-agent unit waits for it and retires any legacy
 user bot/recovery/SSH-agent units before creating its socket. Scheduled delivery
@@ -119,8 +121,8 @@ private traces in private state. The module protects isolate's backing `public`
 mountpoint from tmpfiles aging.
 To diagnose missing shared files in `/tmp/public`, inspect
 the **running inner daemon's** mount namespace; a fresh sandbox can work while
-the old daemon has lost its bind. A restart restores the bind but clears the
-session.
+the old daemon has lost its bind. A restart restores the bind and normally
+resumes the session.
 
 ## GitHub and Discord
 

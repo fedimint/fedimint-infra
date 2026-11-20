@@ -27,7 +27,9 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=b674557fadee1e1e60fdbb043154178edd189ffa";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=7c52c84fb8a43da77a15fc92a6f1bc449860aac3";
+      inputs.linked-specs-skills.follows = "linked-specs-skills";
+      inputs.tau-ext-github-standalone.url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=e53ec374d6c5ed48167e98dac020b55d127ceb47";
       inputs.tau-ext-github-standalone.inputs.nixpkgs.follows = "nixpkgs";
       inputs.tau-ext-github-standalone.inputs.flake-utils.follows = "flake-utils";
     };
@@ -37,7 +39,7 @@
     gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=22ff806f2fa8613f7c40f080d724af93367531ba";
 
     clank = {
-      url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=88fbc570239e2e4cedea53c0e6ca24cce3e88fd9";
+      url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=f5becd776f4162a36809ab41173dc533ced33800";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };

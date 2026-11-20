@@ -19,6 +19,11 @@ def timeout(_signum, _frame):
 signal.signal(signal.SIGALRM, timeout)
 signal.alarm(30)
 
+# Match the locked Tau harness and GitHub extension protocol versions. A
+# compatible extension may use an older minor of the same wire major.
+harness_protocol = {"major": 28, "minor": 4}
+notifier_protocol = {"major": 28, "minor": 3}
+
 with open(sys.argv[2], encoding="utf-8") as source:
     config = json.load(source)["extensions"]["github-notifications"]["config"]
 
@@ -29,13 +34,13 @@ with subprocess.Popen(
         decoder = cbor2.CBORDecoder(process.stdout)
         hello = decoder.decode()
         assert hello["message"] == "hello", hello
-        assert hello["payload"]["protocol_version"] == {"major": 28, "minor": 0}, hello
+        assert hello["payload"]["protocol_version"] == notifier_protocol, hello
         cbor2.dump(
             {
                 "message": "configure",
                 "payload": {
                     "instance_name": "github-notifications",
-                    "harness_protocol_version": {"major": 28, "minor": 0},
+                    "harness_protocol_version": harness_protocol,
                     "config": config,
                     "secrets": {
                         config["token_secret"]: "offline-test-token",
