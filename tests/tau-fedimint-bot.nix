@@ -72,6 +72,7 @@ let
         mkdir "$out"
       '';
   disabledStart = disabled.config.systemd.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  recoveryStart = disabled.config.systemd.services.tau-fedimint-recovery.serviceConfig.ExecStart;
   notificationsEnabled = disabled.extendModules {
     modules = [
       {
@@ -140,38 +141,40 @@ let
         direnv version
         direnv-dpc version
 
-        clear_session=$(
-          grep -Eo '/nix/store/[^ ]+-tau-fedimint-clear-session' ${disabledStart}
-        )
-        test -n "$clear_session"
+        harness=$(grep -Eo '/nix/store/[^ ]+-tau-fedimint-harness.yaml' ${disabledStart})
+        jq -e '
+          (.timers == null)
+          and (.profiles["fedimint-coordinator"].timers == {
+            "clank-grooming": {
+              daily_time: "09:30",
+              utc: true,
+              fire_if_missed: false,
+              message: "Run the clank-grooming skill once."
+            }
+          })
+          and (.agents.role_groups.coordinator.roles.coordinator.main_priority == 10)
+        ' "$harness"
 
-        cleanup_home="$TMPDIR/cleanup-home"
-        mkdir -p \
-          "$cleanup_home/.local/state/tau/sessions/tau-fedimint-bot" \
-          "$cleanup_home/.local/state/tau/sessions/sibling-session" \
-          "$cleanup_home/.local/state/tau/providers/provider-state" \
-          "$cleanup_home/.local/state/clank"
-        touch \
-          "$cleanup_home/.local/state/tau/sessions/tau-fedimint-bot/old-session" \
-          "$cleanup_home/.local/state/tau/sessions/sibling-session/keep" \
-          "$cleanup_home/.local/state/tau/providers/provider-state/keep" \
-          "$cleanup_home/.local/state/clank/keep"
-        HOME="$cleanup_home" "$clear_session"
-        test ! -e "$cleanup_home/.local/state/tau/sessions/tau-fedimint-bot"
-        test -e "$cleanup_home/.local/state/tau/sessions/sibling-session/keep"
-        test -e "$cleanup_home/.local/state/tau/providers/provider-state/keep"
-        test -e "$cleanup_home/.local/state/clank/keep"
-
-        external_sessions="$TMPDIR/external-sessions"
-        mkdir -p "$external_sessions/tau-fedimint-bot"
-        touch "$external_sessions/tau-fedimint-bot/keep"
-        rm -rf "$cleanup_home/.local/state/tau/sessions"
-        ln -s "$external_sessions" "$cleanup_home/.local/state/tau/sessions"
-        if HOME="$cleanup_home" "$clear_session"; then
-          echo "session cleanup followed a symlinked sessions directory" >&2
-          exit 1
-        fi
-        test -e "$external_sessions/tau-fedimint-bot/keep"
+        # Exercise the generated recovery script's two admissions without a live
+        # Tau instance, model request or timer. The stub fails on any other RPC.
+        sed "s|${tauPackage}/bin/tau|$PWD/tau-stub|g" ${recoveryStart} > recovery
+        cat > tau-stub <<'SH'
+        #!${pkgs.runtimeShell}
+        set -eu
+        case "$*" in
+          'agent list --all tau-fedimint-bot') cat roster ;;
+          'message &tau-fedimint-bot') cat >> admitted ;;
+          *) exit 2 ;;
+        esac
+        SH
+        chmod +x recovery tau-stub
+        : > roster
+        ./recovery
+        grep -F 'Recover work that may have been in progress' admitted
+        cp admitted first-admission
+        printf '%s\n' 'coordinator retained (including unavailable historical state)' > roster
+        ./recovery
+        cmp first-admission admitted
 
         configure_git_push=$(
           grep -Eo '/nix/store/[^ ]+-tau-fedimint-configure-git-push' ${disabledStart} |
@@ -426,6 +429,7 @@ let
       for name in [
           "multipart-review-common",
           "multipart-review-javascript-typescript-style",
+          "clank-grooming",
           "maintainers-contact-information",
           "fedimint-bot-pr-branch-rewrite",
           "fedimint-bot-maintainer-requests",
@@ -491,14 +495,25 @@ let
           "https://github.com/fedimint/fedimint-sdk.git"
       )
       # Exercise the actual startup script against the production container plus
-      # nested repository topology. The dummy isolate exits after startup setup.
+      # nested repository topology. The dummy isolate captures the daemon
+      # arguments without starting Tau or firing the configured timer.
+      machine.succeed(
+          "runuser -u tau-fedimint -- mkdir -p -m 0700 "
+          "/home/tau-fedimint/.local/state/tau/sessions/tau-fedimint-bot\n"
+          "runuser -u tau-fedimint -- "
+          "touch /home/tau-fedimint/.local/state/tau/sessions/tau-fedimint-bot/keep"
+      )
       for _ in range(2):
-          status, _ = machine.execute(
+          machine.succeed(
               "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+              "TAU_FEDIMINT_TEST_CAPTURE=/home/tau-fedimint/start.argv "
               "${disabledStart}"
           )
-          assert status == 42
       machine.succeed(
+          "test -f /home/tau-fedimint/.local/state/tau/sessions/tau-fedimint-bot/keep\n"
+          "tr '\\000' '\\n' </home/tau-fedimint/start.argv | tail -7 > /tmp/tau-serve-args\n"
+          "printf '%s\\n' --profile fedimint-coordinator serve --session tau-fedimint-bot "
+          "--create-or-existing --reset-incompatible-session | cmp - /tmp/tau-serve-args\n"
           "test \"$(cat /home/tau-fedimint/fedimint/fedimint-infra/unfinished)\" = preserve\n"
           "test \"$(runuser -u tau-fedimint -- git -C "
           "/home/tau-fedimint/fedimint/fedimint-infra remote get-url origin)\" = "
