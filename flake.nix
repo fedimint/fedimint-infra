@@ -27,7 +27,7 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=1fd69c5f3b2c6bcc0982a4ba79b12e62b557ad7b";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=a0e3531f2b728f8b0601960b013ebe2f22d0bd42";
     };
 
     tau-ext-github = {
@@ -49,7 +49,7 @@
     };
 
     linked-specs-skills = {
-      url = "git+https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git?rev=96602266488833ccddbf28eabbd79191f7758c01";
+      url = "git+https://radicle.dpc.pw/z2HR882B4c4mTdAgdt4SozpdeTuMf.git?rev=d279f05f6c8355531e2f4eed4c4803ab8c059f2d";
       flake = false;
     };
   };
