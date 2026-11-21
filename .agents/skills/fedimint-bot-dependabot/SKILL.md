@@ -22,15 +22,11 @@ limits, consensus restrictions, or any GitHub broker boundary.
 
 Assess the dependency or GitHub Actions update as code: inspect the exact version
 and lockfile changes, compatibility and security impact, generated artifacts, and
-repository policy. Use only approved evidence-gathering routes. If a GitHub
-compare is unavailable, do not use alternate GitHub REST or GraphQL routes through
-a browser, shell, or other client. Verify the identities and available checksums of
-pinned static sources, then compare them locally as data without executing them.
-For Cargo, when registry metadata is unavailable, use the approved sparse-index
-record for the exact crate and version. Verify the canonical `.crate` archive
-against the record’s `cksum` before using it as evidence. Record remaining evidence
-gaps rather than switching routes. Publish substantive feedback naming
-the full inspected SHA.
+repository policy. Use approved routes to verify exact pinned sources and their
+available checksums; compare artifacts locally as data without executing them.
+If evidence is unavailable, identify what cannot be verified and defer the affected
+conclusion. Retry transient failures later or ask for evidence when needed for a
+decision. Publish substantive feedback naming the full inspected SHA.
 Use COMMENT reviews unless an authenticated target-repository maintainer explicitly
 requests approval of that PR; then follow the review skill's SHA-bound approval
 workflow. Dependabot identity does not relax independent review or approval limits.
