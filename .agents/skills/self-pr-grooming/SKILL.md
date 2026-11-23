@@ -11,6 +11,13 @@ Use this scheduled task only for the grooming below. Do not make unsolicited cod
 changes, update branches, merge PRs, or groom other authors' PRs. Load
 `fedimint-bot-github-cli`; keep its broker and publication safeguards.
 
+Serialize brokered GitHub reads across the sweep. The coordinator may collect
+the data or designate one read owner; analysis of collected data may run in
+parallel. If a read-only GET/view fails with an explicit pre-execution
+`exec-priv busy`, wait for in-flight reads to settle, then retry only the missing
+reads serially with a bounded retry limit. Do not retry policy denials or
+uncertain writes. Report missing coverage rather than claim a complete sweep.
+
 1. Enumerate all open PRs authored by `fedimint-tau` in `fedimint/fedimint`,
    `fedimint/fedimint-sdk`, and `fedimint/fedimint-infra`, including drafts.
    Use `gh pr list -R OWNER/REPO
