@@ -32,7 +32,9 @@ Use `files` or paginated PR files for paths; filter the full diff locally
 (`gh pr diff --stat` and pathspecs are unsupported). No arbitrary API reads:
 repository `commits`, `contents`, `compare`, and reaction-list GETs are unsupported.
 Bounded PR-scoped commits are documented in `fedimint-bot-weekly-dev-summary`.
-Report blocked reads; don't try alternatives.
+Report blocked GitHub reads. Don’t retry them through undocumented endpoints or
+another GitHub client. You can still inspect commits already present in the
+local checkout.
 
 ## Team membership reads
 
