@@ -32,7 +32,7 @@
       inputs.tau-ext-github-standalone.inputs.flake-utils.follows = "flake-utils";
     };
 
-    isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?rev=5df086953e60e29e70afac60bb268a31f054f787";
+    isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?ref=refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/exec-priv-broker-64-backport&rev=7390f4e82c42d7d6dda38cf62100a47294db2e43";
 
     gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=22ff806f2fa8613f7c40f080d724af93367531ba";
 
