@@ -3463,16 +3463,17 @@
         "nixpkgs": "nixpkgs_11"
       },
       "locked": {
-        "lastModified": 1794109034,
-        "narHash": "sha256-FU3uL0/e7byP/4tDsA8G5VdQGPXkYwrrxnJf9UXu2n8=",
-        "ref": "refs/heads/master",
-        "rev": "5df086953e60e29e70afac60bb268a31f054f787",
-        "revCount": 99,
+        "lastModified": 1795449733,
+        "narHash": "sha256-3CZw0eOzD2ykr+CCnoNIdhd62AMA0IpTqJhcF8BL1y8=",
+        "ref": "refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/exec-priv-broker-64-backport",
+        "rev": "7390f4e82c42d7d6dda38cf62100a47294db2e43",
+        "revCount": 100,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git"
       },
       "original": {
-        "rev": "5df086953e60e29e70afac60bb268a31f054f787",
+        "ref": "refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/exec-priv-broker-64-backport",
+        "rev": "7390f4e82c42d7d6dda38cf62100a47294db2e43",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git"
       }
