@@ -230,57 +230,54 @@ work, and status. A service restart clears the live session, not these checkout
 files/task records; a fresh coordinator must consult them rather than start over.
 Do not silently truncate the report to fit a response or tool limit.
 
-## Classify activity by significance and outcome
+## Group related activity, then classify the work
 
-Within each of **Pull requests** and **Issues**, use these four subsections in
-this exact order: **done**, **updated**, **abandoned**, **unimportant**.
-Assign every item with observed in-window activity to exactly one subsection,
-using the collected evidence and refreshed current status:
+List issues and PRs together under each category. Group records in one entry
+when the evidence shows they track the same outcome: for example, a bug report,
+a closed PR, and its replacement. A shared label, broad theme, or incidental
+cross-reference does not justify grouping. Put each record with observed
+in-window activity in exactly one entry. You may link a related record you
+already found for context even if you observed no in-window activity on it.
+Count only active records. Keep discovery within its existing scope rather
+than searching for related records.
 
-1. **unimportant** — The work is routine or insignificant, or its only observed
-   in-window activity is not meaningful (e.g. a routine rebase or machine-update).
-   An important older item with only routine activity this week belongs here.
-   Automation alone is not grounds for this classification: an automated fix
-   can deliver meaningful work.
-2. For items with meaningful in-window activity, classify the work's outcome:
-   - **done** — Meaningful work completed: a merged PR or an issue demonstrably
-     resolved/completed. A closed issue is not automatically abandoned; a closed
-     unmerged PR can also be completed if evidence shows its work landed elsewhere.
-   - **updated** — Meaningful progress, but work remains incomplete/open,
-     including reopened work. Discussion, diagnosis, design, or review can be
-     meaningful progress even without code changes.
-   - **abandoned** — Meaningful work closed without completion. Use observable
-     closure evidence, not invented motives; quote or summarize a reason only
-     when explicitly supported. Closure as duplicate or superseded requires
-     checking whether the work was completed elsewhere, not assuming completion.
+If the group had no meaningful in-window activity (e.g. only a routine rebase
+or machine update), classify it as **unimportant** regardless of current status.
+Automation and a decision to stop work can count as meaningful activity.
+Otherwise, classify the outcome of the work as a whole:
+- **done:** Meaningful work completed. Classify by the result that landed or
+  resolved the issue, even if earlier PRs closed unmerged or the tracking issue
+  has not yet been closed. A merged PR that delivered only part of the outcome
+  does not make the whole entry done.
+- **updated:** Meaningful progress, with work still outstanding. Discussion,
+  diagnosis, design, and review can count as progress without code changes.
+- **abandoned:** Meaningful work ended without completion and the evidence
+  shows no further work is planned. Closing a duplicate or superseded PR does
+  not establish that the work ended; check what happened to its replacement.
 
-Apply significance before outcome; do not put routine work in done merely
-because it merged. The entry's activity still covers only the reporting window,
-while its category reflects the outcome at the recorded current-status check.
-If completion or closure happened after the window, explicitly distinguish that
-later outcome from this week's activity. Do not treat later activity as evidence
-of in-window progress. If evidence cannot distinguish completion from abandonment,
-record the uncertainty and follow the existing incomplete-evidence publication
-policy rather than guess.
+Use the outcome at the recorded current-status check for meaningful work.
+If completion or closure happened after the window, identify it as a later
+outcome. Base the account of this week's progress on in-window activity alone.
+If the evidence does not distinguish completion from abandonment, record the
+uncertainty and follow the incomplete-evidence publication policy above.
 
 ## Compose one page
 
-Use the schema below every time, replacing placeholders with verified data.
-Retain one concise entry per active item, with PRs only under Pull requests.
-Within each subsection, order entries by item number. Use level-three category
-headings and level-four linked item headings. Link material comments, reviews,
-or commits that explain progress or blockers.
+Follow the page schema below. Give each entry a short title that names the work
+and link each issue and PR in the entry by number. Within each category, order
+entries by their lowest active issue or PR number. Link material comments,
+reviews, or commits inline when they explain progress or blockers. Keep the
+evidence ledger private and leave the **Evidence** field and section off the page.
 
-For **Next**, prefer the explicit outstanding action from the discussion. Name
-an owner only when supported by evidence. Label your own suggested action as
-such; use `Unknown — needs maintainer clarification` when evidence is insufficient.
-For completed work use `None — merged` or `None — resolved` only when justified;
-a closed issue or PR can still have an explicit follow-up.
+Add **Next** only for a concrete outstanding action worth sharing, including
+follow-up on completed work. Prefer actions named in the discussion. Name an
+owner only if the evidence supports it, and label your own suggestions.
 
-For **every PR entry**, including unimportant PRs, record **Author**,
+For **each included PR**, including unimportant PRs, record **Author**,
 **Reviewers**, and **Approved by** where applicable, using GitHub handles.
-Omit empty/inapplicable fields; do not write `None` for them. These credits cover
-the observed PR history as of the status check, not only this week's activity:
+When an entry includes multiple PRs, identify which PR each set of credits
+belongs to. Omit empty or inapplicable fields. Credits cover the observed PR
+history as of the status check, not only this week's activity:
 
 - **Author:** Use `user.login` from the already collected PR detail.
 - **Reviewers:** Deduplicate `user.login` from submitted reviews (with
@@ -311,20 +308,22 @@ Page schema:
 - Coverage: issue/PR discovery and observed-activity counts, search-cap hits,
   inspected/uninspected candidates, failures and budget stops, consulted sources,
   and disclosed coverage limitations.
-- `## Overview`: Main progress and Main blockers / next actions.
-- `## Pull requests`, then `## Issues`, each with `### done`, `### updated`,
-  `### abandoned`, `### unimportant` in that order.
-- Each item: `#### [#NUMBER — Title](URL)`, applicable PR credits above, then
-  **What was done this week**, **Current status**, and **Next**.
+- `## Overview`: Main progress and any material blockers or next actions.
+- The four categories, in order:
+  - `## done — completed`
+  - `## updated — made progress`
+  - `## abandoned — no further work planned`
+  - `## unimportant — activity but not meaningful`
+- Each entry: `### Short title`, links to its issues and PRs, applicable PR
+  credits, then **What was done this week**, **Current status**, and **Next**
+  where meaningful. Omit any field that does not apply or would only repeat
+  information already given.
 
-Keep both sections and all four subsections even when empty. Use `None.` for
-an empty subsection. If a whole section is empty, also state
-`No pull requests with observed activity in this window.` or
-`No issues with observed activity in this window.` If neither
-has activity, say so in the overview; do not invent progress or next steps.
-Count unimportant entries in coverage; do not omit or duplicate them. Keep their
-entries short, explaining the routine activity, current status, and any supported
-next action without promoting routine churn as main progress in the overview.
+Keep all four categories, with `None.` under an empty category. If coverage shows
+no observed activity, say so in the overview. Count active issues and PRs
+individually in coverage, including those grouped together or classed as
+unimportant. Keep unimportant entries short and leave routine churn out of the
+overview.
 
 ## Publish safely to the wiki when authorized
 
@@ -346,8 +345,9 @@ the wiki's first page in GitHub and check the existing bot account's access.
    if the target is not clearly this window's generated report, stop and ask.
 2. Check the rendered Markdown, links, exact window, coverage, item counts,
    deduplication, status timestamps, and evidence for every next action.
-   Verify all four subsections under both Pull requests and Issues, exactly one
-   placement per active item, and evidence for each significance/outcome decision.
+   Verify the four category headings and their order, and check that each
+   active record appears in exactly one entry. Check the evidence for each
+   grouping and its overall category, and match each set of credits to its PR.
    Inspect the Git diff: only the intended report file may change, except that
    the prescribed same-window rename may delete the old report path and add
    the new one. No other paths may change.
