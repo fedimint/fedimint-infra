@@ -5206,16 +5206,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1795061297,
-        "narHash": "sha256-i5ytmIay2nqmXCJ/lGRrbKW+gMH4RmXRO+ivUfZDMow=",
-        "ref": "refs/heads/master",
-        "rev": "e53ec374d6c5ed48167e98dac020b55d127ceb47",
-        "revCount": 38,
+        "lastModified": 1795560618,
+        "narHash": "sha256-48z7NilawCrnjwJARzokkjRomMehcw1yfiM5Qca5ZLo=",
+        "ref": "refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/compat/protocol28-count-isolation",
+        "rev": "1fb64fc454d25f4cba35b317d583077238f443ef",
+        "revCount": 39,
         "type": "git",
         "url": "https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git"
       },
       "original": {
-        "rev": "e53ec374d6c5ed48167e98dac020b55d127ceb47",
+        "ref": "refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/compat/protocol28-count-isolation",
+        "rev": "1fb64fc454d25f4cba35b317d583077238f443ef",
         "type": "git",
         "url": "https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git"
       }
