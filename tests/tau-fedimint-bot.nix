@@ -76,6 +76,7 @@ let
   notificationsEnabled = disabled.extendModules {
     modules = [
       {
+        services.tau-fedimint-bot.dailyPrGrooming.enable = true;
         services.tau-fedimint-bot.githubNotifications = {
           enable = true;
           package = githubNotificationsPackage;
@@ -87,6 +88,8 @@ let
   };
   notificationsStart =
     notificationsEnabled.config.systemd.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  dailyPrStart =
+    notificationsEnabled.config.systemd.user.services.tau-fedimint-daily-pr-grooming.serviceConfig.ExecStart;
   notifierStartupCheck =
     pkgs.runCommand "tau-github-startup-check"
       {
@@ -175,6 +178,21 @@ let
         printf '%s\n' 'coordinator retained (including unavailable historical state)' > roster
         ./recovery
         cmp first-admission admitted
+
+        # The daily unit submits one dated task to the existing coordinator.
+        # Compare its scope with the notifier's actual rendered configuration.
+        harness=$(grep -Eo '/nix/store/[^ ]+-tau-fedimint-harness.yaml' ${notificationsStart})
+        repos=$(jq -er '.extensions["github-notifications"].config.repositories | join(" ")' "$harness")
+        sed "s|${tauPackage}/bin/tau|$PWD/tau-stub|g" ${dailyPrStart} > daily
+        : > admitted
+        before=$(date -u +%F)
+        ${pkgs.runtimeShell} daily
+        after=$(date -u +%F)
+        for day in "$before" "$after"; do
+          printf 'Run daily-pr-grooming for UTC occurrence %s: %s\n' "$day" "$repos" > expected
+          cmp -s expected admitted && break
+        done
+        cmp expected admitted
 
         configure_git_push=$(
           grep -Eo '/nix/store/[^ ]+-tau-fedimint-configure-git-push' ${disabledStart} |
@@ -413,6 +431,7 @@ let
       machine.succeed("systemd-tmpfiles --create")
       # Simulate upgrading a host with old global project and renamed bot links.
       project_skills = [
+          "self-pr-grooming",
           "multipart-review",
           "fedimint-codebase",
           "fedimint-coding-style",
@@ -427,6 +446,7 @@ let
       for name in project_skills:
           machine.fail(f"test -e {skills_dir}/{name} || test -L {skills_dir}/{name}")
       for name in [
+          "daily-pr-grooming",
           "multipart-review-common",
           "multipart-review-javascript-typescript-style",
           "clank-grooming",
