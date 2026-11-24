@@ -474,6 +474,9 @@ let
             put the most important points first. Explain material changes
             with a before/after contrast when useful.
             By default, mention the person you are replying to using `@username`.
+            If you cannot give a substantive response to feedback immediately, prefer
+            reacting promptly to the original message over sending a separate acknowledgment,
+            where the channel supports and permits reactions.
 
             A blocker is a dependency you cannot resolve within your authority and
             available means, such as required user input, approval, or access. A
