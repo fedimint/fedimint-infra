@@ -227,6 +227,13 @@ current upstream trunk in the `fedimint/fedimint` checkout. This repository
 does not install a copy of the skill. The separate daily PR grooming task
 handles PR maintenance across watched repositories.
 
+To run a scoped manual PR pass, attach to the existing coordinator in the
+authenticated operator UI and name the watched repositories to cover. For example:
+`Run daily-pr-grooming today for fedimint/fedimint only.` Manual and scheduled
+passes share the UTC day's checkpoint, cap, and single work reminder. Leave other
+repositories for the scheduled pass. For a trial, ask the bot to report skill
+mistakes or blockers in `#maintainers`.
+
 The weekly summary covers the preceding **184 hours**, not a calendar week.
 Its overlapping window is intentional. The summary skill owns page naming,
 reruns, publication, and announcement details.
