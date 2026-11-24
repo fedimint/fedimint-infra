@@ -61,6 +61,10 @@ the fields listed above. Use the issue records' timestamps and author. Leave
 
 ## Team membership reads
 
+Read `CODEOWNERS` from the PR's verified base ref in the checkout. Look in
+`.github/`, the root, then `docs/`. For each changed path, use the last
+matching rule.
+
 The broker permits read-only team lookups only in the `fedimint` organization:
 
 ```sh
@@ -101,7 +105,27 @@ bounded gist. Edit changes exactly one existing file, adds one new file, or
 changes the description. Secret/default creation, foreign/secret reads, deletion,
 removal/rename, visibility changes, URLs, and editors are denied.
 
-## PR CI flake retries
+## Required CI gates
+
+Use `gh pr checks NUMBER -R OWNER/REPO --required --json name,workflow,bucket,link`
+and verify `headRefOid` before and after the read. Judge CI readiness by
+GitHub's configured required checks. Use optional failures and
+`statusCheckRollup` for context. Read the returned buckets rather than the
+JSON command's exit status. Passing rows don't prove coverage. Verify the
+full required set from trusted branch settings or a maintainer's confirmation,
+not workflow YAML. If coverage is unknown, leave the PR pending and ask the
+responsible maintainer to confirm the gates. Missing, pending, or unreadable
+gates do not count as passing.
+
+For a merge queue, verify the configured gate on the `merge_group` commit.
+If a PR drops out of the queue without explanation, find the matching queue
+ref and run (start with `gh run list -R OWNER/REPO --event merge_group`).
+Tie the attempt to the PR and exact queued head before reporting a failure
+or retrying. If workflow scope prevents verification, ask the responsible
+maintainer for the gate result on that attempt or the read access to verify
+it. Include the PR, head, and any known queue ref or run.
+
+### Flake retries
 
 Inspect the failed PR CI or Merge Queue attempt with
 `gh run view NUMERIC_RUN -R OWNER/REPO --attempt ATTEMPT --log-failed`. Use trusted

@@ -69,6 +69,16 @@ Verify eligibility, discussion, and head before each action. Changed or
 uncertain evidence does not authorize action. Record each PR's outcome, who
 needs to act next, and any notifications sent.
 
+Use **Required CI gates** in `fedimint-bot-github-cli`. Inspect the failed job
+and compare it with runs on the base or other relevant runs. For local checks,
+use the repository's documented CI command. If the evidence points to a
+pre-existing or infrastructure failure, create or reuse a private Clank
+follow-up and link it from the day's record. Include the gate, run, head,
+comparison evidence, and next diagnostic step or fix. The gate still applies.
+
+Route PR-caused failures and merge conflicts to the author; fix our own. Keep
+investigating if the cause is unclear.
+
 ## Handle selected PRs
 
 ### Our PRs
@@ -94,12 +104,9 @@ for admission, independent review, fork CI, replacements, SHA-bound approval,
 and merging or queueing. Apply repository review instructions within those limits
 (for Fedimint, `github-cargo-dependabot-review` or
 `github-actions-dependabot-review`). Count a prior review as evidence only for
-its verified SHA and scope. Approve CI if needed and safe. Approve a passing
-update and merge it or use the required queue through the normal repository
-process. If the update needs fixes, link the corrected replacement before
-closing the original. If evidence, checks, a
-safe checkout, or a permitted operation is unavailable, record what remains
-pending. If human judgment is needed, record the decision and who can make it.
+its verified SHA and scope.
+If evidence, checks, a safe checkout, or a permitted operation is unavailable,
+record what remains pending and who can unblock it.
 
 ### Other inactive PRs
 
@@ -107,17 +114,24 @@ pending. If human judgment is needed, record the decision and who can make it.
   eligibility, close the PR, and verify closure before posting an invitation
   to reopen when ready for review. Checkpoint the invitation as a separate write:
   commenting first changes the inactivity timestamp. Skip younger drafts.
-- For failing CI or merge conflicts, record the specific action the author
-  needs to take. Treat pending CI as pending, not failed.
-- For a PR potentially ready to merge, use the requested teams and team
-  membership reads in `fedimint-bot-github-cli`. Use `fedimint/firehose` only
-  if it is the only requested team. Treat unreadable membership as unknown.
-  Only if no team was requested, use the repository's authoritative
-  maintainer roster or humans with verified `write` or `admin` permission
-  from a complete collaborator roster. Exclude the author and bots,
-  deduplicate, and choose randomly (e.g. `shuf -n 1`). Keep that reviewer
-  while the same action is outstanding. Use `maintainers-contact-information`
-  to map identities, not to verify repository permissions.
+- For a PR waiting on review or near merge, check `reviewDecision`, review
+  history, and outstanding requests. An empty `requested_reviewers` list only
+  tells you that no requests are outstanding. Count neither dismissed reviews
+  nor comments as approvals. Check base-branch `CODEOWNERS` for the changed
+  paths and verify team membership through `fedimint-bot-github-cli`.
+  Choose someone who can satisfy the outstanding requirement: prefer a prior
+  human reviewer for re-review, then a requested reviewer or code owner.
+  Prefer specific owners to fallback teams such as `fedimint/firehose`.
+  Name the responsible team if you can't verify an eligible member.
+- Only for general review with no applicable reviewer or owner, choose randomly
+  from the authoritative maintainer roster or a complete collaborator roster
+  with verified `write` or `admin` permission. Unreadable evidence is not absence.
+  Exclude the author and bots and keep the same reviewer for the outstanding action.
+  Use `maintainers-contact-information` to map identities, not permissions.
+
+In reports, list each review or other maintainer blocker once under
+**Maintainer actions**. Name the verified person, or the responsible team if
+you can't identify a person, and give the next step.
 
 ## Send one work reminder
 
@@ -141,11 +155,12 @@ or record the overflow as pending.
 ```
 
 If you don't know the person's Discord handle, mention `@username` on one
-eligible GitHub PR in scope. Check the recipient's recorded notification history
-across the watchlist. Don't ping the same person on GitHub more than once in
-seven days. After that, ping them only for a new action. If ruling out a
-duplicate would require reading outside the admitted scope, leave the ping
-pending.
+eligible GitHub PR in scope. Check the shared private daily Clank records
+across the watchlist, even on scoped passes. Record the recipient, PR, action,
+time, and delivery receipt or uncertainty for each notice. Ping a person on
+GitHub at most once in seven days and only for a new action. If verified
+records can't rule out a duplicate, leave the ping pending. Stay within the
+admitted GitHub read scope.
 
 Record unavailable routes and uncertain deliveries. Treat an uncertain
 `general` send as spent until you can verify the outcome; the channel is
