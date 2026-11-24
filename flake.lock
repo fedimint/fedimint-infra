@@ -5179,16 +5179,17 @@
         "nixpkgs": "nixpkgs_16"
       },
       "locked": {
-        "lastModified": 1795143354,
-        "narHash": "sha256-CSwTVPx+qdpYIm/5AzUFgnSOtfyfCCsYGkFdtvmIyKs=",
-        "ref": "refs/heads/main",
-        "rev": "0d43fec9c39855d574266cba767dd2cf6a86794e",
-        "revCount": 71,
+        "lastModified": 1795499722,
+        "narHash": "sha256-Yw7mryfMmy0/KR5Qn/APLm6gtARNqAIcbVG2VZpwTaw=",
+        "ref": "refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/backport/wire-28-suppress-link-previews",
+        "rev": "00731732fd67ffb09039cd918e56677aaa6ec91b",
+        "revCount": 72,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git"
       },
       "original": {
-        "rev": "0d43fec9c39855d574266cba767dd2cf6a86794e",
+        "ref": "refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/backport/wire-28-suppress-link-previews",
+        "rev": "00731732fd67ffb09039cd918e56677aaa6ec91b",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git"
       }
