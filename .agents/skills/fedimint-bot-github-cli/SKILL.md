@@ -136,7 +136,7 @@ enable raw API writes.
 
 ## Pull-request merging
 
-Except for the scheduled daily pass exception in `fedimint-bot-dependabot`,
+Except for the admitted daily pass exception in `fedimint-bot-dependabot`,
 require a GitHub comment explicitly requesting or agreeing to merge the exact PR
 from a target-repository maintainer (native `write` or `admin`, verified with fresh
 trusted delivery facts or `github_user_context`). Team membership, a bot review,
@@ -177,7 +177,7 @@ deployment approvals, dispatch, broader reruns, or Actions settings changes.
 
 ## SHA-bound approval and review forms
 
-Use COMMENT, never REQUEST_CHANGES. Outside the scheduled daily pass exception
+Use COMMENT, never REQUEST_CHANGES. Outside the admitted daily pass exception
 in `fedimint-bot-dependabot`, APPROVE requires an authenticated
 target-repository maintainer's explicit request to approve that PR, independent
 PASS for the exact inspected SHA, and compliance with all main-prompt limits.

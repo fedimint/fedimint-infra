@@ -57,11 +57,12 @@ limits, or a broker blocks publication, publish bounded feedback when supported.
 Preserve blocked output and report it as pending; never claim a replacement was
 delivered or bypass the boundary.
 
-## Scheduled daily pass
+## Admitted daily pass
 
-A scheduled `daily-pr-grooming` delivery that the coordinator admits also covers
-existing open public Dependabot PRs in that delivery's watchlist. Verify the
-native identity, repository, and head. Record drafts as pending.
+A `daily-pr-grooming` pass admitted by the coordinator, whether scheduled or
+explicitly requested through Tau's authenticated outer user channel, covers
+existing open public Dependabot PRs only in its admitted repository scope.
+Verify the native identity, repository, and head. Record drafts as pending.
 Coordinate with active reviews and look for an existing
 replacement before starting work. Apply the same project review, runner safety,
 consensus and compatibility rules as for a creation event.
