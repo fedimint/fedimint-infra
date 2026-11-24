@@ -308,7 +308,7 @@
                   enable = true;
                   sdkOnCalendar = "Mon *-*-* 07:00:00 America/Los_Angeles";
                 };
-                selfPrGrooming.enable = true;
+                dailyPrGrooming.enable = true;
                 staleTriage.enable = true;
                 papercutGrooming.enable = true;
                 workdirCleanup.enable = true;

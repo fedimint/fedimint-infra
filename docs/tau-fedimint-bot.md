@@ -211,7 +211,7 @@ instructions:
 | Task | Instructions |
 | --- | --- |
 | Weekly development summary | [`fedimint-bot-weekly-dev-summary`](../.agents/skills/fedimint-bot-weekly-dev-summary/SKILL.md) |
-| Own-PR grooming | [`self-pr-grooming`](../.agents/skills/self-pr-grooming/SKILL.md) |
+| Daily PR grooming across watched repositories | [`daily-pr-grooming`](../.agents/skills/daily-pr-grooming/SKILL.md) |
 | Stale issue and PR triage | `fedimint/fedimint` checkout: `.agents/skills/github-stale-issue-triage/SKILL.md` and `.agents/skills/github-stale-pr-triage/SKILL.md` on current upstream trunk |
 | Papercut self-improvement | [`fedimint-bot-self-improvement`](../.agents/skills/fedimint-bot-self-improvement/SKILL.md) |
 | Working-directory cleanup | Module's cleanup prompt |

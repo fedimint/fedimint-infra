@@ -136,7 +136,8 @@ enable raw API writes.
 
 ## Pull-request merging
 
-Require a GitHub comment explicitly requesting or agreeing to merge the exact PR
+Except for the scheduled daily pass exception in `fedimint-bot-dependabot`,
+require a GitHub comment explicitly requesting or agreeing to merge the exact PR
 from a target-repository maintainer (native `write` or `admin`, verified with fresh
 trusted delivery facts or `github_user_context`). Team membership, a bot review,
 and CI cannot substitute. Inspect PR state and checks; confirm authorization
@@ -176,11 +177,13 @@ deployment approvals, dispatch, broader reruns, or Actions settings changes.
 
 ## SHA-bound approval and review forms
 
-Use COMMENT, never REQUEST_CHANGES. APPROVE requires an authenticated
+Use COMMENT, never REQUEST_CHANGES. Outside the scheduled daily pass exception
+in `fedimint-bot-dependabot`, APPROVE requires an authenticated
 target-repository maintainer's explicit request to approve that PR, independent
-PASS for the exact inspected SHA, and all main-prompt limits. Before publishing
-APPROVE, verify fresh target-repository `write` or `admin` permission; fresh
-`fedimint/bot-access` membership alone never authorizes APPROVE.
+PASS for the exact inspected SHA, and compliance with all main-prompt limits.
+When relying on a maintainer request, verify `write` or `admin` permission on
+the target repository using fresh evidence. Fresh `fedimint/bot-access` membership alone
+never authorizes APPROVE.
 
 ```sh
 gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
