@@ -32,7 +32,8 @@
       inputs.linked-specs-skills.follows = "linked-specs-skills";
       # Suppress link previews without moving Discord off wire 28.
       inputs.tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?ref=refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/backport/wire-28-suppress-link-previews&rev=00731732fd67ffb09039cd918e56677aaa6ec91b";
-      inputs.tau-ext-github-standalone.url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=e53ec374d6c5ed48167e98dac020b55d127ceb47";
+      # Isolate oversized notification threads without moving off wire 28.
+      inputs.tau-ext-github-standalone.url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?ref=refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/compat/protocol28-count-isolation&rev=1fb64fc454d25f4cba35b317d583077238f443ef";
       inputs.tau-ext-github-standalone.inputs.nixpkgs.follows = "nixpkgs";
       inputs.tau-ext-github-standalone.inputs.flake-utils.follows = "flake-utils";
     };
