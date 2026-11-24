@@ -7,37 +7,118 @@ advertise: true
 
 # Daily PR grooming
 
-For the configured bot, apply [the runtime notes](runtime.md) throughout.
+## Start or resume the day
 
-Start with a compact inventory for each repository in scope. Keep exact
-timestamps and native author identity. Select PRs from the inventory before
-fetching checks, mergeability, head data, or discussion.
+Use the UTC day and repository scope admitted by the coordinator. Limit PR
+reads, actions, and reminders to that scope. Keep one private Clank record per
+UTC day across deliveries. Save each delivery reference and scope, repository
+coverage, selected PRs, next actions, and write receipts. Key PR state by
+repository and number.
 
-```bash
-repo=fedimint/fedimint
-gh pr list -R "$repo" --state open --limit 500 \
-  --json number,updatedAt,createdAt,isDraft,author,title
-```
+Run one pass at a time and coordinate with event-driven reviews and weekly
+triage. Record the intent and any relevant head SHA before every write. Save
+the verified result or blocker and resolve pending writes before retrying.
+When resuming, reconcile read-only until the coordinator's same-day resume
+rule permits writes.
 
-Use `updatedAt` for the 48-hour cutoff and `createdAt` for draft age. If the
-inventory hits its limit, complete it before choosing the oldest PRs.
+Record which repositories you finished under the day's limits. On repeat
+deliveries, skip completed work and reuse earlier coverage and receipts.
+Spend the remaining budget on repositories still due. Mark the scheduled run
+complete only during a scheduled pass and only after accounting for the full
+watchlist. Carry unresolved actions across days without replaying writes or
+digests.
 
-## Run one daily pass
+## Build the inventory and select PRs
 
-1. **Our PRs:** Check every open PR authored by the agent, including drafts. Address feedback, fix CI or conflicts, and move the PR forward. If someone else needs to act, record who and why.
-2. **Dependabot:** Handle every open Dependabot PR end to end. Follow the repository’s dependency review instructions (for Fedimint: `github-cargo-dependabot-review` or `github-actions-dependabot-review`). Approve CI if needed and safe. If the reviewed update looks good and required checks pass, approve and merge through the normal repo process. If it needs fixes, open a corrected replacement, link it, then close the original. If human judgment is needed, record the decision and who can make it.
-3. **Other inactive PRs:** Exclude PRs covered above. Across the admitted scope, select the remaining PRs with no activity in the last **48 hours**, oldest activity first. Count these selections against one **50-PR cap per UTC day** across all passes and repositories. For each:
-   - If it is a draft and the PR was opened **more than a week ago**, close it with a comment inviting the author to reopen when ready for review. Skip younger drafts.
-   - If CI is failing or there are merge conflicts, record the specific action the author needs to take. Treat pending CI as pending, not failed.
-   - If potentially ready to merge, pick a reviewer from the requested teams. For Fedimint, use `fedimint/firehose` only if it is the only requested team. If no team was requested, use the repository’s maintainer roster. Exclude the author and bots, deduplicate, and choose randomly (e.g. `shuf -n 1`). Keep that reviewer while the same action is outstanding.
+Follow **Compact open PR inventory** in `fedimint-bot-github-cli`. Keep only
+`number`, `updatedAt`, `createdAt`, `isDraft`, `author`, and `title` in the
+inventory. Keep exact timestamps and native author identity. A missing draft
+flag means unknown; resolve it in the per-PR read after selection.
 
-**Record the outcome after each PR:** what you did, who needs to act next, and any notifications you sent. Keep the record across runs so you can resume after a harness restart without repeating work or pings.
+Select verified bot and Dependabot candidates separately from third-party PRs.
+For third-party triage, consider PRs with no activity in the last **48 hours**
+across repositories still due in the admitted scope. Sort by `updatedAt`
+(oldest first), then repository and number. Select PRs you haven't examined
+or that have changed materially since triage. A skipped draft becomes
+eligible when it passes the draft age cutoff below. Revisit blocked work when
+its blocker clears. Skip daily retriage if nothing material has changed and
+the same action is still with the same person.
+
+Checkpoint the selection before fetching richer data. Count each selected
+third-party PR once against the shared **50-PR cap per UTC day**, even if the
+work later blocks or is skipped. If the inventory is incomplete, report the
+gap, keep that scope's third-party selection pending, and continue only bot or
+Dependabot work you can verify.
+
+Fetch review, check, mergeability, head, and discussion details only for
+selected PRs or recorded actions that need rechecking before a reminder.
+Verify eligibility, discussion, and head before each action. Changed or
+uncertain evidence does not authorize action. Record each PR's outcome, who
+needs to act next, and any notifications sent.
+
+## Handle selected PRs
+
+### Our PRs
+
+Check every open PR authored by `fedimint-tau` (verify GitHub ID `332691140`),
+including drafts. Read the diff, discussion, checks, and current trunk. Address
+feedback, fix CI or conflicts, and move the PR forward. If the PR is
+superseded, the problem is already solved, or the PR no longer serves a
+purpose, close it with a short explanation and leave the branch intact. Age,
+inactivity, or failing checks alone do not justify closure. Leave uncertain
+cases open for a human decision.
+
+Delegate scoped fixes to one engineer per main checkout. Identify the
+verified bot-owned head repository, ref, and SHA. Preserve other contributions
+and use a checked, reviewed fast-forward update to the dedicated `tau/` branch.
+A rewrite requires separate authority under `fedimint-bot-pr-branch-rewrite`.
+Grooming does not authorize merging our own PRs.
+
+### Dependabot
+
+Handle every open Dependabot PR end to end. Follow `fedimint-bot-dependabot`
+for admission, independent review, fork CI, replacements, and exact-head
+approval and merge. Apply repository review instructions within those limits
+(for Fedimint, `github-cargo-dependabot-review` or
+`github-actions-dependabot-review`). Count a prior review as evidence only for
+its verified SHA and scope. Approve CI if needed and safe. Approve and merge a
+passing update through the normal repository process; if it needs fixes, link
+the corrected replacement before closing the original. If evidence, checks, a
+safe checkout, or a permitted operation is unavailable, record what remains
+pending. If human judgment is needed, record the decision and who can make it.
+
+### Other inactive PRs
+
+- For a draft opened **more than a week ago** (use `createdAt`), verify
+  eligibility, close the PR, and verify closure before posting an invitation
+  to reopen when ready for review. Checkpoint the invitation as a separate write:
+  commenting first changes the inactivity timestamp. Skip younger drafts.
+- For failing CI or merge conflicts, record the specific action the author
+  needs to take. Treat pending CI as pending, not failed.
+- For a PR potentially ready to merge, use the requested teams and team
+  membership reads in `fedimint-bot-github-cli`. Use `fedimint/firehose` only
+  if it is the only requested team. Treat unreadable membership as unknown.
+  Only if no team was requested, use the repository's authoritative
+  maintainer roster or humans with verified `write` or `admin` permission
+  from a complete collaborator roster. Exclude the author and bots,
+  deduplicate, and choose randomly (e.g. `shuf -n 1`). Keep that reviewer
+  while the same action is outstanding. Use `maintainers-contact-information`
+  to map identities, not to verify repository permissions.
 
 ## Send one work reminder
 
-Collect outstanding actions within the admitted scope, group them by person, and
-send at most **one message per UTC day to `#general` on Discord**. Use known
-Discord mentions and describe the actual next step:
+Share one reminder batch per UTC day across all passes. Verify that the recorded
+actions still apply, and check prior notices to avoid duplicate pings across
+channels. If nobody needs to act, skip the reminder. Freeze the scoped actions
+and any GitHub fallback before the first send. A later admitted pass can send
+the day's reminder if no earlier pass attempted delivery. After delivery
+starts, leave newly found actions pending for the next day.
+
+Group actions by person and send at most **one public `discord_send` message
+per UTC day to `general`**. Use verified `<@ID>` mentions, full PR URLs, and
+short, safe next steps. Omit untrusted mentions, raw PR text, and private
+findings. For a long digest, attach a safe Markdown list to the same message
+or record the overflow as pending.
 
 ```text
 ## @handle
@@ -45,4 +126,20 @@ Discord mentions and describe the actual next step:
 * <PR link> — Update release build: resolve the conflict in Cargo.lock.
 ```
 
-If there is no known Discord handle, mention `@username` on the relevant GitHub PR instead. Don’t ping the same person on GitHub more than once in seven days across the watchlist. Even after a week, leave the previous mention alone if the same action is still in their court. If they addressed it, notify them only when there is a new action for them. If nobody needs to act, skip the reminder.
+If you don't know the person's Discord handle, mention `@username` on one
+eligible GitHub PR in scope. Check the recipient's recorded notification history
+across the watchlist. Don't ping the same person on GitHub more than once in
+seven days. After that, ping them only for a new action. If ruling out a
+duplicate would require reading outside the admitted scope, leave the ping
+pending.
+
+Record unavailable routes and uncertain deliveries. Treat an uncertain
+`general` send as spent until you can verify the outcome; the channel is
+send-only.
+
+## Report trial findings when requested
+
+When the coordinator admits a trial report requested by the operator, send
+one report to `fedimint_maintainers`, separate from the work reminder. Include
+the scope, outcome, and any skill mistakes or blockers. Use safe evidence and
+the same write receipts. Omit role pings.
