@@ -230,9 +230,14 @@ handles PR maintenance across watched repositories.
 To run a scoped manual PR pass, attach to the existing coordinator in the
 authenticated operator UI and name the watched repositories to cover. For example:
 `Run daily-pr-grooming today for fedimint/fedimint only.` Manual and scheduled
-passes share the UTC day's checkpoint, cap, and single work reminder. Leave other
-repositories for the scheduled pass. For a trial, ask the bot to report skill
-mistakes or blockers in `#maintainers`.
+passes share one checkpoint, a standard 50-PR cap, and one work reminder per UTC
+day. An authenticated operator can explicitly request one additional batch per
+UTC day. Name one watched repository and give an exact limit of 1–50 third-party
+PRs not yet selected that day. For example: `Run daily-pr-grooming today for
+fedimint/fedimint only, with an additional limit of 50 third-party PRs.` The
+additional batch shares the day's work reminder. Leave other repositories for
+the scheduled pass. For a trial, ask the bot to report skill mistakes or
+blockers in `#maintainers`.
 
 The weekly summary covers the preceding **184 hours**, not a calendar week.
 Its overlapping window is intentional. The summary skill owns page naming,

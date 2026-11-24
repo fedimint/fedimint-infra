@@ -69,11 +69,18 @@ consensus and compatibility rules as for a creation event.
 
 During this pass, the coordinator may submit a SHA-bound APPROVE and merge the
 original Dependabot PR without a separate maintainer request. This exception
-applies only to the original. Before each operation, use current GitHub evidence
-to verify that independent review passed for the exact current head and all
-required checks passed. Recheck the head and follow `fedimint-bot-github-cli`.
-Preserve required queues and protections. If the repository process cannot
-guarantee the reviewed head, leave the merge pending.
+applies only to the original. Immediately before each operation, verify with
+fresh GitHub evidence that the current full head SHA matches the independently
+reviewed PASS and all required checks have passed for that head. Before merging
+or queueing, also verify that required approvals are in place.
+
+Use the normal protected merge path in `fedimint-bot-github-cli` and pass the
+reviewed SHA to `--match-head-commit`. For routine grooming, use the required
+queue after these checks without assuming an atomic head check. If the operator
+explicitly requires atomic exact-head enqueueing, leave the PR pending unless
+the permitted tooling can guarantee it. Stop and report the PR as pending if
+the head changes, a prerequisite is missing, or the request is rejected.
+Verify and report the outcome: queued, merged, auto-merge enabled, or unconfirmed.
 
 Close an original that needs fixes only after verifying that the checked,
 independently reviewed replacement is open, covers the current original, and has
