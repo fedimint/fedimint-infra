@@ -302,3 +302,39 @@ consistent private backup of the **complete** state, including journals,
 artifacts, extension state, and repository/Clank recovery data. Retain the old
 closure too. A NixOS rollback alone cannot undo a data-format upgrade or external
 side effects; restore compatible state and reconcile those effects.
+
+### Local checks for Fedimint core
+
+Run these from the core checkout in its trusted development environment. Use
+the [core check recipes](https://github.com/fedimint/fedimint/blob/master/justfile.fedimint.just)
+for final verification. Use the steps below to prepare or diagnose local runs; they do
+not replace the project's final checks or CI.
+
+- **Missing dependencies during offline Clippy:** If the error names an uncached
+  dependency, run `cargo fetch --locked` in the same environment before retrying
+  `just final-lint`. Fetch only reviewed locked dependencies with authorized
+  network access. Keep the lockfile and the recipe's offline flags unchanged.
+- **Gateway or devimint fixture stalls:** Check the soft and hard descriptor
+  limits (`ulimit -Sn`, `ulimit -Hn`) and the visible CPU count (`nproc`). A
+  wide runner can start many fixtures while the soft limit is 1024. The
+  [CI-style test script](https://github.com/fedimint/fedimint/blob/master/scripts/tests/test-ci-all.sh)
+  raises its own soft limit to 10000 and accepts `FM_TEST_CI_ALL_JOBS` to cap
+  parallel suites. For focused runs outside that script, raise only the test
+  process's inherited soft limit in a subshell if the hard limit permits it,
+  and reduce test concurrency if needed. For example, diagnose a stalled
+  gateway suite without changing runner-wide settings:
+
+  ```sh
+  (
+    ulimit -Sn 10000 &&
+      TOKIO_WORKER_THREADS=4 cargo nextest run -p fedimint-gateway-server \
+        --test gatewayd-tests --test-threads 4
+  )
+  ```
+
+- **Unexpectedly long retries under plain `cargo test`:** Use
+  `cargo nextest run` with a package or test filter for focused Rust tests that
+  need test-mode timing, or the project's devimint harness for devimint suites.
+  Code built without `cfg(test)` can miss the shorter retry delays under plain
+  Cargo. Nextest supplies `NEXTEST`; setting that marker by hand does not run
+  nextest. Keep the separate doctest and other final check recipes.
