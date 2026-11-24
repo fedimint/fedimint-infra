@@ -25,6 +25,7 @@ gh pr diff NUMBER -R OWNER/REPO
 gh api repos/OWNER/REPO/pulls/NUMBER
 gh api repos/OWNER/REPO/pulls/NUMBER/files --paginate
 gh api --paginate repos/OWNER/REPO/pulls/NUMBER/reviews
+gh api repos/OWNER/REPO/pulls/NUMBER/requested_reviewers --paginate
 gh api repos/OWNER/REPO/issues/comments/COMMENT_ID
 ```
 
@@ -35,6 +36,28 @@ Bounded PR-scoped commits are documented in `fedimint-bot-weekly-dev-summary`.
 Report blocked GitHub reads. Don’t retry them through undocumented endpoints or
 another GitHub client. You can still inspect commits already present in the
 local checkout.
+
+### Compact open PR inventory
+
+Make one GitHub request at a time. Use private scratch space for results
+that exceed the tool output limit.
+
+```sh
+gh pr list -R OWNER/REPO --state open --limit 500 \
+  --json number,updatedAt,createdAt,isDraft,author,title
+```
+
+If the list reaches its limit, raise the limit or use the collector. You can
+also use the collector for transient upstream failures such as a 504.
+Report policy or access denials without trying the collector.
+
+```sh
+tau-github-collect 'repos/OWNER/REPO/issues?state=all&per_page=100' PRIVATE_NEW_FILE
+```
+
+From validated pages, keep only open objects with `pull_request` and extract
+the fields listed above. Use the issue records' timestamps and author. Leave
+`isDraft` unknown if the issue record doesn't provide it.
 
 ## Team membership reads
 
