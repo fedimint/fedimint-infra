@@ -115,9 +115,12 @@ record what remains pending and who can unblock it.
   to reopen when ready for review. Checkpoint the invitation as a separate write:
   commenting first changes the inactivity timestamp. Skip younger drafts.
 - For a PR waiting on review or near merge, check `reviewDecision`, review
-  history, and outstanding requests. An empty `requested_reviewers` list only
-  tells you that no requests are outstanding. Count neither dismissed reviews
-  nor comments as approvals. Check base-branch `CODEOWNERS` for the changed
+    history, and outstanding requests. An empty `requested_reviewers` list means
+    no review requests are outstanding. Exclude dismissed reviews and comments
+    when counting effective approvals. Follow the SHA-bound rules in
+    `fedimint-bot-github-cli` to renew a verified stale maintainer approval.
+   Grooming does not authorize merging ordinary PRs. If a human review remains
+   necessary, check base-branch `CODEOWNERS` for the changed
   paths and verify team membership through `fedimint-bot-github-cli`.
   Choose someone who can satisfy the outstanding requirement: prefer a prior
   human reviewer for re-review, then a requested reviewer or code owner.
