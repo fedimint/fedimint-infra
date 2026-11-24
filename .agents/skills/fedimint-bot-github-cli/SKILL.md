@@ -227,13 +227,38 @@ deployment approvals, dispatch, broader reruns, or Actions settings changes.
 
 ## SHA-bound approval and review forms
 
-Use COMMENT, never REQUEST_CHANGES. Outside the admitted daily pass exception
-in `fedimint-bot-dependabot`, APPROVE requires an authenticated
-target-repository maintainer's explicit request to approve that PR, independent
-PASS for the exact inspected SHA, and compliance with all main-prompt limits.
-When relying on a maintainer request, verify `write` or `admin` permission on
-the target repository using fresh evidence. Fresh `fedimint/bot-access` membership alone
-never authorizes APPROVE.
+Use COMMENT, never REQUEST_CHANGES. For an ordinary PR, one of these authorizes a
+separate APPROVE by `fedimint-tau`:
+
+- The maintainer explicitly asks the bot to approve this exact PR.
+- The maintainer asks the bot to review and merge this exact PR if it passes
+  (for example, “review, merge if good”). If the request still authorizes merge
+  under **Pull-request merging**, the bot may APPROVE when it needs approval to merge.
+- A human maintainer approved this same PR in GitHub, the PR is still open and
+  non-draft, and a change to the head or merge base made that approval stale.
+  Verify the original review's APPROVED state and commit in GitHub history.
+  Renew only after independent confirmation of patch equivalence under
+  `fedimint-bot-pull-request-review`. Never use the bot's own or another bot's
+  approval as the baseline.
+
+For a dismissed review, use the PR timeline read in
+`fedimint-bot-weekly-dev-summary` to match the `review_dismissed` event by review
+ID and confirm its prior approved state. Require trusted evidence that GitHub
+dismissed it automatically because the head or merge base changed; timing or
+dismissal text alone does not establish the cause.
+
+Verify the authenticated maintainer's native `write` or `admin` permission on
+the target repository using fresh evidence. Respect explicit SHA limits, newer
+authorized instructions, withdrawals, dismissals for cause, and unresolved
+review blockers. If authority or dismissal history is unclear, leave approval
+pending. Review-only requests, team membership, and PASS alone do not authorize
+APPROVE. Never approve the bot's own PR or use its approval in place of a required
+human or CODEOWNER review. Approval alone never authorizes merge or bypasses
+protections.
+
+Require independent PASS for the exact current head and apply all main-prompt
+limits. Equivalence PASS is evidence only for renewal. Preserve the separate
+admitted daily exception in `fedimint-bot-dependabot`.
 
 ```sh
 gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
@@ -245,12 +270,16 @@ Use the inspected full 40-character lowercase hex SHA. Pinned approval submits
 or raw API approval. Publish substantive feedback separately, naming the full
 SHA; use COMMENT alone when approval limits prevent approval.
 
-Immediately before approval, recheck the head with
-`gh pr view NUMBER -R OWNER/REPO --json headRefOid`. If changed, get independent
-review of the new SHA. Binding pins the review, not the current head; concurrent
-pushes remain possible and stale-review protection still matters.
+Before approval, check for an existing effective bot approval at this SHA and
+recheck that authority and review evidence still apply. Immediately before and
+after the write, verify the head SHA and base ref and SHA with
+`gh api repos/OWNER/REPO/pulls/NUMBER`. The write pins the review to a commit, not
+the live head or base. If either changed before the write, re-evaluate authority
+and review the current patch. If either changed during the write or is unknown,
+report that approval for the current PR is unconfirmed and stop before merging.
 
-Inspect the response and confirm remote `state=APPROVED` and `commit_id=FULL_SHA`:
+Inspect the response and confirm the remote review has `state=APPROVED` and
+`commit_id=FULL_SHA`:
 
 ```sh
 gh api --paginate repos/OWNER/REPO/pulls/NUMBER/reviews
