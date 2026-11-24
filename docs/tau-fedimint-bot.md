@@ -212,7 +212,7 @@ instructions:
 | --- | --- |
 | Weekly development summary | [`fedimint-bot-weekly-dev-summary`](../.agents/skills/fedimint-bot-weekly-dev-summary/SKILL.md) |
 | Daily PR grooming across watched repositories | [`daily-pr-grooming`](../.agents/skills/daily-pr-grooming/SKILL.md) |
-| Stale issue and PR triage | `fedimint/fedimint` checkout: `.agents/skills/github-stale-issue-triage/SKILL.md` and `.agents/skills/github-stale-pr-triage/SKILL.md` on current upstream trunk |
+| Saturday stale issue triage | `.agents/skills/github-stale-issue-triage/SKILL.md` in the `fedimint/fedimint` checkout on current upstream trunk |
 | Papercut self-improvement | [`fedimint-bot-self-improvement`](../.agents/skills/fedimint-bot-self-improvement/SKILL.md) |
 | Working-directory cleanup | Module's cleanup prompt |
 
@@ -222,9 +222,10 @@ the user manager resumes; the other timers are nonpersistent. Reconcile delivery
 failures and uncertain sends before retrying.
 
 Each Saturday at 09:00 America/Los_Angeles, a systemd user timer asks the
-coordinator to add stale triage to its work queue. The task runs each project
-triage skill once in the Fedimint checkout on current upstream trunk. This
-repository does not install copies of those skills.
+coordinator to queue stale issue triage. The bot runs the skill once from
+current upstream trunk in the `fedimint/fedimint` checkout. This repository
+does not install a copy of the skill. The separate daily PR grooming task
+handles PR maintenance across watched repositories.
 
 The weekly summary covers the preceding **184 hours**, not a calendar week.
 Its overlapping window is intentional. The summary skill owns page naming,
