@@ -28,6 +28,19 @@ complete only during a scheduled pass and only after accounting for the full
 watchlist. Carry unresolved actions across days without replaying writes or
 digests.
 
+When the coordinator admits an additional third-party batch, reuse the day's
+record. Select additional PRs only in the named repository, even if its ordinary
+coverage is complete. Record the original delivery, repository, and additional
+limit once. Count distinct new selections against that limit. Exclude PRs already
+selected that UTC day, including blocked or skipped selections. On retry, reconcile
+the saved batch and keep its count. Use the extra allowance only for that batch
+and repository. Recheck pending bot and Dependabot work within scope without
+repeating completed writes. Keep the one-reminder limit.
+Mark each selection as ordinary or supplementary. Track supplementary
+coverage separately: the extra batch neither spends the ordinary budget nor
+marks a repository complete for the ordinary pass. Skip PRs already selected
+in the extra batch when ordinary selection resumes that day.
+
 ## Build the inventory and select PRs
 
 Follow **Compact open PR inventory** in `fedimint-bot-github-cli`. Keep only
@@ -45,10 +58,10 @@ its blocker clears. Skip daily retriage if nothing material has changed and
 the same action is still with the same person.
 
 Checkpoint the selection before fetching richer data. Count each selected
-third-party PR once against the shared **50-PR cap per UTC day**, even if the
-work later blocks or is skipped. If the inventory is incomplete, report the
-gap, keep that scope's third-party selection pending, and continue only bot or
-Dependabot work you can verify.
+third-party PR once against the shared **50-PR cap per UTC day** or the separately
+admitted batch limit, even if the work later blocks or you skip it. If the
+inventory is incomplete, report the gap, keep that scope's third-party
+selection pending, and continue only bot or Dependabot work you can verify.
 
 Fetch review, check, mergeability, head, and discussion details only for
 selected PRs or recorded actions that need rechecking before a reminder.
@@ -77,13 +90,14 @@ Grooming does not authorize merging our own PRs.
 ### Dependabot
 
 Handle every open Dependabot PR end to end. Follow `fedimint-bot-dependabot`
-for admission, independent review, fork CI, replacements, and exact-head
-approval and merge. Apply repository review instructions within those limits
+for admission, independent review, fork CI, replacements, SHA-bound approval,
+and merging or queueing. Apply repository review instructions within those limits
 (for Fedimint, `github-cargo-dependabot-review` or
 `github-actions-dependabot-review`). Count a prior review as evidence only for
-its verified SHA and scope. Approve CI if needed and safe. Approve and merge a
-passing update through the normal repository process; if it needs fixes, link
-the corrected replacement before closing the original. If evidence, checks, a
+its verified SHA and scope. Approve CI if needed and safe. Approve a passing
+update and merge it or use the required queue through the normal repository
+process. If the update needs fixes, link the corrected replacement before
+closing the original. If evidence, checks, a
 safe checkout, or a permitted operation is unavailable, record what remains
 pending. If human judgment is needed, record the decision and who can make it.
 

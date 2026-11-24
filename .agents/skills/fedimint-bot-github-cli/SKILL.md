@@ -173,9 +173,12 @@ gh pr merge NUMBER -R OWNER/REPO --squash --match-head-commit FULL_SHA
 
 Use the first form for a required queue, or one supported direct method
 (`--merge`, `--squash`, `--rebase`). No admin flags or protection/check bypasses.
-Only direct merging provides an atomic head check; do not use queue or auto-merge
-when authorization requires an exact-SHA guarantee. Verify and report whether
-it merged, queued, or enabled auto-merge. Stop on head change or protection failure.
+Rely on `--match-head-commit` for an atomic head check only when merging
+directly. For routine Dependabot grooming, follow the preflight in
+`fedimint-bot-dependabot` and use the required queue. If the authorization
+explicitly requires an atomic exact-head guarantee, stop unless the permitted
+operation provides it. Stop on head change, missing prerequisites, or rejection.
+Verify and report the outcome: merged, queued, auto-merge enabled, or unconfirmed.
 
 ## Fork workflow-run approval
 

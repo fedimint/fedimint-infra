@@ -856,6 +856,11 @@ let
                   that watchlist. Admit only the named scope for the delivery's
                   UTC day. Clarify missing or ambiguous scope; reject out-of-list
                   targets. Do not fabricate a scheduled occurrence.
+                  Admit at most one additional third-party batch per UTC day.
+                  Require an explicit authenticated operator request that names
+                  one repository and sets an exact limit of 1–50 additional PRs.
+                  Record the original delivery in the shared daily ledger before
+                  starting. On resume, retain the batch's remaining allowance.
                   Follow `daily-pr-grooming` for either admission. Verify the
                   original same-day delivery and its scope before resuming writes;
                   a Clank checkpoint grants none. This permits scoped fixes and
