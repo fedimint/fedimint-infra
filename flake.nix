@@ -27,7 +27,8 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=7c52c84fb8a43da77a15fc92a6f1bc449860aac3";
+      # Last wire-28 revision: wire 29 cannot resume the deployed journal.
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=918c02f9d48acfcab116907a80b273460c984515";
       inputs.linked-specs-skills.follows = "linked-specs-skills";
       inputs.tau-ext-github-standalone.url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=e53ec374d6c5ed48167e98dac020b55d127ceb47";
       inputs.tau-ext-github-standalone.inputs.nixpkgs.follows = "nixpkgs";
@@ -36,7 +37,8 @@
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?ref=refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/exec-priv-broker-64-backport&rev=7390f4e82c42d7d6dda38cf62100a47294db2e43";
 
-    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=22ff806f2fa8613f7c40f080d724af93367531ba";
+    # Keep the watch fix without enabling discussion reads on the action PAT.
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=c38033c4d3d5cb05dda340386b445b5059762f53";
 
     clank = {
       url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=f5becd776f4162a36809ab41173dc533ced33800";
