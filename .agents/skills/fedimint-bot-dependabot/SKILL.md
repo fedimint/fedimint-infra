@@ -71,8 +71,9 @@ During this pass, the coordinator may submit a SHA-bound APPROVE and merge the
 original Dependabot PR without a separate maintainer request. This exception
 applies only to the original. Immediately before each operation, verify with
 fresh GitHub evidence that the current full head SHA matches the independently
-reviewed PASS and all required checks have passed for that head. Before merging
-or queueing, also verify that required approvals are in place.
+reviewed PASS and that the head passes the required PR checks. See **Required CI
+gates** in `fedimint-bot-github-cli`. Before merging or queueing, also verify the
+required approvals.
 
 Use the normal protected merge path in `fedimint-bot-github-cli` and pass the
 reviewed SHA to `--match-head-commit`. For routine grooming, use the required
@@ -81,7 +82,10 @@ explicitly requires atomic exact-head enqueueing, leave the PR pending unless
 the permitted tooling can guarantee it. Stop and report the PR as pending if
 the head changes, a prerequisite is missing, or the request is rejected.
 Verify and report the outcome: queued, merged, auto-merge enabled, or unconfirmed.
+If a queued PR disappears without merging, check the exact queue attempt under
+**Required CI gates** before reporting a failure or retrying.
 
-Close an original that needs fixes only after verifying that the checked,
-independently reviewed replacement is open, covers the current original, and has
-a link on the original PR. Verify the closure.
+Before closing an original that needs fixes, verify that it links to the
+checked, independently reviewed replacement. Confirm the replacement is open
+or merged and covers the current original without losing unique work. Verify
+the closure.
