@@ -227,19 +227,18 @@ deployment approvals, dispatch, broader reruns, or Actions settings changes.
 
 ## SHA-bound approval and review forms
 
-Use COMMENT, never REQUEST_CHANGES. For an ordinary PR, one of these authorizes a
-separate APPROVE by `fedimint-tau`:
+Use COMMENT, never REQUEST_CHANGES. A maintainer's explicit request to approve the
+exact PR authorizes a separate APPROVE by `fedimint-tau`. A request to merge, even
+one contingent on review, does not authorize approval.
 
-- The maintainer explicitly asks the bot to approve this exact PR.
-- The maintainer asks the bot to review and merge this exact PR if it passes
-  (for example, “review, merge if good”). If the request still authorizes merge
-  under **Pull-request merging**, the bot may APPROVE when it needs approval to merge.
-- A human maintainer approved this same PR in GitHub, the PR is still open and
-  non-draft, and a change to the head or merge base made that approval stale.
-  Verify the original review's APPROVED state and commit in GitHub history.
-  Renew only after independent confirmation of patch equivalence under
-  `fedimint-bot-pull-request-review`. Never use the bot's own or another bot's
-  approval as the baseline.
+For an open, non-draft ordinary PR, verified prior approval also grants standing
+authority to approve: a human target-repository maintainer approved this same PR
+in GitHub, the patch has not materially changed since that review, and the bot's
+independent review passes for the current head and base. Verify the original
+review's state and commit in GitHub history; follow `fedimint-bot-pull-request-review`
+to establish that the patch is unchanged. The human approval can still be
+effective or have gone stale. Never use a bot approval as the baseline. Team-only
+review remains comment-only, and Dependabot follows `fedimint-bot-dependabot`.
 
 For a dismissed review, use the PR timeline read in
 `fedimint-bot-weekly-dev-summary` to match the `review_dismissed` event by review
@@ -256,9 +255,10 @@ APPROVE. Never approve the bot's own PR or use its approval in place of a requir
 human or CODEOWNER review. Approval alone never authorizes merge or bypasses
 protections.
 
-Require independent PASS for the exact current head and apply all main-prompt
-limits. Equivalence PASS is evidence only for renewal. Preserve the separate
-admitted daily exception in `fedimint-bot-dependabot`.
+In every lane, require independent technical PASS covering the full PR at the
+exact current head and base and apply all main-prompt limits. Patch equivalence
+establishes standing authority; it does not replace technical review. Preserve
+the separate admitted daily exception in `fedimint-bot-dependabot`.
 
 ```sh
 gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE

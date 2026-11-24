@@ -178,6 +178,15 @@ infra writes); there is no new editable maintainer list in Tau's UI.
 Manage the limited roster in the GitHub organization's `bot-access` team instead.
 That team is not a substitute for repository collaborator access.
 
+The bot can approve an open, non-draft, non-Dependabot PR without a new request
+if it verifies that a human maintainer of the repository approved the same PR
+and that the patch has not changed materially since that approval. The bot's
+independent review must also pass for the current head and base. A request to
+merge does not grant approval authority. Bot approval neither authorizes a
+merge nor replaces required human or CODEOWNER review. See
+[`fedimint-bot-github-cli`](../.agents/skills/fedimint-bot-github-cli/SKILL.md)
+for the evidence and SHA checks.
+
 Discord admits personal mentions from configured human maintainers in one
 private channel. Admission permits safe read-only assistance and a reply; it
 does not authorize source or GitHub mutations. Display names and aliases are
