@@ -21,7 +21,7 @@ signal.alarm(30)
 
 # Match the locked Tau harness and GitHub extension protocol versions. A
 # compatible extension may use an older minor of the same wire major.
-harness_protocol = {"major": 28, "minor": 4}
+harness_protocol = {"major": 28, "minor": 5}
 notifier_protocol = {"major": 28, "minor": 3}
 
 with open(sys.argv[2], encoding="utf-8") as source:

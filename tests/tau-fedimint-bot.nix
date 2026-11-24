@@ -724,10 +724,13 @@ let
       )
       # Configured organization team reads reach credential loading; other
       # organizations remain denied before any credential access.
-      for endpoint, accepted in [
-          ("orgs/fedimint/teams/lightning/members --paginate", True),
-          ("orgs/fedimint/teams/lightning/memberships/dpc", True),
-          ("orgs/other-org/teams/lightning/members --paginate", False),
+      for command, accepted in [
+          ("api orgs/fedimint/teams/lightning/members --paginate", True),
+          ("api orgs/fedimint/teams/lightning/memberships/dpc", True),
+          ("api orgs/other-org/teams/lightning/members --paginate", False),
+          ("discussion view 1 -R fedimint/fedimint", False),
+          ("api graphql", False),
+          ("repo fork fedimint/fedimint --clone=false --remote=false", False),
       ]:
           status, output = machine.execute(
               "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
@@ -735,9 +738,9 @@ let
               "isolate -c /home/tau-fedimint/fedimint "
               "exec --profile fedimint-bot -- ${pkgs.runtimeShell} -c "
               "'cd /home/tau-fedimint/fedimint && "
-              "gh api " + endpoint + "' 2>&1"
+              "gh " + command + "' 2>&1"
           )
-          assert status == (125 if accepted else 126), (endpoint, status, output)
+          assert status == (125 if accepted else 126), (command, status, output)
           if accepted:
               assert "open GitHub token secret: No such file or directory" in output, output
           else:

@@ -3446,16 +3446,16 @@
         "nixpkgs": "nixpkgs_10"
       },
       "locked": {
-        "lastModified": 1794557409,
-        "narHash": "sha256-PnTMZTDTEbghEH87eTPnFaMtodFceaFXr1IPqHyy1nE=",
+        "lastModified": 1795048742,
+        "narHash": "sha256-SmbZgWxYRaOg/layThRS0zOnm1YHv1XF3wY5zLjIb6s=",
         "ref": "refs/heads/master",
-        "rev": "22ff806f2fa8613f7c40f080d724af93367531ba",
-        "revCount": 52,
+        "rev": "c38033c4d3d5cb05dda340386b445b5059762f53",
+        "revCount": 54,
         "type": "git",
         "url": "https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git"
       },
       "original": {
-        "rev": "22ff806f2fa8613f7c40f080d724af93367531ba",
+        "rev": "c38033c4d3d5cb05dda340386b445b5059762f53",
         "type": "git",
         "url": "https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git"
       }
@@ -5157,16 +5157,16 @@
         "tau-ext-zulip": "tau-ext-zulip"
       },
       "locked": {
-        "lastModified": 1795201296,
-        "narHash": "sha256-TIBZzguY/oBq4U1zGJqLlZb16UVfkSaEc71w14em6Qg=",
+        "lastModified": 1795316668,
+        "narHash": "sha256-/1OcWQkcSLtGvDyYd+9G9TRoJtoegcGHS5s+y0IapW0=",
         "ref": "refs/heads/master",
-        "rev": "7c52c84fb8a43da77a15fc92a6f1bc449860aac3",
-        "revCount": 3989,
+        "rev": "918c02f9d48acfcab116907a80b273460c984515",
+        "revCount": 4021,
         "type": "git",
         "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       },
       "original": {
-        "rev": "7c52c84fb8a43da77a15fc92a6f1bc449860aac3",
+        "rev": "918c02f9d48acfcab116907a80b273460c984515",
         "type": "git",
         "url": "https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git"
       }
@@ -5272,11 +5272,11 @@
         "nixpkgs": "nixpkgs_19"
       },
       "locked": {
-        "lastModified": 1795064693,
-        "narHash": "sha256-cOOQZnpwfopXpAt08271KlcUApcbCc1aWeg/4VWrLXQ=",
+        "lastModified": 1795282304,
+        "narHash": "sha256-2ihBqmkFPbTMNxuOiIviRSEjSH1cSd9t2ZlY3LUz7cI=",
         "ref": "main",
-        "rev": "3e3848472802139ec650dc62896547fb5ea2ab4d",
-        "revCount": 75,
+        "rev": "51c66451dc3c3a09262328d21f05d45357d35a67",
+        "revCount": 77,
         "type": "git",
         "url": "https://radicle.dpc.pw/z4LrrRivcgNjJii5wzbjTvA8ttt6o.git"
       },
