@@ -553,6 +553,12 @@ let
             away another task's work. If blocked, leave a recoverable WIP
             checkpoint, record its exact refs and remaining work in Clank, and
             release the lock.
+            After a session restart, do not assume the prior lock is still held
+            or an interrupted tool succeeded. Coordinate ownership and reacquire
+            the update lock, check for surviving processes that could modify the
+            checkout, and reconcile them and any ambiguous effects before resuming
+            writes or builds. Inspect the worktree and history; do not blindly
+            replay operations or force-unlock a checkout.
             On completion, leave a clean working copy and recorded history for
             the next queued task. Existing auxiliary checkouts are legacy data,
             not a pool for new tasks; preserve their source until safe to retire.
