@@ -343,7 +343,12 @@ let
     // lib.optionalAttrs cfg.githubNotifications.enable {
       github-notifications = {
         enable = true;
-        command = [ "${cfg.githubNotifications.package}/bin/tau-ext-github-standalone" ];
+        # The notifier's worker logs completed polls at debug without inbox contents.
+        command = [
+          "${pkgs.coreutils}/bin/env"
+          "TAU_LOG=warn,tau_ext_github_standalone=info,tau_ext_github_standalone::worker=debug"
+          "${cfg.githubNotifications.package}/bin/tau-ext-github-standalone"
+        ];
         secrets = {
           github_token = { };
           github_identity_key = { };

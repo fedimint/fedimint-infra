@@ -32,8 +32,8 @@
       inputs.linked-specs-skills.follows = "linked-specs-skills";
       # Suppress link previews without moving Discord off wire 28.
       inputs.tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?ref=refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/backport/wire-28-suppress-link-previews&rev=00731732fd67ffb09039cd918e56677aaa6ec91b";
-      # Keep delivery and GitHub read acknowledgment separate on wire 28.
-      inputs.tau-ext-github-standalone.url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?ref=refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/compat/protocol28-count-isolation&rev=1f34eef728e88fb8b02f083aee55b7f0d5c87f6b";
+      # Keep explicit acknowledgment and preserve retry timing on wire 28.
+      inputs.tau-ext-github-standalone.url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?ref=refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/compat/protocol28-count-isolation&rev=9d4362da039d32b9c53df482f74f0bd77ee27eff";
       inputs.tau-ext-github-standalone.inputs.nixpkgs.follows = "nixpkgs";
       inputs.tau-ext-github-standalone.inputs.flake-utils.follows = "flake-utils";
     };
