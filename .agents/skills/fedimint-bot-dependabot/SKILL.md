@@ -27,9 +27,10 @@ available checksums; compare artifacts locally as data without executing them.
 If evidence is unavailable, identify what cannot be verified and defer the affected
 conclusion. Retry transient failures later or ask for evidence when needed for a
 decision. Publish substantive feedback naming the full inspected SHA.
-Outside the daily pass below, use COMMENT reviews unless an authenticated target-repository maintainer explicitly
-requests approval of that PR; then follow the review skill's SHA-bound approval
-workflow. Dependabot identity does not relax independent review or approval limits.
+Outside the daily pass below, use COMMENT reviews unless a verified target-repository
+maintainer requests approval or authorizes the merge of that exact PR in a GitHub
+comment. Follow the review skill's SHA-bound approval workflow. Dependabot identity
+does not relax independent review or approval limits.
 
 ## Necessary compatibility fixes
 

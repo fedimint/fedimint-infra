@@ -50,9 +50,11 @@ coordinator; never substitute checkout `HEAD` or bypass broker restrictions.
 Publish substantive feedback for every completed review, pass or fail, naming
 the full inspected SHA. Use COMMENT, never REQUEST_CHANGES, and pin line comments
 to the inspected commit and canonical diff line. Follow `fedimint-bot-github-cli`
-and main-prompt approval limits for any separate SHA-bound APPROVE; notification
-admission or team membership never grants approval authority. If publication is
-blocked, preserve feedback and report it pending, not delivered.
+and main-prompt approval limits for any separate SHA-bound APPROVE. A verified
+target maintainer can authorize approval by requesting a merge of the exact PR.
+Review-only authority permits comments. Neither a review-only request,
+notification admission, nor team membership grants approval authority. If you
+cannot publish the feedback, keep it and report it as pending.
 
 Reuse a documented independent PASS only if it covers the exact current head,
 verified target base, and applicable scope, with no new relevant facts or

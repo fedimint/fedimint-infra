@@ -181,9 +181,11 @@ That team is not a substitute for repository collaborator access.
 The bot can approve an open, non-draft, non-Dependabot PR without a new request
 if it verifies that a human maintainer of the repository approved the same PR
 and that the patch has not changed materially since that approval. The bot's
-independent review must also pass for the current head and base. A request to
-merge does not grant approval authority. Bot approval neither authorizes a
-merge nor replaces required human or CODEOWNER review. See
+independent review must pass for the current head and base. When a verified
+target maintainer authorizes a merge of the exact PR in a GitHub comment, the
+bot may approve it if the same review passes and the request's conditions are
+met. A review-only request does not authorize approval. The bot's approval
+neither authorizes a merge nor replaces required human or CODEOWNER review. See
 [`fedimint-bot-github-cli`](../.agents/skills/fedimint-bot-github-cli/SKILL.md)
 for the evidence and SHA checks.
 
