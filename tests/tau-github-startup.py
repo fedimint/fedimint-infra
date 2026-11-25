@@ -51,13 +51,29 @@ with subprocess.Popen(
             process.stdin,
         )
         process.stdin.flush()
+        mark_read = None
         for _ in range(32):
             message = decoder.decode()
             assert message["message"] != "config_error", message
+            if message["message"] == "emit":
+                event = message["payload"]["event"]
+                if event["event"] == "tool.registration_declared":
+                    tool = event["payload"]["tool"]
+                    if tool.get("model_visible_name") == "github_mark_read":
+                        assert mark_read is None, message
+                        mark_read = tool
             if message["message"] == "ready":
                 break
         else:
             raise AssertionError("notifier did not declare readiness")
+        assert mark_read is not None, "notifier did not register github_mark_read"
+        assert mark_read["enabled_by_default"] is False, mark_read
+        assert mark_read["parameters"] == {
+            "type": "object",
+            "properties": {"notification_id": {"type": "string"}},
+            "required": ["notification_id"],
+            "additionalProperties": False,
+        }, mark_read
     finally:
         process.kill()
         process.wait()
