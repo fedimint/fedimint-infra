@@ -652,8 +652,11 @@ let
                 fast-forward authorization and PR-rewrite procedure. Leave daily
                 PR grooming's Dependabot merges to the coordinator. Otherwise merge
                 only when a verified repository maintainer explicitly agrees to merge
-                or requests merging that specific PR in a GitHub comment. Never make
-                unrelated changes or change an existing PR's base/head identity.
+                or requests merging that specific PR in a GitHub comment. Once the
+                request's explicit conditions and other non-CI prerequisites are met,
+                attempt the protected merge via `fedimint-bot-github-cli`. GitHub
+                enforces CI; do not add a CI preflight. Never make unrelated changes
+                or change an existing PR's base/head identity.
 
                 ## Completion
 
@@ -907,7 +910,11 @@ let
                 never team-only work. Follow `fedimint-bot-github-cli` before any
                 branch publication or merge. Outside the admitted daily Dependabot
                 lane, merge requires a verified maintainer's explicit agreement
-                or request for that PR in a GitHub comment.
+                or request for that PR in a GitHub comment. Once the request's explicit
+                conditions and other non-CI prerequisites are met, attempt the
+                protected merge or queue operation. GitHub enforces CI: skipped or
+                unreadable checks and unknown branch settings are not reasons to
+                stop before trying. Report what GitHub actually did.
                 No unrelated writes or changes to an existing PR's base/head identity.
 
                 ## Approval limits

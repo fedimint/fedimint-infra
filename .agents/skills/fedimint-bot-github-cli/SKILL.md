@@ -105,17 +105,15 @@ bounded gist. Edit changes exactly one existing file, adds one new file, or
 changes the description. Secret/default creation, foreign/secret reads, deletion,
 removal/rename, visibility changes, URLs, and editors are denied.
 
-## Required CI gates
+## CI diagnosis
 
-Use `gh pr checks NUMBER -R OWNER/REPO --required --json name,workflow,bucket,link`
-and verify `headRefOid` before and after the read. Judge CI readiness by
-GitHub's configured required checks. Use optional failures and
-`statusCheckRollup` for context. Read the returned buckets rather than the
-JSON command's exit status. Passing rows don't prove coverage. Verify the
-full required set from trusted branch settings or a maintainer's confirmation,
-not workflow YAML. If coverage is unknown, leave the PR pending and ask the
-responsible maintainer to confirm the gates. Missing, pending, or unreadable
-gates do not count as passing.
+To diagnose a blocker GitHub reports, use
+`gh pr checks NUMBER -R OWNER/REPO --required --json name,workflow,bucket,link`
+and verify `headRefOid` before and after the read. Read the buckets rather than
+the JSON command's exit status. Use optional failures and `statusCheckRollup`
+for context; neither visible passing rows nor workflow YAML prove which gates
+apply. Report visibility limits when they prevent diagnosis. These reads are
+not a merge preflight.
 
 For a merge queue, verify the configured gate on the `merge_group` commit.
 If a PR drops out of the queue without explanation, find the matching queue
@@ -187,22 +185,35 @@ Except for the admitted daily pass exception in `fedimint-bot-dependabot`,
 require a GitHub comment explicitly requesting or agreeing to merge the exact PR
 from a target-repository maintainer (native `write` or `admin`, verified with fresh
 trusted delivery facts or `github_user_context`). Team membership, a bot review,
-and CI cannot substitute. Inspect PR state and checks; confirm authorization
-covers the current full lowercase head SHA:
+and CI cannot substitute. Verify the PR is open and non-draft. Confirm authority
+covers the current base and full lowercase head SHA, and satisfy the request's
+explicit conditions and any independent non-CI policy prerequisites. For a
+request to approve and merge if good, complete the independent review and
+SHA-bound approval first.
+
+Then attempt the normal protected merge. GitHub decides which checks gate the
+merge and whether the PR must queue. Skipped, pending, failing, or unreadable
+checks and incomplete branch settings are not reasons to skip the attempt or
+ask for permission. Use CI to diagnose a reported blocker or as evidence of a
+substantive code finding, not as a second merge gate.
 
 ```sh
 gh pr merge NUMBER -R OWNER/REPO --match-head-commit FULL_SHA
 gh pr merge NUMBER -R OWNER/REPO --squash --match-head-commit FULL_SHA
 ```
 
-Use the first form for a required queue, or one supported direct method
-(`--merge`, `--squash`, `--rebase`). No admin flags or protection/check bypasses.
-Rely on `--match-head-commit` for an atomic head check only when merging
-directly. For routine Dependabot grooming, follow the preflight in
-`fedimint-bot-dependabot` and use the required queue. If the authorization
-explicitly requires an atomic exact-head guarantee, stop unless the permitted
-operation provides it. Stop on head change, missing prerequisites, or rejection.
-Verify and report the outcome: merged, queued, auto-merge enabled, or unconfirmed.
+Use the first form for a known required queue. Otherwise use the requested
+or usual repository method (`--merge`, `--squash`, or `--rebase`); GitHub's queue
+still takes precedence if required. No admin flags or protection/check bypasses.
+Re-read the base and head immediately before the attempt and stop if either has
+changed since verification. `--match-head-commit` binds direct merges atomically,
+but queue and auto-merge do not give the same guarantee. If authorization requires
+an atomic exact-head guarantee, proceed only when the permitted path provides it.
+
+Verify and report the actual outcome: merged, queued, auto-merge enabled and
+waiting, blocked or failed, or unconfirmed. If rejected, report the actual
+blocker. If the result is ambiguous or the head changed, recheck remote state
+and report what you can verify before considering any further action.
 
 ## Fork workflow-run approval
 

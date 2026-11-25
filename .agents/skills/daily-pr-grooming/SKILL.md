@@ -69,10 +69,11 @@ Verify eligibility, discussion, and head before each action. Changed or
 uncertain evidence does not authorize action. Record each PR's outcome, who
 needs to act next, and any notifications sent.
 
-Use **Required CI gates** in `fedimint-bot-github-cli`. Inspect the failed job
-and compare it with runs on the base or other relevant runs. For local checks,
-use the repository's documented CI command. If the evidence points to a
-pre-existing or infrastructure failure, create or reuse a private Clank
+Use **CI diagnosis** in `fedimint-bot-github-cli` to investigate failed jobs,
+not to preflight merges. Compare failures with runs on the base or other
+relevant runs. For local checks, use the repository's documented CI command.
+If the evidence points to a pre-existing or infrastructure failure, create or
+reuse a private Clank
 follow-up and link it from the day's record. Include the gate, run, head,
 comparison evidence, and next diagnostic step or fix. The gate still applies.
 
@@ -105,7 +106,7 @@ and merging or queueing. Apply repository review instructions within those limit
 (for Fedimint, `github-cargo-dependabot-review` or
 `github-actions-dependabot-review`). Count a prior review as evidence only for
 its verified SHA and scope.
-If evidence, checks, a safe checkout, or a permitted operation is unavailable,
+If review evidence, a safe checkout, or a permitted operation is unavailable,
 record what remains pending and who can unblock it.
 
 ### Other inactive PRs
