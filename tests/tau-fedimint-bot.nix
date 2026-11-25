@@ -156,6 +156,8 @@ let
             }
           })
           and (.agents.role_groups.coordinator.roles.coordinator.main_priority == 10)
+          and ([.agents.role_groups[].roles | to_entries[]
+            | select((.value.enable_tools // []) | index("github_mark_read"))] == [])
         ' "$harness"
 
         # Exercise the generated recovery script's two admissions without a live
@@ -182,6 +184,11 @@ let
         # The daily unit submits one dated task to the existing coordinator.
         # Compare its scope with the notifier's actual rendered configuration.
         harness=$(grep -Eo '/nix/store/[^ ]+-tau-fedimint-harness.yaml' ${notificationsStart})
+        jq -e '
+          [.agents.role_groups[].roles | to_entries[]
+            | select((.value.enable_tools // []) | index("github_mark_read"))
+            | .key] == ["coordinator"]
+        ' "$harness"
         repos=$(jq -er '.extensions["github-notifications"].config.repositories | join(" ")' "$harness")
         sed "s|${tauPackage}/bin/tau|$PWD/tau-stub|g" ${dailyPrStart} > daily
         : > admitted

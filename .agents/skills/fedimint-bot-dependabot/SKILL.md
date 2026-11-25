@@ -40,9 +40,10 @@ exact update, intended outcome, and publication scope. Require normal project
 checks and independent review before publication; an acceptable dependency does not
 make the original failing change approvable.
 
-An engineer receiving this scoped delegation implements and publishes within its
-scope; do not repeat admission, notification acknowledgement, or implementation
-delegation. The coordinator owns admission and acknowledgement.
+If you receive this delegation as an engineer, implement and publish within
+its scope. Leave admission and marking notifications read to the receiving
+coordinator, who follows `fedimint-bot-github-cli`. Do not delegate
+implementation again.
 
 Load and follow `fedimint-bot-github-cli` for publication. Publish a new non-conflicting `tau/`
 branch through the configured Git SSH remote and open a bot-owned replacement pull
