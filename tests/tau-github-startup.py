@@ -27,6 +27,8 @@ notifier_protocol = {"major": 28, "minor": 3}
 with open(sys.argv[2], encoding="utf-8") as source:
     config = json.load(source)["extensions"]["github-notifications"]["config"]
 
+assert config["filtered_unread_expiry_seconds"] == 7 * 24 * 60 * 60
+
 with subprocess.Popen(
     [sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0
 ) as process:
