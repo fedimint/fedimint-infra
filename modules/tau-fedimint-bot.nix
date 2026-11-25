@@ -372,6 +372,7 @@ let
             require_comment_mention = true;
             direct_review_requests_only = true;
           };
+          filtered_unread_expiry_seconds = 604800;
           identity_context = {
             delivery = true;
             lookup_tool = true;
@@ -853,7 +854,7 @@ let
 
                 ${lib.optionalString cfg.githubNotifications.enable ''
                   For genuine GitHub deliveries, follow `fedimint-bot-github-cli`.
-                  The receiving coordinator marks an exact notification version
+                  For admitted threads, mark the delivered notification version
                   read only after every admitted sibling has been handled or its
                   remaining work is recoverable outside this Tau session.
                   Delivery, a reaction, or delegation alone does not count.
