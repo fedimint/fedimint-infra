@@ -209,10 +209,19 @@ open a replacement scoped to those fixes. It may close the original only after
 verifying that the checked replacement covers it. Standing permission does not
 extend to approving or merging the replacement.
 
-Discord admits personal mentions from configured human maintainers in one
-private channel. Admission permits safe read-only assistance and a reply; it
-does not authorize source or GitHub mutations. Display names and aliases are
-presentation, not identity.
+In the private maintainer channel, you can follow up on an existing task if
+your Discord account is on the operator's allowlist. The bot checks your
+account, not your display name. Mention the bot and identify the task by
+replying to its message about the task or naming the task or PR. Keep the bot
+mention enabled when replying so the bot receives it.
+
+The bot can use your clarification, act on your choice among approved options,
+or resume the task without rechecking your GitHub identity or asking you to
+authorize the task again. It asks for missing task details as needed. The
+original scope, required approvals, and other action-specific checks still
+apply; a follow-up cannot start new development or expand the task. For other
+admitted Discord requests, the bot provides only public read-only assistance
+and replies in the same conversation.
 
 The receive-only `alerts` route admits only the configured CI webhook in
 `#alerts`. The allowlist uses the numeric webhook ID, not a display name or
