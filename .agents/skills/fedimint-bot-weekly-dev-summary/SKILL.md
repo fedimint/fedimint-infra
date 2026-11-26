@@ -102,14 +102,33 @@ the legacy core occurrence ID and exact window. If published, verify rather
 than resend an already delivered or uncertain Discord announcement.
 
 Persist the occurrence, page title, evidence directory, and lifecycle in the
-task. Keep the ledger, captures, and draft in a new owner-private directory
-below the matching persistent checkout (for example, use `umask 077; mktemp -d
-"$CHECKOUT/weekly-XXXXXXXX"` after verifying `CHECKOUT` against the table and
-checking for symlink escapes). Do not use a session directory or ephemeral
-`/tmp`. Run brokered reads from the managed project root and pass absolute
-paths into this evidence directory. On resume, use the recorded paths (including
-existing core evidence), validate the retained repository and window, and never
-overwrite a capture or redo a successful evidence request merely to resume.
+task. For a new occurrence, keep the ledger, captures, and draft in a new
+owner-private directory directly under `/home/tau-fedimint/fedimint`, outside
+all source checkouts. The managed project root contains no tracked source. Verify
+that the root is an owner-private directory, that it and the checkout from the
+repository table resolve to their exact configured paths without symlinks, and
+that the occurrence ID matches the selected repository and exact UTC endpoint.
+Then allocate the directory in the collection shell:
+
+```sh
+umask 077
+EVIDENCE_DIR=$(mktemp -d "/home/tau-fedimint/fedimint/.weekly-evidence-${OCCURRENCE_ID}.XXXXXXXX") || exit 1
+```
+
+Record the exact absolute directory before collecting. Stop if path validation
+or allocation fails; do not fall back to a source checkout, a session directory,
+or `/tmp`. Run brokered reads from the managed project root and pass absolute
+capture filenames within the evidence directory. The helper running in the
+collection shell opens each capture locally; brokered `gh` does not receive the
+capture filename.
+
+On resume, use the exact recorded directory and paths, including legacy
+evidence still in the matching checkout. Verify that the directory is
+owner-private and either directly under the managed project root or inside
+that checkout. Verify that the recorded paths do not escape it or traverse
+symlinks and that the retained repository and window match this occurrence.
+Stop on a mismatch. Do not move or delete legacy evidence, overwrite a capture,
+or redo a successful evidence request merely to resume.
 
 Per occurrence, including retries/resumes:
 
@@ -226,8 +245,9 @@ Maintain durable lifecycle: **delivered** (request accepted), **collecting**
 commit/page verified). Keep announcement delivery separate, including
 uncertainty. A scheduler exit-zero or running service is not report completion.
 Before ending work, persist evidence paths, draft, counters, completed/remaining
-work, and status. A service restart clears the live session, not these checkout
-files/task records; a fresh coordinator must consult them rather than start over.
+work, and status. If a service restart clears the live session, the next
+coordinator must consult the retained evidence files and task records rather
+than start over.
 Do not silently truncate the report to fit a response or tool limit.
 
 ## Group related activity, then classify the work
