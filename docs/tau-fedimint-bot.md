@@ -171,6 +171,16 @@ changes. Maintainer permissions take precedence. Existing mention, direct-review
 draft, independent-review, SHA, and consensus rules still apply, as do the narrow
 Dependabot and authenticated-PR-author exceptions.
 
+The bot posts `REQUEST_CHANGES` when an independent review confirms an unresolved
+blocker in the current patch, except on team-only and Dependabot reviews. It uses
+`COMMENT` for nonblocking findings and for team-only and Dependabot feedback. On
+Dependabot PRs, the bot focuses on approval and merge when eligible, or on a
+replacement PR to fix compatibility. The broker cannot pin a change request to a
+commit, so the bot checks the PR head and base before and after posting and
+verifies the returned review. A later `COMMENT` cannot clear a formal change
+request. If the bot lacks approval authority, a maintainer with review dismissal
+permissions can dismiss a stale request.
+
 Maintainer admission still comes from GitHub's effective repository collaborator
 permissions plus the existing configured numeric-ID exception. Request
 authorization separately checks native `write` or `admin` (on infra itself for
@@ -188,6 +198,16 @@ met. A review-only request does not authorize approval. The bot's approval
 neither authorizes a merge nor replaces required human or CODEOWNER review. See
 [`fedimint-bot-github-cli`](../.agents/skills/fedimint-bot-github-cli/SKILL.md)
 for the evidence and SHA checks.
+
+The bot uses the same workflow for genuine PR creation notifications and admitted
+daily grooming runs. For either path, it independently verifies that the original
+is an open, non-draft PR from Dependabot in a public repository. Grooming picks up
+PRs the bot missed or left pending. The bot may approve an admitted original and
+attempt its protected merge only after independent review passes for the exact
+current head and base. If the original needs compatibility fixes, the bot may
+open a replacement scoped to those fixes. It may close the original only after
+verifying that the checked replacement covers it. Standing permission does not
+extend to approving or merging the replacement.
 
 Discord admits personal mentions from configured human maintainers in one
 private channel. Admission permits safe read-only assistance and a reply; it

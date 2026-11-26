@@ -181,7 +181,7 @@ enable raw API writes.
 
 ## Pull-request merging
 
-Except for the admitted daily pass exception in `fedimint-bot-dependabot`,
+Except for an original admitted under `fedimint-bot-dependabot`,
 require a GitHub comment explicitly requesting or agreeing to merge the exact PR
 from a target-repository maintainer (native `write` or `admin`, verified with fresh
 trusted delivery facts or `github_user_context`). Team membership, a bot review,
@@ -241,9 +241,9 @@ deployment approvals, dispatch, broader reruns, or Actions settings changes.
 
 ## SHA-bound approval and review forms
 
-Use COMMENT for review feedback, never REQUEST_CHANGES. A verified target
-maintainer can authorize a separate APPROVE by explicitly asking you to approve
-the exact PR or authorizing its merge in a GitHub comment as described above.
+Select the feedback status under `fedimint-bot-pull-request-review`. A verified
+target maintainer can authorize a separate APPROVE by explicitly asking you to
+approve the exact PR or authorizing its merge in a GitHub comment as described above.
 “Merge this PR” and “review and merge if it looks good” both authorize approval
 subject to the request's conditions and the checks below. A review-only request
 does not grant approval authority.
@@ -274,17 +274,40 @@ review. Approval alone never authorizes merge or bypasses protections.
 In every lane, require independent technical PASS covering the full PR at the
 exact current head and base and apply all main-prompt limits. Patch equivalence
 establishes standing authority; it does not replace technical review. Preserve
-the separate admitted daily exception in `fedimint-bot-dependabot`.
+the separate standing authority in `fedimint-bot-dependabot`.
 
 ```sh
 gh pr review NUMBER -R OWNER/REPO --comment --body-file FILE
+gh pr review NUMBER -R OWNER/REPO --request-changes --body-file FILE
 gh pr review NUMBER -R OWNER/REPO --approve --commit-id FULL_SHA
 ```
+
+For REQUEST_CHANGES, use a repo-local body file explaining the blocker and
+naming the full inspected SHA. Before submitting, check the review history.
+Do not duplicate an effective bot change request for the same head and blocker
+on the current base. Use retained evidence to match the base; a review record's
+`commit_id` identifies only the head. Do not recreate a maintainer-dismissed
+request on unchanged evidence without new maintainer authorization. Check the
+PR is still open and verify its head SHA and base ref and SHA immediately before
+and after the write using `gh api repos/OWNER/REPO/pulls/NUMBER`. If the patch
+changed before the write, review it again before requesting changes. The broker's
+file-backed review does not send `commit_id`, so GitHub can attach it to a newer
+head if the PR changes during the write. Confirm the returned review ID, bot
+author, `state=CHANGES_REQUESTED`, and `commit_id` matching the inspected head.
+On uncertain delivery, check the review list below. If delivery remains unknown,
+report it as unconfirmed and stop without retrying. If the review was submitted
+but the head or base changed or could not be verified afterward, identify the
+review and immediately flag it to a target maintainer for dismissal if it still
+blocks the PR. Do not claim the reviewed blocker applies to the current patch.
+
+A later COMMENT does not clear REQUEST_CHANGES. If re-review clears the blocker
+but approval is not authorized, report the result and ask a target maintainer
+to dismiss the stale request if it still blocks the PR.
 
 Use the inspected full 40-character lowercase hex SHA. Pinned approval submits
 `event=APPROVE` and `commit_id=FULL_SHA`, with no body or extra flags. No unpinned
 or raw API approval. Publish substantive feedback separately, naming the full
-SHA; use COMMENT alone when approval limits prevent approval.
+SHA; without approval authority, publish only the appropriate feedback review.
 
 Before approval, check for an existing effective bot approval at this SHA and
 recheck that authority and review evidence still apply. Immediately before and
