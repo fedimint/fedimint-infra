@@ -29,14 +29,21 @@ deadline is a backstop, not a guarantee of a particular request count.
 Do not wait automatically across quota resets or restart budgets on resume.
 Synthesis delegates read saved evidence without issuing network requests.
 
-Keep private evidence, ledger, and draft below the matching persistent repository
-checkout. Run the helper from the managed bot project root and pass absolute
-capture filenames. Record the repository, exact UTC window, paths, and
-delivered/collecting/blocked/drafted/published state in the durable task. On restart,
-the launcher clears the live session but leaves checkout files and durable task
-records intact. Preserve them during deployment and verify them read-only
-before/after restart. Restart loses live conversations;
-it is not a request to publish or resume a report.
+For new weekly occurrences, keep private evidence, the ledger, and the draft
+in an owner-private occurrence directory directly under the managed bot project
+root, outside all source checkouts. The managed root contains no tracked source.
+The weekly skill defines the repository-specific occurrence ID and directory
+allocation. Run the helper from the managed project root and pass absolute
+capture filenames. The helper running in the collection shell opens the capture
+locally; brokered `gh` does not receive the capture filename.
+
+Record the repository, exact UTC window, paths, and publication state in the
+durable task. On resume, validate and reuse the exact recorded paths, including
+legacy evidence inside the matching checkout, without moving or deleting it.
+During deployment, preserve weekly evidence under the managed project root and
+in matching checkouts, along with the durable task records. Check both evidence
+locations and the task records read-only before and after restart. A restart
+does not authorize publication or resumption, even if it clears the live session.
 
 Create an owner-private directory with `mktemp -d`, then provide a new filename
 inside it. The helper refuses to overwrite any existing file, creates the capture
@@ -44,7 +51,8 @@ with mode 0600, and retains it only after complete successful collection and
 validation. Its stdout is a small JSON summary containing page/item counts, byte
 count, filename, and successful command exit. These counts precede report-level
 deduplication. Read the saved response bodies for evidence, not the stdout summary
-or a tool's truncated rendering. Remove the private evidence when no longer needed.
+or a tool's truncated rendering. Do not delete recorded weekly evidence without
+separate cleanup authority.
 
 ## Why include response headers
 
