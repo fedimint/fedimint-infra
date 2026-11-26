@@ -359,7 +359,7 @@ let
           repositories = watchedRepositories;
           actors = {
             mode = "repository_maintainers";
-            user_ids = [ 49699333 ];
+            user_ids = [ 49699333 ]; # dependabot[bot]
           };
           trusted_teams = [
             {
@@ -652,10 +652,10 @@ let
                 pull requests and prefer squashing follow-up edits into previous commits.
                 Before publishing any branch
                 update, load and follow `fedimint-bot-github-cli`, including its
-                fast-forward authorization and PR-rewrite procedure. Leave daily
-                PR grooming's Dependabot merges to the coordinator. Otherwise merge
-                only when a verified repository maintainer explicitly agrees to merge
-                or requests merging that specific PR in a GitHub comment. Once the
+                fast-forward authorization and PR-rewrite procedure. Leave standing
+                Dependabot approvals, merges, and original closures to the coordinator.
+                Otherwise merge only when a verified repository maintainer explicitly
+                agrees to merge or requests merging that specific PR in a GitHub comment. Once the
                 request's explicit conditions and other non-CI prerequisites are met,
                 attempt the protected merge via `fedimint-bot-github-cli`. GitHub
                 enforces CI; do not add a CI preflight. Never make unrelated changes
@@ -832,9 +832,10 @@ let
                 permits only the read-only assistance described below.
 
                 Narrow exceptions: authenticated PR authors may consent to changes to
-                their exact PR head, not unrelated commands. Independently verified new,
-                non-draft public Dependabot PRs authorize review and permitted replacement
-                compatibility fixes under `fedimint-bot-dependabot`, not arbitrary comments.
+                their exact PR head, not unrelated commands. A genuine creation delivery
+                for an independently verified public, non-draft Dependabot PR authorizes
+                the same scoped workflow as an admitted grooming pass under
+                `fedimint-bot-dependabot`, not arbitrary comments.
 
                 ### Security issue disclosure
 
@@ -913,33 +914,34 @@ let
                   authorized maintainer or limited bot-access requests.
                 - Use `fedimint-bot-pull-request-review` for PR review admission,
                   draft deferral, and review. Also use `fedimint-bot-dependabot`
-                  for standing Dependabot review and replacement-PR remediation.
+                  for the standing workflow on eligible Dependabot originals.
 
                 Default to PR delivery only for separately authorized development,
                 never team-only work. Follow `fedimint-bot-github-cli` before any
-                branch publication or merge. Outside the admitted daily Dependabot
-                lane, merge requires a verified maintainer's explicit agreement
-                or request for that PR in a GitHub comment. Once the request's explicit
-                conditions and other non-CI prerequisites are met, attempt the
+                branch publication or merge. Outside standing authority under
+                `fedimint-bot-dependabot`, merge requires a verified maintainer's
+                explicit agreement or request for that PR in a GitHub comment.
+                Once the request's explicit conditions and other non-CI
+                prerequisites are met, attempt the
                 protected merge or queue operation. GitHub enforces CI: skipped or
                 unreadable checks and unknown branch settings are not reasons to
                 stop before trying. Report what GitHub actually did.
                 No unrelated writes or changes to an existing PR's base/head identity.
 
-                ## Approval limits
+                ## Review and approval limits
 
-                - Publish review feedback as COMMENT, never REQUEST_CHANGES. Follow
-                  `fedimint-bot-github-cli` for a separate SHA-bound APPROVE. A
+                - Follow `fedimint-bot-pull-request-review` to select the review
+                  feedback status.
+                - Follow `fedimint-bot-github-cli` for a separate SHA-bound APPROVE. A
                   verified target maintainer can authorize approval by asking you
                   to approve the exact PR or by authorizing its merge in a GitHub
                   comment. The standing lanes are verified prior human maintainer
                   approval of the same materially unchanged ordinary PR patch and
-                  the admitted daily Dependabot pass.
+                  verified originals admitted by `fedimint-bot-dependabot`.
                 - Every approval requires independent technical PASS covering the
                   full PR at the exact current head and base. Honor the request's
-                  conditions and all approval limits. Review-only authority permits
-                  comments. Neither a review-only request nor notification
-                  admission grants approval authority.
+                  conditions and all approval limits. Neither a review-only
+                  request nor notification admission grants approval authority.
                   Bot approval neither grants merge authority nor substitutes for
                   required human or CODEOWNER review.
                 - Never approve Fedimint consensus changes in `fedimint/fedimint`

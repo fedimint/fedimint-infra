@@ -100,14 +100,10 @@ Grooming does not authorize merging our own PRs.
 
 ### Dependabot
 
-Handle every open Dependabot PR end to end. Follow `fedimint-bot-dependabot`
-for admission, independent review, fork CI, replacements, SHA-bound approval,
-and merging or queueing. Apply repository review instructions within those limits
-(for Fedimint, `github-cargo-dependabot-review` or
-`github-actions-dependabot-review`). Count a prior review as evidence only for
-its verified SHA and scope.
-If review evidence, a safe checkout, or a permitted operation is unavailable,
-record what remains pending and who can unblock it.
+Reconcile every in-scope open Dependabot PR through `fedimint-bot-dependabot`,
+including PRs already reviewed or missed on delivery. Check current state
+and continue any pending work without duplicating it. Record what remains
+pending and who can unblock it.
 
 ### Other inactive PRs
 
