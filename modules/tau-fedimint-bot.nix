@@ -2320,6 +2320,7 @@ in
       serviceConfig = {
         User = user;
         Group = user;
+        LimitNOFILE = "65536:524288";
         NetworkNamespacePath = "/run/netns/tau-fedimint";
         BindReadOnlyPaths = [
           "/etc/netns/tau-fedimint/resolv.conf:/run/systemd/resolve/stub-resolv.conf"
