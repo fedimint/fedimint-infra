@@ -365,3 +365,17 @@ consistent private backup of the **complete** state, including journals,
 artifacts, extension state, and repository/Clank recovery data. Retain the old
 closure too. A NixOS rollback alone cannot undo a data-format upgrade or external
 side effects; restore compatible state and reconcile those effects.
+
+Before stopping the bot for the wire 28 to 29 upgrade, get operator approval
+for a new coordinator and save a handoff for the old coordinator's unfinished
+tasks. There is no in-place journal migration. On first start, the configured
+reset detaches the old session and the recovery service starts a new
+coordinator. The new coordinator will not resume the old conversation, timers
+or in-flight work.
+
+Stop every writer and take the backup before inspecting
+`/home/tau-fedimint/.local/state/tau`. If either `artifacts` or `blobs` is a
+symlink, or if both paths exist, stop and inspect the layout rather than merging
+them. If `artifacts` is a directory and `blobs` is absent, rename `artifacts` to
+`blobs` in that directory before starting Tau 29. The rename preserves stored
+content, not journal compatibility. Leave journal wire markers unchanged.
