@@ -149,6 +149,7 @@
             inputs.perfit.nixosModules.perfitd
 
             ./hosts/runner/configuration.nix
+            ./modules/monitoring/node-exporter.nix
           ]
           ++ extraModules;
           specialArgs = {
@@ -383,6 +384,7 @@
           extraModules = [
             ./modules/perfit.nix
             ./modules/radicle.nix
+            ./modules/monitoring/server.nix
           ];
         };
 

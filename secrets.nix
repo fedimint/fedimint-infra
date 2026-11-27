@@ -46,6 +46,8 @@ in
   ++ users;
   "secrets/perfitd-info.age".publicKeys = users;
   "secrets/radicle-seednode.age".publicKeys = [ runner-04 ] ++ users;
+  "secrets/grafana-admin-password.age".publicKeys = [ runner-04 ] ++ users;
+  "secrets/grafana-secret-key.age".publicKeys = [ runner-04 ] ++ users;
   "secrets/bitcoind-signet-pass.age".publicKeys = fedimintds ++ users;
   "secrets/fedimint-signet-demo.age".publicKeys = users;
 }
