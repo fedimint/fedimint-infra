@@ -72,6 +72,48 @@ let
         mkdir "$out"
       '';
   disabledStart = disabled.config.systemd.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  alertsEnabled = disabled.extendModules {
+    modules = [
+      {
+        services.tau-fedimint-bot.discord = {
+          enable = true;
+          package = dummyPackage "tau-ext-discord";
+          guildId = 10;
+          channelId = 20;
+          allowedUserIds = [ 30 ];
+          alerts = {
+            channelId = 40;
+            webhookId = 50;
+          };
+          tokenAgeFile = builtins.toFile "discord-token.age" "test-only";
+          identityKeyAgeFile = builtins.toFile "discord-identity.age" "test-only";
+        };
+      }
+    ];
+  };
+  backportEvidencePackage =
+    lib.findFirst (package: lib.getName package == "tau-backport-evidence")
+      (throw "tau-backport-evidence missing with alerts configured")
+      alertsEnabled.config.environment.systemPackages;
+  backportEvidenceCheck =
+    pkgs.runCommand "tau-backport-evidence-check"
+      {
+        nativeBuildInputs = [
+          pkgs.gnugrep
+          pkgs.jq
+          pkgs.python3
+        ];
+      }
+      ''
+        harness=$(grep -Eo '/nix/store/[^ ]+-tau-fedimint-harness.yaml' \
+          ${alertsEnabled.config.systemd.services.tau-fedimint-bot.serviceConfig.ExecStart})
+        jq -e '.. | objects | select(.alias? == "alerts") |
+           .receive == "alerts_only" and .alert_webhook_ids == [50]' "$harness"
+        grep -F 'route Fedimint backport' "$harness"
+        python3 ${./tau-backport-evidence.py} \
+          ${backportEvidencePackage}/bin/tau-backport-evidence
+        touch "$out"
+      '';
   recoveryStart = disabled.config.systemd.services.tau-fedimint-recovery.serviceConfig.ExecStart;
   notificationsEnabled = disabled.extendModules {
     modules = [
@@ -804,6 +846,10 @@ pkgs.linkFarm "tau-fedimint-bot-checks" [
   {
     name = "weekly-summary";
     path = weeklyCheck;
+  }
+  {
+    name = "backport-evidence";
+    path = backportEvidenceCheck;
   }
   {
     name = "config";

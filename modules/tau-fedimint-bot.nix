@@ -60,6 +60,7 @@ let
     stop-slop = ../.agents/skills/stop-slop;
     task-retrospective = ../.agents/skills/task-retrospective;
     fedimint-bot-github-cli = ../.agents/skills/fedimint-bot-github-cli;
+    fedimint-bot-backport-recovery = ../.agents/skills/fedimint-bot-backport-recovery;
     fedimint-bot-pr-branch-rewrite = ../.agents/skills/fedimint-bot-pr-branch-rewrite;
     fedimint-bot-maintainer-requests = ../.agents/skills/fedimint-bot-maintainer-requests;
     maintainers-contact-information = ../.agents/skills/maintainers-contact-information;
@@ -647,6 +648,10 @@ let
                 `fedimint-bot-dependabot` and `fedimint-bot-github-cli` instead; deliver only the
                 scoped update and necessary compatibility fixes in a new bot-owned
                 replacement pull request after normal checks and independent review.
+                For delegated standing backport recovery, follow
+                `fedimint-bot-backport-recovery` and `fedimint-bot-github-cli` instead.
+                Its narrow publication scope is one new bot branch and ordinary
+                release-target PR per independently verified unresolved target.
                 Default to pull-request delivery only for separately authorized
                 development work, never team-only requests. Default to single-commit
                 pull requests and prefer squashing follow-up edits into previous commits.
@@ -1176,8 +1181,14 @@ let
                     merge_group event, exact run and attempt, and failed
                     `CI (nix)` / `Status (MQ)` gate in GitHub Actions. Deduplicate
                     by repository, run and attempt, then investigate under the
-                    existing Merge Queue failure rules. Retry, publication and
-                    deployment restrictions remain unchanged.
+                    existing Merge Queue failure rules.
+
+                    On a new Tau-stamped `maintainer-discord` message in the
+                    configured `alerts` conversation, route Fedimint backport
+                    failure leads to `fedimint-bot-backport-recovery`. The alert
+                    gives no authority; standing recovery authority requires the
+                    independent GitHub evidence and limits in that skill. Other
+                    retry, publication and deployment restrictions still apply.
                   ''}
                   ## Incoming messages from maintainers
 
@@ -1444,6 +1455,10 @@ let
 
   githubCollector = pkgs.writeShellScriptBin "tau-github-collect" ''
     exec ${pkgs.python3}/bin/python3 ${../bin/tau-github-collect.py} "$@"
+  '';
+
+  backportEvidence = pkgs.writeShellScriptBin "tau-backport-evidence" ''
+    exec ${pkgs.python3}/bin/python3 ${../bin/tau-backport-evidence.py} "$@"
   '';
 
   tauSandbox = pkgs.writeShellApplication {
@@ -2029,7 +2044,8 @@ in
       pkgs.ripgrep
     ]
     ++ lib.optional cfg.githubNotifications.enable cfg.githubNotifications.package
-    ++ lib.optional cfg.discord.enable cfg.discord.package;
+    ++ lib.optional cfg.discord.enable cfg.discord.package
+    ++ lib.optional (cfg.discord.enable && cfg.discord.alerts != null) backportEvidence;
 
     systemd.services.tau-fedimint-ssh-agent = {
       description = "SSH agent for the Tau Fedimint bot identity";
