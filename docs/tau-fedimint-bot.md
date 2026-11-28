@@ -379,3 +379,41 @@ symlink, or if both paths exist, stop and inspect the layout rather than merging
 them. If `artifacts` is a directory and `blobs` is absent, rename `artifacts` to
 `blobs` in that directory before starting Tau 29. The rename preserves stored
 content, not journal compatibility. Leave journal wire markers unchanged.
+
+### Local checks for Fedimint core
+
+Run these from the core checkout in its trusted development environment. Use
+the [core check recipes](https://github.com/fedimint/fedimint/blob/master/justfile.fedimint.just)
+for final verification. Use the steps below to prepare or diagnose local runs.
+They do not replace the project's final checks or CI.
+
+- **Missing dependencies during offline Clippy:** If the error names an uncached
+  dependency, run `cargo fetch --locked` in the same environment before retrying
+  `just final-lint`. Fetch only reviewed locked dependencies with authorized
+  network access. Keep the lockfile and the recipe's offline flags unchanged.
+- **Gateway or devimint fixture stalls:** Check the soft and hard descriptor
+  limits (`ulimit -Sn`, `ulimit -Hn`) and the visible CPU count (`nproc`).
+  On older, unmanaged, or overridden configurations, a wide runner can start
+  many fixtures with a soft limit of 1024. See
+  [managed open-file limits](open-file-limits.md). The [CI-style test script](https://github.com/fedimint/fedimint/blob/master/scripts/tests/test-ci-all.sh)
+  raises its own soft limit to 10000 and accepts `FM_TEST_CI_ALL_JOBS` to cap
+  parallel suites. For focused runs outside that script, raise only the test
+  process's inherited soft limit in a subshell if the hard limit permits it,
+  and reduce test concurrency if needed. For example, diagnose a stalled
+  gateway suite without changing runner-wide settings; omit the `ulimit` command
+  if the soft limit is already at least 10000:
+
+  ```sh
+  (
+    ulimit -Sn 10000 &&
+      TOKIO_WORKER_THREADS=4 cargo nextest run -p fedimint-gateway-server \
+        --test gatewayd-tests --test-threads 4
+  )
+  ```
+
+- **Unexpectedly long retries under plain `cargo test`:** Use
+  `cargo nextest run` with a package or test filter for focused Rust tests that
+  need test-mode timing, or the project's devimint harness for devimint suites.
+  Code built without `cfg(test)` can miss the shorter retry delays under plain
+  Cargo. Nextest supplies `NEXTEST`; setting that marker by hand does not run
+  nextest. Keep the separate doctest and other final check recipes.
