@@ -72,9 +72,53 @@ let
         mkdir "$out"
       '';
   disabledStart = disabled.config.systemd.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  alertsEnabled = disabled.extendModules {
+    modules = [
+      {
+        services.tau-fedimint-bot.discord = {
+          enable = true;
+          package = dummyPackage "tau-ext-discord";
+          guildId = 10;
+          channelId = 20;
+          allowedUserIds = [ 30 ];
+          alerts = {
+            channelId = 40;
+            webhookId = 50;
+          };
+          tokenAgeFile = builtins.toFile "discord-token.age" "test-only";
+          identityKeyAgeFile = builtins.toFile "discord-identity.age" "test-only";
+        };
+      }
+    ];
+  };
+  backportEvidencePackage =
+    lib.findFirst (package: lib.getName package == "tau-backport-evidence")
+      (throw "tau-backport-evidence missing with alerts configured")
+      alertsEnabled.config.environment.systemPackages;
+  backportEvidenceCheck =
+    pkgs.runCommand "tau-backport-evidence-check"
+      {
+        nativeBuildInputs = [
+          pkgs.gnugrep
+          pkgs.jq
+          pkgs.python3
+        ];
+      }
+      ''
+        harness=$(grep -Eo '/nix/store/[^ ]+-tau-fedimint-harness.yaml' \
+          ${alertsEnabled.config.systemd.services.tau-fedimint-bot.serviceConfig.ExecStart})
+        jq -e '.. | objects | select(.alias? == "alerts") |
+           .receive == "alerts_only" and .alert_webhook_ids == [50]' "$harness"
+        grep -F 'route Fedimint backport' "$harness"
+        python3 ${./tau-backport-evidence.py} \
+          ${backportEvidencePackage}/bin/tau-backport-evidence
+        touch "$out"
+      '';
+  recoveryStart = disabled.config.systemd.services.tau-fedimint-recovery.serviceConfig.ExecStart;
   notificationsEnabled = disabled.extendModules {
     modules = [
       {
+        services.tau-fedimint-bot.dailyPrGrooming.enable = true;
         services.tau-fedimint-bot.githubNotifications = {
           enable = true;
           package = githubNotificationsPackage;
@@ -86,6 +130,8 @@ let
   };
   notificationsStart =
     notificationsEnabled.config.systemd.services.tau-fedimint-bot.serviceConfig.ExecStart;
+  dailyPrStart =
+    notificationsEnabled.config.systemd.user.services.tau-fedimint-daily-pr-grooming.serviceConfig.ExecStart;
   notifierStartupCheck =
     pkgs.runCommand "tau-github-startup-check"
       {
@@ -140,38 +186,62 @@ let
         direnv version
         direnv-dpc version
 
-        clear_session=$(
-          grep -Eo '/nix/store/[^ ]+-tau-fedimint-clear-session' ${disabledStart}
-        )
-        test -n "$clear_session"
+        harness=$(grep -Eo '/nix/store/[^ ]+-tau-fedimint-harness.yaml' ${disabledStart})
+        jq -e '
+          (.timers == null)
+          and (.profiles["fedimint-coordinator"].timers == {
+            "clank-grooming": {
+              daily_time: "09:30",
+              utc: true,
+              fire_if_missed: false,
+              message: "Run the clank-grooming skill once."
+            }
+          })
+          and (.agents.role_groups.coordinator.roles.coordinator.main_priority == 10)
+          and ([.agents.role_groups[].roles | to_entries[]
+            | select((.value.enable_tools // []) | index("github_mark_read"))] == [])
+        ' "$harness"
 
-        cleanup_home="$TMPDIR/cleanup-home"
-        mkdir -p \
-          "$cleanup_home/.local/state/tau/sessions/tau-fedimint-bot" \
-          "$cleanup_home/.local/state/tau/sessions/sibling-session" \
-          "$cleanup_home/.local/state/tau/providers/provider-state" \
-          "$cleanup_home/.local/state/clank"
-        touch \
-          "$cleanup_home/.local/state/tau/sessions/tau-fedimint-bot/old-session" \
-          "$cleanup_home/.local/state/tau/sessions/sibling-session/keep" \
-          "$cleanup_home/.local/state/tau/providers/provider-state/keep" \
-          "$cleanup_home/.local/state/clank/keep"
-        HOME="$cleanup_home" "$clear_session"
-        test ! -e "$cleanup_home/.local/state/tau/sessions/tau-fedimint-bot"
-        test -e "$cleanup_home/.local/state/tau/sessions/sibling-session/keep"
-        test -e "$cleanup_home/.local/state/tau/providers/provider-state/keep"
-        test -e "$cleanup_home/.local/state/clank/keep"
+        # Exercise the generated recovery script's two admissions without a live
+        # Tau instance, model request or timer. The stub fails on any other RPC.
+        sed "s|${tauPackage}/bin/tau|$PWD/tau-stub|g" ${recoveryStart} > recovery
+        cat > tau-stub <<'SH'
+        #!${pkgs.runtimeShell}
+        set -eu
+        case "$*" in
+          'agent list --all tau-fedimint-bot') cat roster ;;
+          'message &tau-fedimint-bot') cat >> admitted ;;
+          *) exit 2 ;;
+        esac
+        SH
+        chmod +x recovery tau-stub
+        : > roster
+        ./recovery
+        grep -F 'Recover work that may have been in progress' admitted
+        cp admitted first-admission
+        printf '%s\n' 'coordinator retained (including unavailable historical state)' > roster
+        ./recovery
+        cmp first-admission admitted
 
-        external_sessions="$TMPDIR/external-sessions"
-        mkdir -p "$external_sessions/tau-fedimint-bot"
-        touch "$external_sessions/tau-fedimint-bot/keep"
-        rm -rf "$cleanup_home/.local/state/tau/sessions"
-        ln -s "$external_sessions" "$cleanup_home/.local/state/tau/sessions"
-        if HOME="$cleanup_home" "$clear_session"; then
-          echo "session cleanup followed a symlinked sessions directory" >&2
-          exit 1
-        fi
-        test -e "$external_sessions/tau-fedimint-bot/keep"
+        # The daily unit submits one dated task to the existing coordinator.
+        # Compare its scope with the notifier's actual rendered configuration.
+        harness=$(grep -Eo '/nix/store/[^ ]+-tau-fedimint-harness.yaml' ${notificationsStart})
+        jq -e '
+          [.agents.role_groups[].roles | to_entries[]
+            | select((.value.enable_tools // []) | index("github_mark_read"))
+            | .key] == ["coordinator"]
+        ' "$harness"
+        repos=$(jq -er '.extensions["github-notifications"].config.repositories | join(" ")' "$harness")
+        sed "s|${tauPackage}/bin/tau|$PWD/tau-stub|g" ${dailyPrStart} > daily
+        : > admitted
+        before=$(date -u +%F)
+        ${pkgs.runtimeShell} daily
+        after=$(date -u +%F)
+        for day in "$before" "$after"; do
+          printf 'Run daily-pr-grooming for UTC occurrence %s: %s\n' "$day" "$repos" > expected
+          cmp -s expected admitted && break
+        done
+        cmp expected admitted
 
         configure_git_push=$(
           grep -Eo '/nix/store/[^ ]+-tau-fedimint-configure-git-push' ${disabledStart} |
@@ -410,6 +480,7 @@ let
       machine.succeed("systemd-tmpfiles --create")
       # Simulate upgrading a host with old global project and renamed bot links.
       project_skills = [
+          "self-pr-grooming",
           "multipart-review",
           "fedimint-codebase",
           "fedimint-coding-style",
@@ -424,8 +495,10 @@ let
       for name in project_skills:
           machine.fail(f"test -e {skills_dir}/{name} || test -L {skills_dir}/{name}")
       for name in [
+          "daily-pr-grooming",
           "multipart-review-common",
           "multipart-review-javascript-typescript-style",
+          "clank-grooming",
           "maintainers-contact-information",
           "fedimint-bot-pr-branch-rewrite",
           "fedimint-bot-maintainer-requests",
@@ -491,14 +564,25 @@ let
           "https://github.com/fedimint/fedimint-sdk.git"
       )
       # Exercise the actual startup script against the production container plus
-      # nested repository topology. The dummy isolate exits after startup setup.
+      # nested repository topology. The dummy isolate captures the daemon
+      # arguments without starting Tau or firing the configured timer.
+      machine.succeed(
+          "runuser -u tau-fedimint -- mkdir -p -m 0700 "
+          "/home/tau-fedimint/.local/state/tau/sessions/tau-fedimint-bot\n"
+          "runuser -u tau-fedimint -- "
+          "touch /home/tau-fedimint/.local/state/tau/sessions/tau-fedimint-bot/keep"
+      )
       for _ in range(2):
-          status, _ = machine.execute(
+          machine.succeed(
               "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
+              "TAU_FEDIMINT_TEST_CAPTURE=/home/tau-fedimint/start.argv "
               "${disabledStart}"
           )
-          assert status == 42
       machine.succeed(
+          "test -f /home/tau-fedimint/.local/state/tau/sessions/tau-fedimint-bot/keep\n"
+          "tr '\\000' '\\n' </home/tau-fedimint/start.argv | tail -7 > /tmp/tau-serve-args\n"
+          "printf '%s\\n' --profile fedimint-coordinator serve --session tau-fedimint-bot "
+          "--create-or-existing --reset-incompatible-session | cmp - /tmp/tau-serve-args\n"
           "test \"$(cat /home/tau-fedimint/fedimint/fedimint-infra/unfinished)\" = preserve\n"
           "test \"$(runuser -u tau-fedimint -- git -C "
           "/home/tau-fedimint/fedimint/fedimint-infra remote get-url origin)\" = "
@@ -709,10 +793,13 @@ let
       )
       # Configured organization team reads reach credential loading; other
       # organizations remain denied before any credential access.
-      for endpoint, accepted in [
-          ("orgs/fedimint/teams/lightning/members --paginate", True),
-          ("orgs/fedimint/teams/lightning/memberships/dpc", True),
-          ("orgs/other-org/teams/lightning/members --paginate", False),
+      for command, accepted in [
+          ("api orgs/fedimint/teams/lightning/members --paginate", True),
+          ("api orgs/fedimint/teams/lightning/memberships/dpc", True),
+          ("api orgs/other-org/teams/lightning/members --paginate", False),
+          ("discussion view 1 -R fedimint/fedimint", False),
+          ("api graphql", False),
+          ("repo fork fedimint/fedimint --clone=false --remote=false", False),
       ]:
           status, output = machine.execute(
               "runuser -u tau-fedimint -- env HOME=/home/tau-fedimint "
@@ -720,9 +807,9 @@ let
               "isolate -c /home/tau-fedimint/fedimint "
               "exec --profile fedimint-bot -- ${pkgs.runtimeShell} -c "
               "'cd /home/tau-fedimint/fedimint && "
-              "gh api " + endpoint + "' 2>&1"
+              "gh " + command + "' 2>&1"
           )
-          assert status == (125 if accepted else 126), (endpoint, status, output)
+          assert status == (125 if accepted else 126), (command, status, output)
           if accepted:
               assert "open GitHub token secret: No such file or directory" in output, output
           else:
@@ -759,6 +846,10 @@ pkgs.linkFarm "tau-fedimint-bot-checks" [
   {
     name = "weekly-summary";
     path = weeklyCheck;
+  }
+  {
+    name = "backport-evidence";
+    path = backportEvidenceCheck;
   }
   {
     name = "config";

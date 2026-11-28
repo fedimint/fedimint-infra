@@ -9,8 +9,8 @@ advertise: true
 
 Handle delivered issue activity here, but use the request workflow only after
 the main prompt's authorization checks, including its exact-PR author consent
-path. Delivery alone authorizes no work. On denial, only acknowledge under
-`fedimint-bot-github-cli`.
+path. Delivery alone authorizes no work. If you deny a request, follow the
+reaction and mark-read rules in `fedimint-bot-github-cli`.
 
 ## Respond and track
 
@@ -26,10 +26,10 @@ The coordinator gives an engineer the exact repository, literal request, intende
 outcome, and publication scope. The delegation carries no authority for unrelated
 work. Require the project's normal checks and independent review.
 
-An engineer receiving that scoped delegation implements and publishes the
-authorized changes without repeating admission, acknowledging the notification,
-or delegating implementation again. The coordinator handles admission and
-acknowledgement.
+If you receive this delegation as an engineer, implement and publish the
+authorized changes. Leave admission and marking notifications read to the
+receiving coordinator, who follows `fedimint-bot-github-cli`. Do not
+delegate implementation again.
 
 For requests authorized only by fresh `fedimint/bot-access` membership, delegate
 public read-only inspection or research, not implementation. Include the authenticated

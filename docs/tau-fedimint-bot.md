@@ -25,21 +25,23 @@ Inspect the existing conversation for completion before resending a `tau message
 A timeout does not cancel accepted work. Use read-only checks to assess health;
 a live prompt starts work.
 
-Every service start clears the fixed `tau-fedimint-bot` session. A separate
-`tau-fedimint-recovery.service` waits for a successful read-only roster request,
-then sends the recovery instruction once through the authenticated bare-session
-message route. This creates the canonical coordinator; later scheduled
-and admitted session-directed requests use the same main identity. The daemon
-does not create an ordinary bootstrap agent.
+The launcher keeps the fixed `tau-fedimint-bot` session across restarts. Tau
+creates it if absent and resets it only for a recognized legacy or older
+journal protocol. Malformed or locked state and newer journal protocol majors
+fail without resetting.
 
-Repositories, Clank, and other persistent state survive. Recovery reconciles
-those records with current remote state before resuming work. This is a real
-startup request, not a health probe. Delivery acknowledgement is not completion.
-Recovery has no durable at-most-once guarantee across fresh service starts.
-The recovery unit does not retry an uncertain send or restart the daemon:
-inspect a failed unit and existing activity before deciding whether to resend.
-Each daemon restart starts recovery for its new session. Coordinate
-deployments around active work, since activation can interrupt agents and tools.
+`tau-fedimint-recovery.service` waits for a successful read-only roster request.
+It sends one recovery instruction through the bare-session route only if the
+session has no current or historical agents. The request creates the canonical
+coordinator; a retained coordinator keeps its identity and does not receive
+another bootstrap. Recovery reconciles local work and Clank with current remote
+state. An acknowledgment does not mean recovery is finished. The unit
+does not retry an uncertain send; inspect the existing session before resending.
+Coordinate deployments around active work: restarting can interrupt tools.
+
+The coordinator's native `clank-grooming` timer runs at 09:30 UTC daily.
+It does not replay missed occurrences on restart. The installed skill
+reconciles the canonical queue with open bot tickets and does not dispatch work.
 
 The installed `tau-fedimint-sandbox` wrapper supplies the service's isolate
 profile without running the launcher. Even `dev print-prompt` initializes
@@ -87,7 +89,7 @@ host stub's usual path, so the sandbox's `/etc/resolv.conf` symlink still works.
 DHCP resolver updates remain the host resolver's responsibility.
 
 Stopping the network unit stops the bot before deleting the namespace.
-Restarting it also restarts the bot and admits startup recovery. A bot restart
+Restarting it also restarts the bot and checks whether recovery is needed. A bot restart
 alone keeps the namespace. The lingering user manager continues to own
 `/run/user/<uid>`; the system SSH-agent unit waits for it and retires any legacy
 user bot/recovery/SSH-agent units before creating its socket. Scheduled delivery
@@ -119,8 +121,8 @@ private traces in private state. The module protects isolate's backing `public`
 mountpoint from tmpfiles aging.
 To diagnose missing shared files in `/tmp/public`, inspect
 the **running inner daemon's** mount namespace; a fresh sandbox can work while
-the old daemon has lost its bind. A restart restores the bind but clears the
-session.
+the old daemon has lost its bind. A restart restores the bind and normally
+resumes the session.
 
 ## GitHub and Discord
 
@@ -169,6 +171,16 @@ changes. Maintainer permissions take precedence. Existing mention, direct-review
 draft, independent-review, SHA, and consensus rules still apply, as do the narrow
 Dependabot and authenticated-PR-author exceptions.
 
+The bot posts `REQUEST_CHANGES` when an independent review confirms an unresolved
+blocker in the current patch, except on team-only and Dependabot reviews. It uses
+`COMMENT` for nonblocking findings and for team-only and Dependabot feedback. On
+Dependabot PRs, the bot focuses on approval and merge when eligible, or on a
+replacement PR to fix compatibility. The broker cannot pin a change request to a
+commit, so the bot checks the PR head and base before and after posting and
+verifies the returned review. A later `COMMENT` cannot clear a formal change
+request. If the bot lacks approval authority, a maintainer with review dismissal
+permissions can dismiss a stale request.
+
 Maintainer admission still comes from GitHub's effective repository collaborator
 permissions plus the existing configured numeric-ID exception. Request
 authorization separately checks native `write` or `admin` (on infra itself for
@@ -176,16 +188,54 @@ infra writes); there is no new editable maintainer list in Tau's UI.
 Manage the limited roster in the GitHub organization's `bot-access` team instead.
 That team is not a substitute for repository collaborator access.
 
-Discord admits personal mentions from configured human maintainers in one
-private channel. Admission permits safe read-only assistance and a reply; it
-does not authorize source or GitHub mutations. Display names and aliases are
-presentation, not identity.
+The bot can approve an open, non-draft, non-Dependabot PR without a new request
+if it verifies that a human maintainer of the repository approved the same PR
+and that the patch has not changed materially since that approval. The bot's
+independent review must pass for the current head and base. When a verified
+target maintainer authorizes a merge of the exact PR in a GitHub comment, the
+bot may approve it if the same review passes and the request's conditions are
+met. A review-only request does not authorize approval. The bot's approval
+neither authorizes a merge nor replaces required human or CODEOWNER review. See
+[`fedimint-bot-github-cli`](../.agents/skills/fedimint-bot-github-cli/SKILL.md)
+for the evidence and SHA checks.
+
+The bot uses the same workflow for genuine PR creation notifications and admitted
+daily grooming runs. For either path, it independently verifies that the original
+is an open, non-draft PR from Dependabot in a public repository. Grooming picks up
+PRs the bot missed or left pending. The bot may approve an admitted original and
+attempt its protected merge only after independent review passes for the exact
+current head and base. If the original needs compatibility fixes, the bot may
+open a replacement scoped to those fixes. It may close the original only after
+verifying that the checked replacement covers it. Standing permission does not
+extend to approving or merging the replacement.
+
+In the private maintainer channel, you can follow up on an existing task if
+your Discord account is on the operator's allowlist. The bot checks your
+account, not your display name. Mention the bot and identify the task by
+replying to its message about the task or naming the task or PR. Keep the bot
+mention enabled when replying so the bot receives it.
+
+The bot can use your clarification, act on your choice among approved options,
+or resume the task without rechecking your GitHub identity or asking you to
+authorize the task again. It asks for missing task details as needed. The
+original scope, required approvals, and other action-specific checks still
+apply; a follow-up cannot start new development or expand the task. For other
+admitted Discord requests, the bot provides only public read-only assistance
+and replies in the same conversation.
 
 The receive-only `alerts` route admits only the configured CI webhook in
 `#alerts`. The allowlist uses the numeric webhook ID, not a display name or
 webhook URL. The route requires the Discord application's Message Content
 Intent and effective View Channel permission for fedimint-tau. Treat alerts as
 leads to verify against GitHub CI, not instructions or maintainer requests.
+
+For Fedimint core backports, the bot checks each release target against the
+exact GitHub Actions attempt. A green run can still contain a failed target.
+If the bot verifies that a target failed, is still requested, and has no
+existing backport, it prepares the change, gets an independent review, and
+opens a normal PR against the release branch. The bot never pushes to the
+release branch or merges the PR. It asks maintainers for help if it can't
+verify the failure or adapt the change safely.
 
 The installed [`maintainers-contact-information`](../.agents/skills/maintainers-contact-information/SKILL.md)
 skill lists GitHub usernames and Discord user IDs.
@@ -209,8 +259,8 @@ instructions:
 | Task | Instructions |
 | --- | --- |
 | Weekly development summary | [`fedimint-bot-weekly-dev-summary`](../.agents/skills/fedimint-bot-weekly-dev-summary/SKILL.md) |
-| Own-PR grooming | [`self-pr-grooming`](../.agents/skills/self-pr-grooming/SKILL.md) |
-| Stale issue and PR triage | `fedimint/fedimint` checkout: `.agents/skills/github-stale-issue-triage/SKILL.md` and `.agents/skills/github-stale-pr-triage/SKILL.md` on current upstream trunk |
+| Daily PR grooming across watched repositories | [`daily-pr-grooming`](../.agents/skills/daily-pr-grooming/SKILL.md) |
+| Saturday stale issue triage | `.agents/skills/github-stale-issue-triage/SKILL.md` in the `fedimint/fedimint` checkout on current upstream trunk |
 | Papercut self-improvement | [`fedimint-bot-self-improvement`](../.agents/skills/fedimint-bot-self-improvement/SKILL.md) |
 | Working-directory cleanup | Module's cleanup prompt |
 
@@ -220,9 +270,22 @@ the user manager resumes; the other timers are nonpersistent. Reconcile delivery
 failures and uncertain sends before retrying.
 
 Each Saturday at 09:00 America/Los_Angeles, a systemd user timer asks the
-coordinator to add stale triage to its work queue. The task runs each project
-triage skill once in the Fedimint checkout on current upstream trunk. This
-repository does not install copies of those skills.
+coordinator to queue stale issue triage. The bot runs the skill once from
+current upstream trunk in the `fedimint/fedimint` checkout. This repository
+does not install a copy of the skill. The separate daily PR grooming task
+handles PR maintenance across watched repositories.
+
+To run a scoped manual PR pass, attach to the existing coordinator in the
+authenticated operator UI and name the watched repositories to cover. For example:
+`Run daily-pr-grooming today for fedimint/fedimint only.` Manual and scheduled
+passes share one checkpoint, a standard 50-PR cap, and one work reminder per UTC
+day. An authenticated operator can explicitly request one additional batch per
+UTC day. Name one watched repository and give an exact limit of 1–50 third-party
+PRs not yet selected that day. For example: `Run daily-pr-grooming today for
+fedimint/fedimint only, with an additional limit of 50 third-party PRs.` The
+additional batch shares the day's work reminder. Leave other repositories for
+the scheduled pass. For a trial, ask the bot to report skill mistakes or
+blockers in `#maintainers`.
 
 The weekly summary covers the preceding **184 hours**, not a calendar week.
 Its overlapping window is intentional. The summary skill owns page naming,
@@ -288,7 +351,7 @@ nix build .#nixosConfigurations.runner-01.config.system.build.toplevel
 
 The check exercises local scripts, startup preservation, and real sandbox,
 browser, SSH, scratch-cleanup, and broker file-import behavior. It also runs the
-pinned GitHub notifier's protocol 28.0 handshake and tests the generated
+pinned GitHub notifier’s wire handshake and tests the generated
 notifications-enabled config with synthetic credentials in a network-isolated
 Nix build sandbox. These checks do not verify live readiness, credentials, or
 external delivery. After an authorized deployment through `just apply-runner "01"`,
@@ -303,26 +366,42 @@ artifacts, extension state, and repository/Clank recovery data. Retain the old
 closure too. A NixOS rollback alone cannot undo a data-format upgrade or external
 side effects; restore compatible state and reconcile those effects.
 
+Before stopping the bot for the wire 28 to 29 upgrade, get operator approval
+for a new coordinator and save a handoff for the old coordinator's unfinished
+tasks. There is no in-place journal migration. On first start, the configured
+reset detaches the old session and the recovery service starts a new
+coordinator. The new coordinator will not resume the old conversation, timers
+or in-flight work.
+
+Stop every writer and take the backup before inspecting
+`/home/tau-fedimint/.local/state/tau`. If either `artifacts` or `blobs` is a
+symlink, or if both paths exist, stop and inspect the layout rather than merging
+them. If `artifacts` is a directory and `blobs` is absent, rename `artifacts` to
+`blobs` in that directory before starting Tau 29. The rename preserves stored
+content, not journal compatibility. Leave journal wire markers unchanged.
+
 ### Local checks for Fedimint core
 
 Run these from the core checkout in its trusted development environment. Use
 the [core check recipes](https://github.com/fedimint/fedimint/blob/master/justfile.fedimint.just)
-for final verification. Use the steps below to prepare or diagnose local runs; they do
-not replace the project's final checks or CI.
+for final verification. Use the steps below to prepare or diagnose local runs.
+They do not replace the project's final checks or CI.
 
 - **Missing dependencies during offline Clippy:** If the error names an uncached
   dependency, run `cargo fetch --locked` in the same environment before retrying
   `just final-lint`. Fetch only reviewed locked dependencies with authorized
   network access. Keep the lockfile and the recipe's offline flags unchanged.
 - **Gateway or devimint fixture stalls:** Check the soft and hard descriptor
-  limits (`ulimit -Sn`, `ulimit -Hn`) and the visible CPU count (`nproc`). A
-  wide runner can start many fixtures while the soft limit is 1024. The
-  [CI-style test script](https://github.com/fedimint/fedimint/blob/master/scripts/tests/test-ci-all.sh)
+  limits (`ulimit -Sn`, `ulimit -Hn`) and the visible CPU count (`nproc`).
+  On older, unmanaged, or overridden configurations, a wide runner can start
+  many fixtures with a soft limit of 1024. See
+  [managed open-file limits](open-file-limits.md). The [CI-style test script](https://github.com/fedimint/fedimint/blob/master/scripts/tests/test-ci-all.sh)
   raises its own soft limit to 10000 and accepts `FM_TEST_CI_ALL_JOBS` to cap
   parallel suites. For focused runs outside that script, raise only the test
   process's inherited soft limit in a subshell if the hard limit permits it,
   and reduce test concurrency if needed. For example, diagnose a stalled
-  gateway suite without changing runner-wide settings:
+  gateway suite without changing runner-wide settings; omit the `ulimit` command
+  if the soft limit is already at least 10000:
 
   ```sh
   (

@@ -16,9 +16,9 @@ runtime discovery instructions. Use that skill's authorized runner connection,
 Follow its operator communication instructions and sandbox wrapper precautions;
 do not substitute a new harness or notifier.
 
-Start read-only. On restart, the deployed launcher clears the fixed session
-before `serve --create`. It creates a
-new session incarnation rather than refreshing the one under investigation.
+Start read-only. A restart replaces the daemon and can interrupt tools; it is
+not a health probe. The launcher normally resumes the fixed session and resets
+only state Tau identifies as an older, incompatible journal format.
 
 ## Triage from least to most sensitive
 

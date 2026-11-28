@@ -26,10 +26,10 @@ live check. Do not add tests, mock fixtures, or extra validation gates, or debug
 tests to protect this bot's deployment. Follow required project workflow and
 review without adding testing requirements.
 
-Treat the current session as disposable: a normal service restart resets it.
-Do not preserve or migrate the session, build backup or session-identity
-machinery around it, or seek separate approval for a restart covered by
-deployment authorization. Preserve durable repository and task data.
+A normal service restart resumes the fixed session if Tau recognizes its
+journals. Tau resets only recognized legacy or older incompatible state. Do
+not manually clear or migrate the session, or seek separate approval for a
+restart covered by deployment authorization. Preserve repository and task data.
 
 Start diagnostics read-only, but proceed with an authorized deployment and its
 restart. Outside that authorization, get operator approval before restarting or
@@ -158,7 +158,7 @@ ip netns exec tau-fedimint runuser -u tau-fedimint -- \
 The wrapper uses the service's `fedimint-bot` profile, project-root working
 directory, fixed HOME/XDG environment, config and state mounts, runtime
 directory, SSH agent, and managed secret sources. It passes Tau arguments
-literally. It does not call the service launcher, clear the fixed session, or
+literally. It does not call the service launcher or
 automatically attach to the running daemon. It refuses to run as another user,
 outside the bot network namespace, or without the installed managed isolate config.
 Ordinary SSH logins still use the host network. Host-side

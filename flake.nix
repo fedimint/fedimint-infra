@@ -27,17 +27,30 @@
     };
 
     tau = {
-      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=b674557fadee1e1e60fdbb043154178edd189ffa";
+      url = "git+https://radicle.dpc.pw/z3ToHcxKefTYxZEoCoDXmddUkK3a4.git?rev=2e7c07eb2c61cac86a2117c33abc1f4653a8804c";
+      inputs.linked-specs-skills.follows = "linked-specs-skills";
+      # Track published extension trunks independently of the Tau lock.
+      inputs.tau-ext-discord.url = "git+https://radicle.dpc.pw/z3xEMWxFEWv7fKYLRhYVCpytsrcSd.git?rev=9b9fad74c668cfe22fdab0a8cda67a80ece1d265";
+      inputs.tau-ext-github-standalone.url = "git+https://radicle.dpc.pw/zeY514sMfgDNMC8czs3C1V1MFsaH.git?rev=2fd90d484e90143c0e939c56ef81cbaedcbfb614";
+      inputs.tau-ext-pim.url = "git+https://radicle.dpc.pw/z4FCuiVzFns5iTquhsYCntZyVWCqi.git?rev=b51120b7cfef603e5aa3c0cc99cc5809779b9633";
+      inputs.tau-ext-rhai.url = "git+https://radicle.dpc.pw/z5RLeoLpNH8Wuba64rZ63u61RkQp.git?rev=159c97766233ef753e501ad16b6009979a9e8477";
+      inputs.tau-ext-rostra.url = "git+https://radicle.dpc.pw/z4LrrRivcgNjJii5wzbjTvA8ttt6o.git?rev=5c59e1fdc6eb727c4fb5b92373624077784a592c";
+      inputs.tau-ext-slack.url = "git+https://radicle.dpc.pw/z3NJhEtKWCbHPa28wDQSYJ8eEfBjg.git?rev=dfc062e617038a0dbf2df340bd62ca986fe085f5";
+      inputs.tau-ext-swarm.url = "git+https://radicle.dpc.pw/z38my9x3Rmn6VYtDMiLKgjK3tRv8o.git?rev=743a47ea1f98abf0296266ac365601a870c91fad";
+      inputs.tau-ext-telegram.url = "git+https://radicle.dpc.pw/z3sPdSePnxtBvP9pTLwUwVgpMU68r.git?rev=1cb31ec0b901bc295be30c8770460e714b937b37";
+      inputs.tau-ext-xmpp.url = "git+https://radicle.dpc.pw/zpN6uwkd6ok9qRAX5yZaF7w8xzDd.git?rev=cdb9cdb5eea735ff4711d2eb8bc3c2cd356c9978";
+      inputs.tau-ext-zulip.url = "git+https://radicle.dpc.pw/z2LFTBWK7VpAwC3Bpxohkh91aqXd.git?rev=47f0501c6a3cc0b584a74c12127be48fbd6757c3";
       inputs.tau-ext-github-standalone.inputs.nixpkgs.follows = "nixpkgs";
       inputs.tau-ext-github-standalone.inputs.flake-utils.follows = "flake-utils";
     };
 
     isolate.url = "git+https://radicle.dpc.pw/z3qqqx5cpk5jk9ioEGaw54dihfDwb.git?ref=refs/namespaces/z6MkiksiCWT4LDhMQK75t6y3m2gj5iQPE1nhJfJuX1wd5Uef/refs/heads/exec-priv-broker-64-backport&rev=7390f4e82c42d7d6dda38cf62100a47294db2e43";
 
-    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=22ff806f2fa8613f7c40f080d724af93367531ba";
+    # Keep the watch fix without enabling discussion reads on the action PAT.
+    gh-isolate.url = "git+https://radicle.dpc.pw/zR8u6vetg8SFDCYwnCAoBuZB32aE.git?rev=c38033c4d3d5cb05dda340386b445b5059762f53";
 
     clank = {
-      url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=88fbc570239e2e4cedea53c0e6ca24cce3e88fd9";
+      url = "git+https://radicle.dpc.pw/z3HjJnZr71vKqT3RUCSaWHfJVUqG1.git?rev=f5becd776f4162a36809ab41173dc533ced33800";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
@@ -142,6 +155,7 @@
             inputs.perfit.nixosModules.perfitd
 
             ./hosts/runner/configuration.nix
+            ./modules/monitoring/node-exporter.nix
           ]
           ++ extraModules;
           specialArgs = {
@@ -304,7 +318,7 @@
                   enable = true;
                   sdkOnCalendar = "Mon *-*-* 07:00:00 America/Los_Angeles";
                 };
-                selfPrGrooming.enable = true;
+                dailyPrGrooming.enable = true;
                 staleTriage.enable = true;
                 papercutGrooming.enable = true;
                 workdirCleanup.enable = true;
@@ -376,6 +390,7 @@
           extraModules = [
             ./modules/perfit.nix
             ./modules/radicle.nix
+            ./modules/monitoring/server.nix
           ];
         };
 
