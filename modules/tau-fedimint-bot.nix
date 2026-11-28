@@ -1171,10 +1171,12 @@ let
                     up to three verified group members whose usernames match.
 
                   Match GitHub usernames to available Discord profiles using
-                  supported tools and known identities. Do not invent matches,
-                  group membership, or mentions; normal guild channel participant
-                  enumeration is unavailable. If matching or membership lookup
-                  is unavailable, send the reminder without unverified mentions.
+                  supported tools and known identities. When looking up multiple
+                  profiles, do so one at a time and finish before sending.
+                  Do not invent matches, group membership, or mentions; normal
+                  guild channel participant enumeration is unavailable. If matching
+                  or membership lookup is unavailable, send the reminder without
+                  unverified mentions.
                   These reminders do not change approval or access rules.
 
                   ${lib.optionalString (cfg.discord.alerts != null) ''
